@@ -1,21 +1,50 @@
+use std::collections::HashMap;
+
 use clap::{Arg, App};
 use glob::Pattern as GlobPattern;
 
-pub fn filter_nodes(nodes: &Vec<String>, filter: &str) -> Vec<String> {
-    let filters: Vec<GlobPattern> = filter.split(",").map(|pattern| GlobPattern::new(pattern).unwrap()).collect();
+use super::nix::DeploymentConfig;
+
+enum NodeFilter {
+    NameFilter(GlobPattern),
+    TagFilter(GlobPattern),
+}
+
+pub fn filter_nodes(nodes: &HashMap<String, DeploymentConfig>, filter: &str) -> Vec<String> {
+    let filters: Vec<NodeFilter> = filter.split(",").map(|pattern| {
+        use NodeFilter::*;
+        if let Some(tag_pattern) = pattern.strip_prefix("@") {
+            TagFilter(GlobPattern::new(tag_pattern).unwrap())
+        } else {
+            NameFilter(GlobPattern::new(pattern).unwrap())
+        }
+    }).collect();
 
     if filters.len() > 0 {
-        nodes.iter().filter(|name| {
+        nodes.iter().filter_map(|(name, node)| {
             for filter in filters.iter() {
-                if filter.matches(name) {
-                    return true;
+                use NodeFilter::*;
+                match filter {
+                    TagFilter(pat) => {
+                        // Welp
+                        for tag in node.tags() {
+                            if pat.matches(tag) {
+                                return Some(name);
+                            }
+                        }
+                    }
+                    NameFilter(pat) => {
+                        if pat.matches(name) {
+                            return Some(name)
+                        }
+                    }
                 }
             }
 
-            false
+            None
         }).cloned().collect()
     } else {
-        nodes.to_owned()
+        nodes.keys().cloned().collect()
     }
 }
 
@@ -30,11 +59,12 @@ pub fn register_common_args<'a, 'b>(command: App<'a, 'b>) -> App<'a, 'b> {
         .arg(Arg::with_name("on")
             .long("on")
             .help("Select a list of machines")
-            .long_help(r#"The list is comma-separated and globs are supported.
+            .long_help(r#"The list is comma-separated and globs are supported. To match tags, prepend the filter by @.
 Valid examples:
 
 - host1,host2,host3
 - edge-*
-- edge-*,core-*"#)
+- edge-*,core-*
+- @a-tag,@tags-can-have-*"#)
             .takes_value(true))
 }

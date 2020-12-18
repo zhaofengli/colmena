@@ -87,6 +87,7 @@ dependencies = [
  "glob",
  "indicatif",
  "log",
+ "quit",
  "serde",
  "serde_json",
  "snafu",
@@ -443,6 +444,21 @@ checksum = "1e0704ee1a7e00d7bb417d0770ea303c1bccbabf0ef1667dae92b5967f5f8a71"
 dependencies = [
  "unicode-xid",
 ]
+
+[[package]]
+name = "quit"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "94f4bb36a4259c52bb35ae60baf6242b9b33f7505e834d8d36f6227d21840756"
+dependencies = [
+ "quit_macros",
+]
+
+[[package]]
+name = "quit_macros"
+version = "1.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ff6923e4138faf97a0aaabf4a7b5ff1b0df28370786bead6200d2202c16e1b4e"
 
 [[package]]
 name = "quote"

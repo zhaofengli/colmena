@@ -1,14 +1,15 @@
 use std::cmp::min;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use indicatif::{MultiProgress, ProgressBar, ProgressDrawTarget};
 use futures::future::join_all;
+use tokio::sync::Mutex;
 
-use crate::nix::{DeploymentTask, DeploymentResult};
+use crate::nix::DeploymentTask;
 use crate::progress::get_spinner_styles;
 
 /// User-facing deploy routine
-pub async fn deploy(tasks: Vec<DeploymentTask<'static>>, max_parallelism: Option<usize>, progress_bar: bool) {
+pub async fn deploy(tasks: Vec<DeploymentTask>, max_parallelism: Option<usize>, progress_bar: bool) {
     let parallelism = match max_parallelism {
         Some(limit) => {
             min(limit, tasks.len())
@@ -32,7 +33,7 @@ pub async fn deploy(tasks: Vec<DeploymentTask<'static>>, max_parallelism: Option
     }
 
     let tasks = Arc::new(Mutex::new(tasks));
-    let result_list: Arc<Mutex<Vec<DeploymentResult>>> = Arc::new(Mutex::new(Vec::new()));
+    let result_list: Arc<Mutex<Vec<(DeploymentTask, bool)>>> = Arc::new(Mutex::new(Vec::new()));
 
     let mut futures = Vec::new();
 
@@ -48,7 +49,7 @@ pub async fn deploy(tasks: Vec<DeploymentTask<'static>>, max_parallelism: Option
             // Perform tasks until there's none
             loop {
                 let (task, remaining) = {
-                    let mut tasks = tasks.lock().unwrap();
+                    let mut tasks = tasks.lock().await;
                     let task = tasks.pop();
                     let remaining = tasks.len();
                     (task, remaining)
@@ -68,25 +69,23 @@ pub async fn deploy(tasks: Vec<DeploymentTask<'static>>, max_parallelism: Option
                 bar.inc(0);
 
                 if progress_bar {
-                    task.set_progress_bar(&bar);
-                    task.set_failing_spinner_style(failing_spinner_style.clone());
+                    task.set_progress_bar(bar.clone()).await;
                 }
 
                 match task.execute().await {
-                    Ok(result) => {
-                        if !result.success() {
-                            bar.abandon_with_message("Failed")
-                        } else {
-                            bar.finish_with_message(task.goal().success_str().unwrap());
-                        }
-                        bar.inc(0);
-                        let mut result_list = result_list.lock().unwrap();
-                        result_list.push(result);
+                    Ok(_) => {
+                        bar.finish_with_message(task.goal().success_str().unwrap());
+
+                        let mut result_list = result_list.lock().await;
+                        result_list.push((task, true));
                     },
                     Err(e) => {
                         println!("An error occurred while pushing to {}: {:?}", task.name(), e);
                         bar.set_style(failing_spinner_style.clone());
                         bar.abandon_with_message("Internal error");
+
+                        let mut result_list = result_list.lock().await;
+                        result_list.push((task, false));
                     },
                 }
 
@@ -109,10 +108,25 @@ pub async fn deploy(tasks: Vec<DeploymentTask<'static>>, max_parallelism: Option
 
     join_all(futures).await;
 
-    let result_list = result_list.lock().unwrap();
-    for result in result_list.iter() {
-        if !result.success() {
-            println!("{}", result);
+    let mut result_list = result_list.lock().await;
+    for (task, success) in result_list.drain(..) {
+        if !success {
+            let name = task.name().to_owned();
+            let host = task.to_host().await;
+
+            print!("Failed to deploy to {}. ", name);
+            if let Some(logs) = host.dump_logs().await {
+                if let Some(lines) = logs.chunks(10).rev().next() {
+                    println!("Last {} lines of logs:", lines.len());
+                    for line in lines {
+                        println!("{}", line);
+                    }
+                } else {
+                    println!("The log is empty.");
+                }
+            } else {
+                println!("Logs are not available for this target.");
+            }
         }
     }
 }

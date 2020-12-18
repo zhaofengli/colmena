@@ -107,7 +107,7 @@ let
     value = evalNode name hive.${name};
   }) nodeNames);
 
-  deploymentInfoJson = toJSON (lib.attrsets.mapAttrs (name: eval: eval.config.deployment) nodes);
+  deploymentConfigJson = toJSON (lib.attrsets.mapAttrs (name: eval: eval.config.deployment) nodes);
 
   toplevel = lib.attrsets.mapAttrs (name: eval: eval.config.system.build.toplevel) nodes;
 
@@ -126,6 +126,10 @@ let
       echo "$json" > $out
     '';
   };
+
+  introspect = function: function {
+    inherit pkgs lib nodes;
+  };
 in {
-  inherit nodes deploymentInfoJson toplevel buildAll buildSelected;
+  inherit nodes deploymentConfigJson toplevel buildAll buildSelected introspect;
 }

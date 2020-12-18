@@ -66,11 +66,27 @@ Here is a sample `hive.nix` with two nodes, with some common configurations appl
 The full set of options can be found at `src/eval.nix`.
 Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to deploy it to all nodes.
 
+## `colmena introspect`
+
+Sometimes you may want to extract values from your Hive configuration for consumption in another program (e.g., [OctoDNS](https://github.com/octodns/octodns)).
+To do that, create a `.nix` file with a lambda:
+
+```nix
+{ nodes, pkgs, lib, ... }:
+# Feels like a NixOS module - But you can return any JSON-serializable value
+lib.attrsets.mapAttrs (k: v: v.config.deployment.targetHost) nodes
+```
+
+Then you can evaluate with:
+
+```
+colmena introspect your-lambda.nix
+```
+
 ## Current limitations
 
 - It's required to use SSH keys to log into the remote hosts, and interactive authentication will not work.
 - There is no option to override SSH or `nix-copy-closure` options.
-- Node tagging is not yet implemented.
 - Error reporting is lacking.
 
 ## Licensing
