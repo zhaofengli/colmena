@@ -11,11 +11,9 @@
           date = rustNightly;
         };
       in rec {
-        rustc = rustChannel.rust.override {
+        pinnedRust = rustChannel.rust.override {
           extensions = [ "rust-src" ];
         };
-        inherit (rustChannel) cargo rust-fmt rust-std clippy;
-        crate2nix = super.callPackage sources.crate2nix {};
       })
     ];
   };

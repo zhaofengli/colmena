@@ -7,9 +7,9 @@ Colmena is still an early prototype.
 
 ## Tutorial
 
-Enter a `nix-shell` with `colmena` with:
+Enter a shell with `colmena` with:
 ```
-nix-shell test-shell.nix
+nix-shell
 ```
 
 Colmena should work with your existing NixOps and Morph configurations with minimal modification.
