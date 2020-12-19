@@ -7,18 +7,24 @@ mod deployment;
 mod util;
 
 macro_rules! command {
-    ($name:ident, $matches:ident) => {
-        if let Some(sub_matches) = $matches.subcommand_matches(stringify!($name)) {
-            command::$name::run(&$matches, &sub_matches).await;
+    ($module:ident, $matches:ident) => {
+        if let Some(sub_matches) = $matches.subcommand_matches(stringify!($module)) {
+            command::$module::run(&$matches, &sub_matches).await;
             return;
         }
-    }
+    };
+    ($name:expr, $module:ident, $matches:ident) => {
+        if let Some(sub_matches) = $matches.subcommand_matches($name) {
+            command::$module::run(&$matches, &sub_matches).await;
+            return;
+        }
+    };
 }
 
 macro_rules! bind_command {
-    ($name:ident, $app:ident) => {
-        $app = $app.subcommand(command::$name::subcommand());
-    }
+    ($module:ident, $app:ident) => {
+        $app = $app.subcommand(command::$module::subcommand());
+    };
 }
 
 #[tokio::main(flavor = "multi_thread")]
@@ -31,12 +37,14 @@ async fn main() {
         .setting(AppSettings::ArgRequiredElseHelp);
 
     bind_command!(apply, app);
+    bind_command!(apply_local, app);
     bind_command!(build, app);
     bind_command!(introspect, app);
 
     let matches = app.get_matches();
 
     command!(apply, matches);
+    command!("apply-local", apply_local, matches);
     command!(build, matches);
     command!(introspect, matches);
 }

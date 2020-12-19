@@ -6,7 +6,7 @@ use crate::util;
 
 pub fn subcommand() -> App<'static, 'static> {
     let command = SubCommand::with_name("apply")
-        .about("Apply the configuration")
+        .about("Apply configurations on remote machines")
         .arg(Arg::with_name("goal")
             .help("Deployment goal")
             .long_help("Same as the targets for switch-to-configuration.\n\"push\" means only copying the closures to remote nodes.")
@@ -61,7 +61,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     }
 
     // Some ugly argument mangling :/
-    let profiles = hive.build_selected(selected_nodes).await.unwrap();
+    let mut profiles = hive.build_selected(selected_nodes).await.unwrap();
     let goal = DeploymentGoal::from_str(local_args.value_of("goal").unwrap()).unwrap();
     let verbose = local_args.is_present("verbose");
 
@@ -72,17 +72,26 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     };
 
     let mut task_list: Vec<DeploymentTask> = Vec::new();
-    for (name, profile) in profiles.iter() {
-        let task = DeploymentTask::new(
-            name.clone(),
-            all_nodes.get(name).unwrap().to_host(),
-            profile.clone(),
-            goal,
-        );
-        task_list.push(task);
+    let mut skip_list: Vec<String> = Vec::new();
+    for (name, profile) in profiles.drain() {
+        let target = all_nodes.get(&name).unwrap().to_ssh_host();
+
+        match target {
+            Some(target) => {
+                let task = DeploymentTask::new(name, target, profile, goal);
+                task_list.push(task);
+            }
+            None => {
+                skip_list.push(name);
+            }
+        }
     }
 
-    println!("Applying configurations...");
+    if skip_list.len() != 0 {
+        println!("Applying configurations ({} skipped)...", skip_list.len());
+    } else {
+        println!("Applying configurations...");
+    }
 
     deploy(task_list, max_parallelism, !verbose).await;
 }

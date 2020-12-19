@@ -15,7 +15,7 @@ use tempfile::{NamedTempFile, TempPath};
 use tokio::process::Command;
 use tokio::sync::Mutex;
 
-mod host;
+pub mod host;
 pub use host::{Host, CopyDirection};
 use host::SSH;
 
@@ -131,18 +131,26 @@ impl Hive {
 #[derive(Debug, Clone, Deserialize)]
 pub struct DeploymentConfig {
     #[serde(rename = "targetHost")]
-    target_host: String,
+    target_host: Option<String>,
 
     #[serde(rename = "targetUser")]
     target_user: String,
+
+    #[serde(rename = "allowLocalDeployment")]
+    allow_local_deployment: bool,
     tags: Vec<String>,
 }
 
 impl DeploymentConfig {
     pub fn tags(&self) -> &[String] { &self.tags }
-    pub fn to_host(&self) -> Box<dyn Host> {
-        let host = SSH::new(self.target_user.clone(), self.target_host.clone());
-        Box::new(host)
+    pub fn allows_local_deployment(&self) -> bool { self.allow_local_deployment }
+
+    pub fn to_ssh_host(&self) -> Option<Box<dyn Host>> {
+        self.target_host.as_ref().map(|target_host| {
+            let host = SSH::new(self.target_user.clone(), target_host.clone());
+            let host: Box<dyn Host> = Box::new(host);
+            host
+        })
     }
 }
 

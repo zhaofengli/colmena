@@ -3,7 +3,7 @@ with builtins;
 let
   defaultHive = {
     # Will be set in defaultHiveMeta
-    network = {};
+    meta = {};
 
     # Like in NixOps, there is a special host named `defaults`
     # containing configurations that will be applied to all
@@ -11,12 +11,16 @@ let
     defaults = {};
   };
 
-  defaultHiveMeta = {
+  defaultMeta = {
     name = "hive";
     description = "A Colmena Hive";
 
     # Can be a path, a lambda, or an initialized Nixpkgs attrset
     nixpkgs = <nixpkgs>;
+
+    # Per-node Nixpkgs overrides
+    # Keys are hostnames.
+    nodeNixpkgs = {};
   };
 
   # Colmena-specific options
@@ -32,9 +36,10 @@ let
           description = ''
             The target SSH node for deployment.
 
-            If not specified, the node's attribute name will be used.
+            By default, the node's attribute name will be used.
+            If set to null, only local deployment will be supported.
           '';
-          type = types.str;
+          type = types.nullOr types.str;
           default = name;
         };
         targetUser = lib.mkOption {
@@ -43,6 +48,23 @@ let
           '';
           type = types.str;
           default = "root";
+        };
+        allowLocalDeployment = lib.mkOption {
+          description = ''
+            Allow the configuration to be applied locally on the host running
+            Colmena.
+
+            For local deployment to work, all of the following must be true:
+            - The node must be running NixOS.
+            - The node must have deployment.allowLocalDeployment set to true.
+            - The node's networking.hostName must match the hostname.
+
+            To apply the configurations locally, run `colmena apply-local`.
+            You can also set deployment.targetHost to null if the nost is not
+            accessible over SSH (only local deployment will be possible).
+          '';
+          type = types.bool;
+          default = false;
         };
         tags = lib.mkOption {
           description = ''
@@ -57,42 +79,53 @@ let
     };
   };
 
-  hiveMeta = {
-    network = defaultHiveMeta // (if rawHive ? network then rawHive.network else {});
-  };
-  hive = defaultHive // rawHive // hiveMeta;
+  userMeta = if rawHive ? meta then rawHive.meta
+    else if rawHive ? network then rawHive.network
+    else {};
 
-  pkgs = let
-    pkgConf = hive.network.nixpkgs;
-  in if typeOf pkgConf == "path" then
-    import pkgConf {}
-  else if typeOf pkgConf == "lambda" then
-    pkgConf {}
-  else if typeOf pkgConf == "set" then
-    pkgConf
-  else throw ''
-    network.nixpkgs must be one of:
+  # The final hive will always have the meta key instead of network.
+  hive = let 
+    mergedHive = removeAttrs (defaultHive // rawHive) [ "meta" "network" ];
+    meta = {
+      meta = lib.recursiveUpdate defaultMeta userMeta;
+    };
+  in mergedHive // meta;
 
-    - A path to Nixpkgs (e.g., <nixpkgs>)
-    - A Nixpkgs lambda (e.g., import <nixpkgs>)
-    - A Nixpkgs attribute set
-  '';
+  mkNixpkgs = configName: pkgConf:
+    if typeOf pkgConf == "path" then
+      import pkgConf {}
+    else if typeOf pkgConf == "lambda" then
+      pkgConf {}
+    else if typeOf pkgConf == "set" then
+      pkgConf
+    else throw ''
+      ${configName} must be one of:
 
+      - A path to Nixpkgs (e.g., <nixpkgs>)
+      - A Nixpkgs lambda (e.g., import <nixpkgs>)
+      - A Nixpkgs attribute set
+    '';
+
+  pkgs = mkNixpkgs "meta.nixpkgs" (defaultMeta // userMeta).nixpkgs;
   lib = pkgs.lib;
   reservedNames = [ "defaults" "network" "meta" ];
 
   evalNode = name: config: let
-    evalConfig = import (pkgs.path + "/nixos/lib/eval-config.nix");
+    npkgs =
+      if hasAttr name hive.meta.nodeNixpkgs
+      then mkNixpkgs "meta.nodeNixpkgs.${name}" hive.meta.nodeNixpkgs.${name}
+      else pkgs;
+    evalConfig = import (npkgs.path + "/nixos/lib/eval-config.nix");
   in evalConfig {
     system = currentSystem;
     modules = [
       deploymentOptions
       hive.defaults
       config
-    ] ++ (import (pkgs.path + "/nixos/modules/module-list.nix"));
+    ] ++ (import (npkgs.path + "/nixos/modules/module-list.nix"));
     specialArgs = {
       inherit name nodes;
-      modulesPath = pkgs.path + "/nixos/modules";
+      modulesPath = npkgs.path + "/nixos/modules";
     };
   };
 
@@ -118,7 +151,7 @@ let
     # Change in the order of the names should not cause a derivation to be created
     selected = lib.attrsets.filterAttrs (name: _: elem name names) toplevel;
   in derivation rec {
-    name = "colmena-${hive.network.name}";
+    name = "colmena-${hive.meta.name}";
     system = currentSystem;
     json = toJSON (lib.attrsets.mapAttrs (k: v: toString v) selected);
     builder = pkgs.writeScript "${name}.sh" ''

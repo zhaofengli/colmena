@@ -84,6 +84,13 @@ impl Host for Local {
                 paths.lines().map(|p| p.to_string().into()).collect()
             })
     }
+    async fn activate(&mut self, profile: &StorePath, goal: DeploymentGoal) -> NixResult<()> {
+        let activation_command = format!("{}/bin/switch-to-configuration", profile.as_path().to_str().unwrap());
+        Command::new(activation_command)
+            .arg(goal.as_str().unwrap())
+            .passthrough()
+            .await
+    }
 }
 
 /// A remote machine connected over SSH.

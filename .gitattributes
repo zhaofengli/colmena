@@ -1,2 +1,1 @@
-/Cargo.nix linguist-generated
-/nix/* liguist-generated
+nix/* liguist-generated=true
