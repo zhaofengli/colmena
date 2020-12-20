@@ -80,9 +80,8 @@ pub async fn deploy(tasks: Vec<DeploymentTask>, max_parallelism: Option<usize>, 
                         result_list.push((task, true));
                     },
                     Err(e) => {
-                        println!("An error occurred while pushing to {}: {:?}", task.name(), e);
                         bar.set_style(failing_spinner_style.clone());
-                        bar.abandon_with_message("Internal error");
+                        bar.abandon_with_message("Failed");
 
                         let mut result_list = result_list.lock().await;
                         result_list.push((task, false));
