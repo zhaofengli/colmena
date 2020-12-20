@@ -103,7 +103,7 @@ async fn escalate() -> ! {
     let exit = Command::new("sudo")
         .arg("--")
         .args(argv)
-        .arg("--no-sudo")
+        .arg("--we-are-launched-by-sudo")
         .spawn()
         .expect("Failed to run sudo to escalate privileges")
         .wait()
