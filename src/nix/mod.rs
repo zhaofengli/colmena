@@ -207,6 +207,14 @@ impl DeploymentGoal {
             DryActivate => Some("Dry activation successful"),
         }
     }
+
+    pub fn should_switch_profile(&self) -> bool {
+        use DeploymentGoal::*;
+        match self {
+            Boot | Switch => true,
+            _ => false,
+        }
+    }
 }
 
 struct NixInstantiate<'hive> {

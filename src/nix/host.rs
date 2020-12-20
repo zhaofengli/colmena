@@ -86,11 +86,13 @@ impl Host for Local {
     }
     async fn activate(&mut self, profile: &StorePath, goal: DeploymentGoal) -> NixResult<()> {
         let profile = profile.as_path().to_str().unwrap();
-        Command::new("nix-env")
-            .args(&["--profile", SYSTEM_PROFILE])
-            .args(&["--set", profile])
-            .passthrough()
-            .await?;
+        if goal.should_switch_profile() {
+            Command::new("nix-env")
+                .args(&["--profile", SYSTEM_PROFILE])
+                .args(&["--set", profile])
+                .passthrough()
+                .await?;
+        }
 
         let activation_command = format!("{}/bin/switch-to-configuration", profile);
         Command::new(activation_command)
@@ -133,8 +135,10 @@ impl Host for SSH {
     async fn activate(&mut self, profile: &StorePath, goal: DeploymentGoal) -> NixResult<()> {
         let profile = profile.as_path().to_str().unwrap();
 
-        let set_profile = self.ssh(&["nix-env", "--profile", SYSTEM_PROFILE, "--set", profile]);
-        self.run_command(set_profile).await?;
+        if goal.should_switch_profile() {
+            let set_profile = self.ssh(&["nix-env", "--profile", SYSTEM_PROFILE, "--set", profile]);
+            self.run_command(set_profile).await?;
+        }
 
         let activation_command = format!("{}/bin/switch-to-configuration", profile);
         let command = self.ssh(&[&activation_command, goal.as_str().unwrap()]);
