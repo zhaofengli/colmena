@@ -21,6 +21,8 @@ use host::SSH;
 
 const HIVE_EVAL: &'static [u8] = include_bytes!("eval.nix");
 
+pub const SYSTEM_PROFILE: &'static str = "/nix/var/nix/profiles/system";
+
 pub type NixResult<T> = Result<T, NixError>;
 
 #[derive(Debug, Snafu)]

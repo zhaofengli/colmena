@@ -7,7 +7,7 @@ use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use indicatif::ProgressBar;
 
-use super::{StorePath, DeploymentGoal, NixResult, NixError, NixCommand};
+use super::{StorePath, DeploymentGoal, NixResult, NixError, NixCommand, SYSTEM_PROFILE};
 
 pub(crate) fn local() -> Box<dyn Host + 'static> {
     Box::new(Local {})
@@ -85,7 +85,14 @@ impl Host for Local {
             })
     }
     async fn activate(&mut self, profile: &StorePath, goal: DeploymentGoal) -> NixResult<()> {
-        let activation_command = format!("{}/bin/switch-to-configuration", profile.as_path().to_str().unwrap());
+        let profile = profile.as_path().to_str().unwrap();
+        Command::new("nix-env")
+            .args(&["--profile", SYSTEM_PROFILE])
+            .args(&["--set", profile])
+            .passthrough()
+            .await?;
+
+        let activation_command = format!("{}/bin/switch-to-configuration", profile);
         Command::new(activation_command)
             .arg(goal.as_str().unwrap())
             .passthrough()
@@ -124,7 +131,12 @@ impl Host for SSH {
             })
     }
     async fn activate(&mut self, profile: &StorePath, goal: DeploymentGoal) -> NixResult<()> {
-        let activation_command = format!("{}/bin/switch-to-configuration", profile.as_path().to_str().unwrap());
+        let profile = profile.as_path().to_str().unwrap();
+
+        let set_profile = self.ssh(&["nix-env", "--profile", SYSTEM_PROFILE, "--set", profile]);
+        self.run_command(set_profile).await?;
+
+        let activation_command = format!("{}/bin/switch-to-configuration", profile);
         let command = self.ssh(&[&activation_command, goal.as_str().unwrap()]);
         self.run_command(command).await
     }
