@@ -35,7 +35,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
             quit::with_code(5);
         }
     } else {
-        log::error!("Coult not detect the OS version from /etc/os-release.");
+        log::error!("Could not detect the OS version from /etc/os-release.");
         quit::with_code(5);
     }
 
