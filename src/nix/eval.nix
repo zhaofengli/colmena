@@ -117,7 +117,6 @@ let
       else pkgs;
     evalConfig = import (npkgs.path + "/nixos/lib/eval-config.nix");
   in evalConfig {
-    system = currentSystem;
     modules = [
       deploymentOptions
       hive.defaults
