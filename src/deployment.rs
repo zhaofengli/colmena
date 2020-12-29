@@ -79,7 +79,7 @@ pub async fn deploy(tasks: Vec<DeploymentTask>, max_parallelism: Option<usize>, 
                         let mut result_list = result_list.lock().await;
                         result_list.push((task, true));
                     },
-                    Err(e) => {
+                    Err(_) => {
                         bar.set_style(failing_spinner_style.clone());
                         bar.abandon_with_message("Failed");
 
