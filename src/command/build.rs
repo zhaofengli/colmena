@@ -13,11 +13,11 @@ pub fn subcommand() -> App<'static, 'static> {
             .long_help("Deactivates the progress spinner and prints every line of output.")
             .takes_value(false));
 
-    util::register_common_args(command)
+    util::register_selector_args(command)
 }
 
 pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
-    let mut hive = Hive::from_config_arg(local_args).unwrap();
+    let mut hive = Hive::from_args(local_args).unwrap();
 
     println!("Enumerating nodes...");
     let all_nodes = hive.deployment_info().await.unwrap();

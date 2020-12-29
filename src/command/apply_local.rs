@@ -6,9 +6,10 @@ use tokio::process::Command;
 
 use crate::nix::{Hive, DeploymentTask, DeploymentGoal, Host};
 use crate::nix::host;
+use crate::util;
 
 pub fn subcommand() -> App<'static, 'static> {
-    SubCommand::with_name("apply-local")
+    let command = SubCommand::with_name("apply-local")
         .about("Apply configurations on the local machine")
         .arg(Arg::with_name("goal")
             .help("Deployment goal")
@@ -29,7 +30,9 @@ pub fn subcommand() -> App<'static, 'static> {
         .arg(Arg::with_name("we-are-launched-by-sudo")
             .long("we-are-launched-by-sudo")
             .hidden(true)
-            .takes_value(false))
+            .takes_value(false));
+
+    util::register_common_args(command)
 }
 
 pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
@@ -62,7 +65,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
         }
     }
 
-    let mut hive = Hive::from_config_arg(local_args).unwrap();
+    let mut hive = Hive::from_args(local_args).unwrap();
     let hostname = hostname::get().expect("Could not get hostname")
         .to_string_lossy().into_owned();
     let goal = DeploymentGoal::from_str(local_args.value_of("goal").unwrap()).unwrap();

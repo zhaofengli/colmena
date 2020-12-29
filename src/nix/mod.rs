@@ -56,6 +56,7 @@ pub struct Hive {
     hive: PathBuf,
     eval_nix: TempPath,
     builder: Box<dyn Host>,
+    show_trace: bool,
 }
 
 impl Hive {
@@ -67,14 +68,21 @@ impl Hive {
             hive: hive.as_ref().to_owned(),
             eval_nix: eval_nix.into_temp_path(),
             builder: host::local(),
+            show_trace: false,
         })
     }
 
-    pub fn from_config_arg(args: &ArgMatches<'_>) -> NixResult<Self> {
+    pub fn from_args(args: &ArgMatches<'_>) -> NixResult<Self> {
         let path = args.value_of("config").expect("The config arg should exist").to_owned();
         let path = canonicalize_path(path);
 
-        Self::new(path)
+        let mut hive = Self::new(path)?;
+
+        if args.is_present("show-trace") {
+            hive.show_trace = true;
+        }
+
+        Ok(hive)
     }
 
     /// Retrieve deployment info for all nodes
@@ -126,7 +134,7 @@ impl Hive {
     }
 
     fn nix_instantiate(&self, expression: &str) -> NixInstantiate {
-        NixInstantiate::new(&self.eval_nix, &self.hive, expression.to_owned())
+        NixInstantiate::new(&self, expression.to_owned())
     }
 }
 
@@ -218,17 +226,15 @@ impl DeploymentGoal {
 }
 
 struct NixInstantiate<'hive> {
-    eval_nix: &'hive Path,
-    hive: &'hive Path,
+    hive: &'hive Hive,
     expression: String,
 }
 
 impl<'hive> NixInstantiate<'hive> {
-    fn new(eval_nix: &'hive Path, hive: &'hive Path, expression: String) -> Self {
+    fn new(hive: &'hive Hive, expression: String) -> Self {
         Self {
-            eval_nix,
-            expression,
             hive,
+            expression,
         }
     }
 
@@ -242,10 +248,15 @@ impl<'hive> NixInstantiate<'hive> {
             .arg("-E")
             .arg(format!(
                 "with builtins; let eval = import {}; hive = eval {{ rawHive = import {}; }}; in {}",
-                self.eval_nix.to_str().unwrap(),
-                self.hive.to_str().unwrap(),
+                self.hive.eval_nix.to_str().unwrap(),
+                self.hive.hive.to_str().unwrap(),
                 self.expression,
             ));
+
+        if self.hive.show_trace {
+            command.arg("--show-trace");
+        }
+
         command
     }
 

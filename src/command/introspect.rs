@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use clap::{Arg, App, SubCommand, ArgMatches};
 
 use crate::nix::Hive;
+use crate::util;
 
 pub fn subcommand() -> App<'static, 'static> {
     let command = SubCommand::with_name("introspect")
@@ -29,11 +30,11 @@ For example, to retrieve the configuration of one node, you may write something 
             .required(true))
         ;
 
-    command
+    util::register_common_args(command)
 }
 
 pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
-    let mut hive = Hive::from_config_arg(local_args).unwrap();
+    let mut hive = Hive::from_args(local_args).unwrap();
 
     if !(local_args.is_present("expression") ^ local_args.is_present("expression_file")) {
         eprintln!("Either an expression (-E) xor a .nix file containing an expression should be specified, not both.");

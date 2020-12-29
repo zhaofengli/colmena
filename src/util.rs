@@ -56,6 +56,17 @@ pub fn register_common_args<'a, 'b>(command: App<'a, 'b>) -> App<'a, 'b> {
             .help("Path to a Hive expression")
             .default_value("hive.nix")
             .required(true))
+        .arg(Arg::with_name("show-trace")
+            .long("show-trace")
+            .help("Show debug information for Nix commands")
+            .long_help("Passes --show-trace to Nix commands")
+            .takes_value(false))
+}
+
+pub fn register_selector_args<'a, 'b>(command: App<'a, 'b>) -> App<'a, 'b> {
+    let command = register_common_args(command);
+
+    command
         .arg(Arg::with_name("on")
             .long("on")
             .help("Select a list of machines")
