@@ -10,5 +10,5 @@ in rustPlatform.buildRustPackage {
   version = "0.1.0";
 
   src = ./.;
-  cargoSha256 = "0gwjbzvx6hlbjb8892rc2p9rj5l432y13aq1nxr2h71rgqppxflg";
+  cargoSha256 = "1ai046vbvydyqhwiy8qz0d28dch5jpxg3rzk7nrh2sdwcvxirmvm";
 }

@@ -187,7 +187,7 @@ impl SSH {
                 progress.set_message(trimmed);
                 progress.inc(0);
             } else {
-                println!("{} | {}", style(&self.friendly_name).cyan(), trimmed);
+                eprintln!("{} | {}", style(&self.friendly_name).cyan(), trimmed);
             }
             self.logs.push(line);
         }

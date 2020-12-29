@@ -1,6 +1,5 @@
 use clap::{Arg, App, SubCommand, ArgMatches};
 
-use crate::nix::Hive;
 use crate::util;
 
 pub fn subcommand() -> App<'static, 'static> {
@@ -17,9 +16,9 @@ pub fn subcommand() -> App<'static, 'static> {
 }
 
 pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
-    let mut hive = Hive::from_args(local_args).unwrap();
+    let mut hive = util::hive_from_args(local_args).unwrap();
 
-    println!("Enumerating nodes...");
+    log::info!("Enumerating nodes...");
     let all_nodes = hive.deployment_info().await.unwrap();
 
     let selected_nodes = match local_args.value_of("on") {
@@ -30,17 +29,17 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     };
 
     if selected_nodes.len() == 0 {
-        println!("No hosts matched. Exiting...");
+        log::warn!("No hosts matched. Exiting...");
         quit::with_code(2);
     }
 
     if selected_nodes.len() == all_nodes.len() {
-        println!("Building all node configurations...");
+        log::info!("Building all node configurations...");
     } else {
-        println!("Selected {} out of {} hosts. Building node configurations...", selected_nodes.len(), all_nodes.len());
+        log::info!("Selected {} out of {} hosts. Building node configurations...", selected_nodes.len(), all_nodes.len());
     }
 
     hive.build_selected(selected_nodes).await.unwrap();
 
-    println!("Success!");
+    log::info!("Success!");
 }

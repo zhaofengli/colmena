@@ -6,7 +6,6 @@ use std::collections::HashMap;
 use std::fs;
 
 use async_trait::async_trait;
-use clap::ArgMatches;
 use indicatif::ProgressBar;
 use serde::de::DeserializeOwned;
 use serde::{Serialize, Deserialize};
@@ -72,17 +71,8 @@ impl Hive {
         })
     }
 
-    pub fn from_args(args: &ArgMatches<'_>) -> NixResult<Self> {
-        let path = args.value_of("config").expect("The config arg should exist").to_owned();
-        let path = canonicalize_path(path);
-
-        let mut hive = Self::new(path)?;
-
-        if args.is_present("show-trace") {
-            hive.show_trace = true;
-        }
-
-        Ok(hive)
+    pub fn show_trace(&mut self, value: bool) {
+        self.show_trace = value;
     }
 
     /// Retrieve deployment info for all nodes
@@ -443,12 +433,3 @@ impl DeploymentTask {
         }
     }
 }
-
-fn canonicalize_path(path: String) -> PathBuf {
-    if !path.starts_with("/") {
-        format!("./{}", path).into()
-    } else {
-        path.into()
-    }
-}
-
