@@ -235,6 +235,7 @@ impl<'hive> NixInstantiate<'hive> {
 
         let mut command = Command::new("nix-instantiate");
         command
+            .arg("--no-gc-warning")
             .arg("-E")
             .arg(format!(
                 "with builtins; let eval = import {}; hive = eval {{ rawHive = import {}; }}; in {}",

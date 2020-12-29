@@ -76,6 +76,7 @@ impl Host for Local {
     }
     async fn realize_remote(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
         Command::new("nix-store")
+            .arg("--no-gc-warning")
             .arg("--realise")
             .arg(derivation.as_path())
             .capture_output()
@@ -125,7 +126,7 @@ impl Host for SSH {
     }
     async fn realize_remote(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
         // FIXME
-        self.ssh(&["nix-store", "--realise", derivation.as_path().to_str().unwrap()])
+        self.ssh(&["nix-store", "--no-gc-warning", "--realise", derivation.as_path().to_str().unwrap()])
             .capture_output()
             .await
             .map(|paths| {
