@@ -118,7 +118,7 @@ pub async fn deploy(tasks: Vec<DeploymentTask>, max_parallelism: Option<usize>, 
                 if let Some(lines) = logs.chunks(10).rev().next() {
                     println!("Last {} lines of logs:", lines.len());
                     for line in lines {
-                        println!("{}", line);
+                        println!("{}", line.trim_end());
                     }
                 } else {
                     println!("The log is empty.");
