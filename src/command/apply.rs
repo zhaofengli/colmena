@@ -16,8 +16,12 @@ pub fn subcommand() -> App<'static, 'static> {
         .arg(Arg::with_name("parallel")
             .short("p")
             .long("parallel")
+            .value_name("LIMIT")
             .help("Parallelism limit")
-            .long_help("Set to 0 to disable parallemism limit.")
+            .long_help(r#"Limits the maximum number of hosts to be deployed in parallel.
+
+Set to 0 to disable parallemism limit.
+"#)
             .default_value("10")
             .takes_value(true)
             .validator(|s| {

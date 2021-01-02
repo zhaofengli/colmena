@@ -126,9 +126,11 @@ pub fn register_selector_args<'a, 'b>(command: App<'a, 'b>) -> App<'a, 'b> {
     command
         .arg(Arg::with_name("on")
             .long("on")
-            .help("Select a list of machines")
-            .long_help(r#"The list is comma-separated and globs are supported. To match tags, prepend the filter by @.
-Valid examples:
+            .value_name("NODES")
+            .help("Node selector")
+            .long_help(r#"Select a list of nodes to deploy to.
+
+The list is comma-separated and globs are supported. To match tags, prepend the filter by @. Valid examples:
 
 - host1,host2,host3
 - edge-*

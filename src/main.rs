@@ -41,6 +41,7 @@ async fn main() {
         .arg(Arg::with_name("config")
             .short("f")
             .long("config")
+            .value_name("CONFIG")
             .help("Path to a Hive expression")
 
             // The default value is a lie (sort of)!
