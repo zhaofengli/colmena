@@ -19,6 +19,40 @@ pub enum CopyDirection {
     FromRemote,
 }
 
+#[derive(Copy, Clone, Debug)]
+pub struct CopyOptions {
+    include_outputs: bool,
+    use_substitutes: bool,
+    gzip: bool,
+}
+
+impl Default for CopyOptions {
+    fn default() -> Self {
+        Self {
+            include_outputs: true,
+            use_substitutes: true,
+            gzip: true,
+        }
+    }
+}
+
+impl CopyOptions {
+    pub fn include_outputs(mut self, val: bool) -> Self {
+        self.include_outputs = val;
+        self
+    }
+
+    pub fn use_substitutes(mut self, val: bool) -> Self {
+        self.use_substitutes = val;
+        self
+    }
+
+    pub fn gzip(mut self, val: bool) -> Self {
+        self.gzip = val;
+        self
+    }
+}
+
 /// A Nix(OS) host.
 ///
 /// The underlying implementation must be Send and Sync.
@@ -27,7 +61,7 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     /// Sends or receives the specified closure to the host
     ///
     /// The StorePath and its dependent paths will then exist on this host.
-    async fn copy_closure(&mut self, closure: &StorePath, direction: CopyDirection, include_outputs: bool) -> NixResult<()>;
+    async fn copy_closure(&mut self, closure: &StorePath, direction: CopyDirection, options: CopyOptions) -> NixResult<()>;
 
     /// Realizes the specified derivation on the host
     ///
@@ -38,9 +72,11 @@ pub trait Host: Send + Sync + std::fmt::Debug {
 
     /// Realizes the specified local derivation on the host then retrieves the outputs.
     async fn realize(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
-        self.copy_closure(derivation, CopyDirection::ToRemote, false).await?;
+        let options = CopyOptions::default();
+
+        self.copy_closure(derivation, CopyDirection::ToRemote, options.include_outputs(false)).await?;
         let paths = self.realize_remote(derivation).await?;
-        self.copy_closure(derivation, CopyDirection::FromRemote, true).await?;
+        self.copy_closure(derivation, CopyDirection::FromRemote, options.include_outputs(true)).await?;
 
         Ok(paths)
     }
@@ -71,7 +107,7 @@ pub struct Local {}
 
 #[async_trait]
 impl Host for Local {
-    async fn copy_closure(&mut self, _closure: &StorePath, _direction: CopyDirection, _include_outputs: bool) -> NixResult<()> {
+    async fn copy_closure(&mut self, _closure: &StorePath, _direction: CopyDirection, _options: CopyOptions) -> NixResult<()> {
         Ok(())
     }
     async fn realize_remote(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
@@ -120,8 +156,8 @@ pub struct SSH {
 
 #[async_trait]
 impl Host for SSH {
-    async fn copy_closure(&mut self, closure: &StorePath, direction: CopyDirection, include_outputs: bool) -> NixResult<()> {
-        let command = self.nix_copy_closure(closure, direction, include_outputs);
+    async fn copy_closure(&mut self, closure: &StorePath, direction: CopyDirection, options: CopyOptions) -> NixResult<()> {
+        let command = self.nix_copy_closure(closure, direction, options);
         self.run_command(command).await
     }
     async fn realize_remote(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
@@ -205,7 +241,7 @@ impl SSH {
         format!("{}@{}", self.user, self.host)
     }
 
-    fn nix_copy_closure(&self, path: &StorePath, direction: CopyDirection, include_outputs: bool) -> Command {
+    fn nix_copy_closure(&self, path: &StorePath, direction: CopyDirection, options: CopyOptions) -> Command {
         let mut command = Command::new("nix-copy-closure");
         match direction {
             CopyDirection::ToRemote => {
@@ -215,13 +251,19 @@ impl SSH {
                 command.arg("--from");
             }
         }
-        if include_outputs {
+
+        // FIXME: Host-agnostic abstraction
+        if options.include_outputs {
             command.arg("--include-outputs");
+        }
+        if options.use_substitutes {
+            command.arg("--use-substitutes");
+        }
+        if options.gzip {
+            command.arg("--gzip");
         }
 
         command
-            .arg("--gzip")
-            .arg("--use-substitutes")
             .arg(&self.ssh_target())
             .arg(path.as_path());
 

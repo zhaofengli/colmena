@@ -15,7 +15,7 @@ use tokio::process::Command;
 use tokio::sync::Mutex;
 
 pub mod host;
-pub use host::{Host, CopyDirection};
+pub use host::{Host, CopyDirection, CopyOptions};
 use host::SSH;
 
 const HIVE_EVAL: &'static [u8] = include_bytes!("eval.nix");
@@ -383,6 +383,9 @@ pub struct DeploymentTask {
 
     /// The goal of this deployment.
     goal: DeploymentGoal,
+
+    /// Options used for copying closures to the remote host.
+    copy_options: CopyOptions,
 }
 
 impl DeploymentTask {
@@ -392,11 +395,17 @@ impl DeploymentTask {
             target: Mutex::new(target),
             profile,
             goal,
+            copy_options: CopyOptions::default(),
         }
     }
 
     pub fn name(&self) -> &str { &self.name }
     pub fn goal(&self) -> DeploymentGoal { self.goal }
+
+    /// Set options used for copying closures to the remote host.
+    pub fn set_copy_options(&mut self, options: CopyOptions) {
+        self.copy_options = options;
+    }
 
     /// Set the progress bar used during deployment.
     pub async fn set_progress_bar(&mut self, progress: ProgressBar) {
@@ -423,7 +432,9 @@ impl DeploymentTask {
 
     async fn push(&mut self) -> NixResult<()> {
         let mut target = self.target.lock().await;
-        target.copy_closure(&self.profile, CopyDirection::ToRemote, true).await
+        let options = self.copy_options.include_outputs(true);
+
+        target.copy_closure(&self.profile, CopyDirection::ToRemote, options).await
     }
 
     async fn push_and_activate(&mut self) -> NixResult<()> {

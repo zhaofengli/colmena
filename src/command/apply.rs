@@ -1,6 +1,7 @@
 use clap::{Arg, App, SubCommand, ArgMatches};
 
 use crate::nix::{DeploymentTask, DeploymentGoal};
+use crate::nix::host::CopyOptions;
 use crate::deployment::deploy;
 use crate::util;
 
@@ -35,7 +36,18 @@ Set to 0 to disable parallemism limit.
             .long("verbose")
             .help("Be verbose")
             .long_help("Deactivates the progress spinner and prints every line of output.")
-            .takes_value(false));
+            .takes_value(false))
+        .arg(Arg::with_name("no-substitutes")
+            .long("no-substitutes")
+            .help("Do not use substitutes")
+            .long_help("Disables the use of substituters when copying closures to the remote host.")
+            .takes_value(false))
+        .arg(Arg::with_name("no-gzip")
+            .long("no-gzip")
+            .help("Do not use gzip")
+            .long_help("Disables the use of gzip when copying closures to the remote host.")
+            .takes_value(false))
+    ;
 
     util::register_selector_args(command)
 }
@@ -82,7 +94,13 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
 
         match target {
             Some(target) => {
-                let task = DeploymentTask::new(name, target, profile, goal);
+                let mut task = DeploymentTask::new(name, target, profile, goal);
+                let options = CopyOptions::default()
+                    .gzip(!local_args.is_present("no-gzip"))
+                    .use_substitutes(!local_args.is_present("no-substitutes"))
+                ;
+
+                task.set_copy_options(options);
                 task_list.push(task);
             }
             None => {
