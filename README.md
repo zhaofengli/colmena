@@ -5,6 +5,15 @@ It's a thin wrapper over Nix commands like `nix-instantiate` and `nix-copy-closu
 
 Colmena is still an early prototype.
 
+## Installation
+
+Colmena doesn't have a stable release yet.
+To install the latest development version to the user profile, use `default.nix`:
+
+```
+nix-env -if default.nix
+```
+
 ## Tutorial
 
 Enter a shell with `colmena` with:
