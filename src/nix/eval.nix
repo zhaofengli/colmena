@@ -79,7 +79,10 @@ let
     };
   };
 
-  userMeta = if rawHive ? meta then rawHive.meta
+  userMeta =
+    if rawHive ? meta && rawHive ? network then
+      throw "Only one of `network` and `meta` may be specified. `meta` should be used as `network` is for NixOps compatibility."
+    else if rawHive ? meta then rawHive.meta
     else if rawHive ? network then rawHive.network
     else {};
 
