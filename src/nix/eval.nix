@@ -93,7 +93,8 @@ let
 
   mkNixpkgs = configName: pkgConf:
     if typeOf pkgConf == "path" then
-      import pkgConf {}
+      # The referenced file might return an initialized Nixpkgs attribute set directly
+      mkNixpkgs configName (import pkgConf)
     else if typeOf pkgConf == "lambda" then
       pkgConf {}
     else if typeOf pkgConf == "set" then
