@@ -1,29 +1,35 @@
-use std::path::{Path, PathBuf};
-use std::convert::AsRef;
-use std::io::Write;
+use std::convert::TryFrom;
 use std::process::Stdio;
-use std::collections::HashMap;
-use std::fs;
 
 use async_trait::async_trait;
-use indicatif::ProgressBar;
 use serde::de::DeserializeOwned;
-use serde::{Serialize, Deserialize};
+use serde::Deserialize;
 use snafu::Snafu;
-use tempfile::{NamedTempFile, TempPath};
 use tokio::process::Command;
-use tokio::sync::Mutex;
+
+use crate::util::CommandExecution;
 
 pub mod host;
 pub use host::{Host, CopyDirection, CopyOptions};
 use host::SSH;
 
-const HIVE_EVAL: &'static [u8] = include_bytes!("eval.nix");
+pub mod hive;
+pub use hive::Hive;
+
+pub mod store;
+pub use store::{StorePath, StoreDerivation};
+
+pub mod profile;
+pub use profile::{Profile, ProfileMap};
+
+pub mod deployment;
+pub use deployment::{DeploymentGoal, Deployment};
 
 pub const SYSTEM_PROFILE: &'static str = "/nix/var/nix/profiles/system";
 
 pub type NixResult<T> = Result<T, NixError>;
 
+#[non_exhaustive]
 #[derive(Debug, Snafu)]
 pub enum NixError {
     #[snafu(display("I/O Error: {}", error))]
@@ -41,6 +47,12 @@ pub enum NixError {
     #[snafu(display("This operation is not supported"))]
     Unsupported,
 
+    #[snafu(display("Invalid Nix store path"))]
+    InvalidStorePath,
+
+    #[snafu(display("Invalid NixOS system profile"))]
+    InvalidProfile,
+
     #[snafu(display("Nix Error: {}", message))]
     Unknown { message: String },
 }
@@ -51,85 +63,8 @@ impl From<std::io::Error> for NixError {
     }
 }
 
-pub struct Hive {
-    hive: PathBuf,
-    eval_nix: TempPath,
-    builder: Box<dyn Host>,
-    show_trace: bool,
-}
-
-impl Hive {
-    pub fn new<P: AsRef<Path>>(hive: P) -> NixResult<Self> {
-        let mut eval_nix = NamedTempFile::new()?;
-        eval_nix.write_all(HIVE_EVAL)?;
-
-        Ok(Self {
-            hive: hive.as_ref().to_owned(),
-            eval_nix: eval_nix.into_temp_path(),
-            builder: host::local(),
-            show_trace: false,
-        })
-    }
-
-    pub fn show_trace(&mut self, value: bool) {
-        self.show_trace = value;
-    }
-
-    /// Retrieve deployment info for all nodes
-    pub async fn deployment_info(&self) -> NixResult<HashMap<String, DeploymentConfig>> {
-        // FIXME: Really ugly :(
-        let s: String = self.nix_instantiate("hive.deploymentConfigJson").eval()
-            .capture_json().await?;
-
-        Ok(serde_json::from_str(&s).unwrap())
-    }
-
-    /// Builds selected nodes
-    pub async fn build_selected(&mut self, nodes: Vec<String>) -> NixResult<HashMap<String, StorePath>> {
-        let nodes_expr = SerializedNixExpresssion::new(&nodes)?;
-        let expr = format!("hive.buildSelected {{ names = {}; }}", nodes_expr.expression());
-
-        self.build_common(&expr).await
-    }
-
-    #[allow(dead_code)]
-    /// Builds all node configurations
-    pub async fn build_all(&mut self) -> NixResult<HashMap<String, StorePath>> {
-        self.build_common("hive.buildAll").await
-    }
-
-    /// Evaluates an expression using values from the configuration
-    pub async fn introspect(&mut self, expression: String) -> NixResult<String> {
-        let expression = format!("toJSON (hive.introspect ({}))", expression);
-        self.nix_instantiate(&expression).eval()
-            .capture_json().await
-    }
-
-    /// Builds node configurations
-    ///
-    /// Expects the resulting store path to point to a JSON file containing
-    /// a map of node name -> store path.
-    async fn build_common(&mut self, expression: &str) -> NixResult<HashMap<String, StorePath>> {
-        let build: StorePath = self.nix_instantiate(expression).instantiate()
-            .capture_store_path().await?;
-
-        let realization = self.builder.realize(&build).await?;
-        assert!(realization.len() == 1);
-
-        let json = fs::read_to_string(&realization[0].as_path())?;
-        let result_map = serde_json::from_str(&json)
-            .expect("Bad result from our own build routine");
-
-        Ok(result_map)
-    }
-
-    fn nix_instantiate(&self, expression: &str) -> NixInstantiate {
-        NixInstantiate::new(&self, expression.to_owned())
-    }
-}
-
 #[derive(Debug, Clone, Deserialize)]
-pub struct DeploymentConfig {
+pub struct NodeConfig {
     #[serde(rename = "targetHost")]
     target_host: Option<String>,
 
@@ -141,7 +76,7 @@ pub struct DeploymentConfig {
     tags: Vec<String>,
 }
 
-impl DeploymentConfig {
+impl NodeConfig {
     pub fn tags(&self) -> &[String] { &self.tags }
     pub fn allows_local_deployment(&self) -> bool { self.allow_local_deployment }
 
@@ -151,110 +86,6 @@ impl DeploymentConfig {
             let host: Box<dyn Host> = Box::new(host);
             host
         })
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum DeploymentGoal {
-    /// Push the closures only.
-    Push,
-
-    /// Make the configuration the boot default and activate now.
-    Switch,
-
-    /// Make the configuration the boot default.
-    Boot,
-
-    /// Activate the configuration, but don't make it the boot default.
-    Test,
-
-    /// Show what would be done if this configuration were activated.
-    DryActivate,
-}
-
-impl DeploymentGoal {
-    pub fn from_str(s: &str) -> Option<Self> {
-        match s {
-            "push" => Some(Self::Push),
-            "switch" => Some(Self::Switch),
-            "boot" => Some(Self::Boot),
-            "test" => Some(Self::Test),
-            "dry-activate" => Some(Self::DryActivate),
-            _ => None,
-        }
-    }
-
-    pub fn as_str(&self) -> Option<&'static str> {
-        use DeploymentGoal::*;
-        match self {
-            Push => None,
-            Switch => Some("switch"),
-            Boot => Some("boot"),
-            Test => Some("test"),
-            DryActivate => Some("dry-activate"),
-        }
-    }
-
-    pub fn success_str(&self) -> Option<&'static str> {
-        use DeploymentGoal::*;
-        match self {
-            Push => Some("Pushed"),
-            Switch => Some("Activation successful"),
-            Boot => Some("Will be activated next boot"),
-            Test => Some("Activation successful (test)"),
-            DryActivate => Some("Dry activation successful"),
-        }
-    }
-
-    pub fn should_switch_profile(&self) -> bool {
-        use DeploymentGoal::*;
-        match self {
-            Boot | Switch => true,
-            _ => false,
-        }
-    }
-}
-
-struct NixInstantiate<'hive> {
-    hive: &'hive Hive,
-    expression: String,
-}
-
-impl<'hive> NixInstantiate<'hive> {
-    fn new(hive: &'hive Hive, expression: String) -> Self {
-        Self {
-            hive,
-            expression,
-        }
-    }
-
-    fn instantiate(self) -> Command {
-        // FIXME: unwrap
-        // Technically filenames can be arbitrary byte strings (OsStr),
-        // but Nix may not like it...
-
-        let mut command = Command::new("nix-instantiate");
-        command
-            .arg("--no-gc-warning")
-            .arg("-E")
-            .arg(format!(
-                "with builtins; let eval = import {}; hive = eval {{ rawHive = import {}; }}; in {}",
-                self.hive.eval_nix.to_str().unwrap(),
-                self.hive.hive.to_str().unwrap(),
-                self.expression,
-            ));
-
-        if self.hive.show_trace {
-            command.arg("--show-trace");
-        }
-
-        command
-    }
-
-    fn eval(self) -> Command {
-        let mut command = self.instantiate();
-        command.arg("--eval").arg("--json");
-        command
     }
 }
 
@@ -317,131 +148,37 @@ impl NixCommand for Command {
     /// Captures a single store path.
     async fn capture_store_path(&mut self) -> NixResult<StorePath> {
         let output = self.capture_output().await?;
-        Ok(StorePath(output.trim_end().into()))
+        let path = output.trim_end().to_owned();
+        StorePath::try_from(path)
     }
 }
 
-/// A Nix store path.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StorePath(PathBuf);
-
-impl StorePath {
-    /// Returns the store path
-    pub fn as_path(&self) -> &Path {
-        &self.0
+#[async_trait]
+impl NixCommand for CommandExecution {
+    async fn passthrough(&mut self) -> NixResult<()> {
+        self.run().await
     }
-}
 
-impl From<String> for StorePath {
-    fn from(s: String) -> Self {
-        Self(s.into())
+    /// Captures output as a String.
+    async fn capture_output(&mut self) -> NixResult<String> {
+        self.run().await?;
+        let (stdout, _) = self.get_logs();
+
+        Ok(stdout.unwrap().to_owned())
     }
-}
 
-impl Into<PathBuf> for StorePath {
-    fn into(self) -> PathBuf {
-        self.0
-    }
-}
-
-/// A serialized Nix expression.
-///
-/// Very hacky and involves an Import From Derivation, so should be
-/// avoided as much as possible. But I suppose it's more robust than attempting
-/// to generate Nix expressions directly or escaping a JSON string to strip
-/// off Nix interpolation.
-struct SerializedNixExpresssion {
-    json_file: TempPath, 
-}
-
-impl SerializedNixExpresssion {
-    pub fn new<'de, T>(data: T) -> NixResult<Self> where T: Serialize {
-        let mut tmp = NamedTempFile::new()?;
-        let json = serde_json::to_vec(&data).expect("Could not serialize data");
-        tmp.write_all(&json)?;
-
-        Ok(Self {
-            json_file: tmp.into_temp_path(),
+    /// Captures deserialized output from JSON.
+    async fn capture_json<T>(&mut self) -> NixResult<T> where T: DeserializeOwned {
+        let output = self.capture_output().await?;
+        serde_json::from_str(&output).map_err(|_| NixError::BadOutput {
+            output: output.clone()
         })
     }
 
-    pub fn expression(&self) -> String {
-        format!("(builtins.fromJSON (builtins.readFile {}))", self.json_file.to_str().unwrap())
-    }
-}
-
-#[derive(Debug)]
-pub struct DeploymentTask {
-    /// Name of the target.
-    name: String,
-
-    /// The target to deploy to.
-    target: Mutex<Box<dyn Host>>,
-
-    /// Nix store path to the system profile to deploy.
-    profile: StorePath,
-
-    /// The goal of this deployment.
-    goal: DeploymentGoal,
-
-    /// Options used for copying closures to the remote host.
-    copy_options: CopyOptions,
-}
-
-impl DeploymentTask {
-    pub fn new(name: String, target: Box<dyn Host>, profile: StorePath, goal: DeploymentGoal) -> Self {
-        Self {
-            name,
-            target: Mutex::new(target),
-            profile,
-            goal,
-            copy_options: CopyOptions::default(),
-        }
-    }
-
-    pub fn name(&self) -> &str { &self.name }
-    pub fn goal(&self) -> DeploymentGoal { self.goal }
-
-    /// Set options used for copying closures to the remote host.
-    pub fn set_copy_options(&mut self, options: CopyOptions) {
-        self.copy_options = options;
-    }
-
-    /// Set the progress bar used during deployment.
-    pub async fn set_progress_bar(&mut self, progress: ProgressBar) {
-        let mut target = self.target.lock().await;
-        target.set_progress_bar(progress);
-    }
-
-    /// Executes the deployment.
-    pub async fn execute(&mut self) -> NixResult<()> {
-        match self.goal {
-            DeploymentGoal::Push => {
-                self.push().await
-            }
-            _ => {
-                self.push_and_activate().await
-            }
-        }
-    }
-
-    /// Takes the Host out, consuming the DeploymentTask.
-    pub async fn to_host(self) -> Box<dyn Host> {
-        self.target.into_inner()
-    }
-
-    async fn push(&mut self) -> NixResult<()> {
-        let mut target = self.target.lock().await;
-        let options = self.copy_options.include_outputs(true);
-
-        target.copy_closure(&self.profile, CopyDirection::ToRemote, options).await
-    }
-
-    async fn push_and_activate(&mut self) -> NixResult<()> {
-        self.push().await?;
-        {
-            let mut target = self.target.lock().await;
-            target.activate(&self.profile, self.goal).await
-        }
+    /// Captures a single store path.
+    async fn capture_store_path(&mut self) -> NixResult<StorePath> {
+        let output = self.capture_output().await?;
+        let path = output.trim_end().to_owned();
+        StorePath::try_from(path)
     }
 }

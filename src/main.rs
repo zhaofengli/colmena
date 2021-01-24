@@ -4,7 +4,6 @@ use clap::{App, AppSettings, Arg};
 mod nix;
 mod command;
 mod progress;
-mod deployment;
 mod util;
 
 macro_rules! command {

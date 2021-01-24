@@ -59,6 +59,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ad1f8e949d755f9d79112b5bb46938e0ef9d3804a0b16dfab13aafcaa5f0fa72"
 
 [[package]]
+name = "cc"
+version = "1.0.66"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4c0496836a84f8d0495758516b8621a622beb77c0fed418570e50764093ced48"
+
+[[package]]
 name = "cfg-if"
 version = "0.1.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -103,6 +109,7 @@ dependencies = [
  "serde",
  "serde_json",
  "snafu",
+ "sys-info",
  "tempfile",
  "tokio",
 ]
@@ -703,6 +710,16 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-xid",
+]
+
+[[package]]
+name = "sys-info"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e5cfbd84f86389198ade41b439f72a5b1b3a8ba728e61cd589e1720d0df44c39"
+dependencies = [
+ "cc",
+ "libc",
 ]
 
 [[package]]

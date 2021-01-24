@@ -1,16 +1,15 @@
-use std::process::Stdio;
 use std::collections::HashSet;
+use std::convert::TryInto;
 
-use console::style;
 use async_trait::async_trait;
-use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use indicatif::ProgressBar;
 
-use super::{StorePath, DeploymentGoal, NixResult, NixError, NixCommand, SYSTEM_PROFILE};
+use super::{StorePath, Profile, DeploymentGoal, NixResult, NixError, NixCommand, SYSTEM_PROFILE};
+use crate::util::CommandExecution;
 
 pub(crate) fn local() -> Box<dyn Host + 'static> {
-    Box::new(Local {})
+    Box::new(Local::new())
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -81,9 +80,22 @@ pub trait Host: Send + Sync + std::fmt::Debug {
         Ok(paths)
     }
 
+    /// Pushes and optionally activates a profile to the host.
+    async fn deploy(&mut self, profile: &Profile, goal: DeploymentGoal, copy_options: CopyOptions) -> NixResult<()> {
+        self.copy_closure(profile.as_store_path(), CopyDirection::ToRemote, copy_options).await?;
+
+        if goal.requires_activation() {
+            self.activate(profile, goal).await?;
+        }
+
+        Ok(())
+    }
+
     #[allow(unused_variables)] 
     /// Activates a system profile on the host, if it runs NixOS.
-    async fn activate(&mut self, profile: &StorePath, goal: DeploymentGoal) -> NixResult<()> {
+    ///
+    /// The profile must already exist on the host. You should probably use deploy instead.
+    async fn activate(&mut self, profile: &Profile, goal: DeploymentGoal) -> NixResult<()> {
         Err(NixError::Unsupported)
     }
 
@@ -93,7 +105,7 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     }
 
     /// Dumps human-readable unstructured log messages related to the host.
-    async fn dump_logs(&self) -> Option<&[String]> {
+    async fn dump_logs(&self) -> Option<&str> {
         None
     }
 }
@@ -103,7 +115,19 @@ pub trait Host: Send + Sync + std::fmt::Debug {
 /// It may not be capable of realizing some derivations
 /// (e.g., building Linux derivations on macOS).
 #[derive(Debug)]
-pub struct Local {}
+pub struct Local {
+    progress_bar: Option<ProgressBar>,
+    logs: String,
+}
+
+impl Local {
+    pub fn new() -> Self {
+        Self {
+            progress_bar: None,
+            logs: String::new(),
+        }
+    }
+}
 
 #[async_trait]
 impl Host for Local {
@@ -111,31 +135,58 @@ impl Host for Local {
         Ok(())
     }
     async fn realize_remote(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
-        Command::new("nix-store")
+        let mut command = Command::new("nix-store");
+        command
             .arg("--no-gc-warning")
             .arg("--realise")
-            .arg(derivation.as_path())
-            .capture_output()
-            .await
-            .map(|paths| {
-                paths.lines().map(|p| p.to_string().into()).collect()
-            })
+            .arg(derivation.as_path());
+
+        let mut execution = CommandExecution::new("local", command);
+
+        if let Some(bar) = self.progress_bar.as_ref() {
+            execution.set_progress_bar(bar.clone());
+        }
+
+        execution.run().await?;
+
+        let (stdout, _) = execution.get_logs();
+        stdout.unwrap().lines().map(|p| p.to_string().try_into()).collect()
     }
-    async fn activate(&mut self, profile: &StorePath, goal: DeploymentGoal) -> NixResult<()> {
-        let profile = profile.as_path().to_str().unwrap();
+    async fn activate(&mut self, profile: &Profile, goal: DeploymentGoal) -> NixResult<()> {
         if goal.should_switch_profile() {
+            let path = profile.as_path().to_str().unwrap();
             Command::new("nix-env")
                 .args(&["--profile", SYSTEM_PROFILE])
-                .args(&["--set", profile])
+                .args(&["--set", path])
                 .passthrough()
                 .await?;
         }
 
-        let activation_command = format!("{}/bin/switch-to-configuration", profile);
-        Command::new(activation_command)
-            .arg(goal.as_str().unwrap())
-            .passthrough()
-            .await
+        let activation_command = profile.activation_command(goal).unwrap();
+        let mut command = Command::new(&activation_command[0]);
+        command
+            .args(&activation_command[1..]);
+
+        let mut execution = CommandExecution::new("local", command);
+
+        if let Some(bar) = self.progress_bar.as_ref() {
+            execution.set_progress_bar(bar.clone());
+        }
+
+        let result = execution.run().await;
+
+        // FIXME: Bad - Order of lines is messed up
+        let (stdout, stderr) = execution.get_logs();
+        self.logs += stdout.unwrap();
+        self.logs += stderr.unwrap();
+
+        result
+    }
+    fn set_progress_bar(&mut self, bar: ProgressBar) {
+        self.progress_bar = Some(bar);
+    }
+    async fn dump_logs(&self) -> Option<&str> {
+        Some(&self.logs)
     }
 }
 
@@ -150,8 +201,8 @@ pub struct SSH {
 
     friendly_name: String,
     path_cache: HashSet<StorePath>,
-    progress: Option<ProgressBar>,
-    logs: Vec<String>,
+    progress_bar: Option<ProgressBar>,
+    logs: String,
 }
 
 #[async_trait]
@@ -162,29 +213,33 @@ impl Host for SSH {
     }
     async fn realize_remote(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
         // FIXME
-        self.ssh(&["nix-store", "--no-gc-warning", "--realise", derivation.as_path().to_str().unwrap()])
+        let paths = self.ssh(&["nix-store", "--no-gc-warning", "--realise", derivation.as_path().to_str().unwrap()])
             .capture_output()
-            .await
-            .map(|paths| {
-                paths.lines().map(|p| p.to_string().into()).collect()
-            })
-    }
-    async fn activate(&mut self, profile: &StorePath, goal: DeploymentGoal) -> NixResult<()> {
-        let profile = profile.as_path().to_str().unwrap();
+            .await;
 
+        match paths {
+            Ok(paths) => {
+                paths.lines().map(|p| p.to_string().try_into()).collect()
+            }
+            Err(e) => Err(e),
+        }
+    }
+    async fn activate(&mut self, profile: &Profile, goal: DeploymentGoal) -> NixResult<()> {
         if goal.should_switch_profile() {
-            let set_profile = self.ssh(&["nix-env", "--profile", SYSTEM_PROFILE, "--set", profile]);
+            let path = profile.as_path().to_str().unwrap();
+            let set_profile = self.ssh(&["nix-env", "--profile", SYSTEM_PROFILE, "--set", path]);
             self.run_command(set_profile).await?;
         }
 
-        let activation_command = format!("{}/bin/switch-to-configuration", profile);
-        let command = self.ssh(&[&activation_command, goal.as_str().unwrap()]);
+        let activation_command = profile.activation_command(goal).unwrap();
+        let v: Vec<&str> = activation_command.iter().map(|s| &**s).collect();
+        let command = self.ssh(&v);
         self.run_command(command).await
     }
     fn set_progress_bar(&mut self, bar: ProgressBar) {
-        self.progress = Some(bar);
+        self.progress_bar = Some(bar);
     }
-    async fn dump_logs(&self) -> Option<&[String]> {
+    async fn dump_logs(&self) -> Option<&str> {
         Some(&self.logs)
     }
 }
@@ -197,44 +252,26 @@ impl SSH {
             host,
             friendly_name,
             path_cache: HashSet::new(),
-            progress: None,
-            logs: Vec::new(),
+            progress_bar: None,
+            logs: String::new(),
         }
     }
 
-    async fn run_command(&mut self, mut command: Command) -> NixResult<()> {
-        command.stdin(Stdio::null());
-        command.stdout(Stdio::piped());
-        command.stderr(Stdio::piped());
+    async fn run_command(&mut self, command: Command) -> NixResult<()> {
+        let mut execution = CommandExecution::new(&self.friendly_name, command);
 
-        let mut child = command.spawn()?;
-
-        let mut stderr = BufReader::new(child.stderr.as_mut().unwrap());
-
-        loop {
-            let mut line = String::new();
-            let len = stderr.read_line(&mut line).await.unwrap();
-
-            if len == 0 {
-                break;
-            }
-
-            let trimmed = line.trim_end();
-            if let Some(progress) = self.progress.as_mut() {
-                progress.set_message(trimmed);
-                progress.inc(0);
-            } else {
-                eprintln!("{} | {}", style(&self.friendly_name).cyan(), trimmed);
-            }
-            self.logs.push(line);
+        if let Some(bar) = self.progress_bar.as_ref() {
+            execution.set_progress_bar(bar.clone());
         }
-        let exit = child.wait().await?;
 
-        if exit.success() {
-            Ok(())
-        } else {
-            Err(NixError::NixFailure { exit_code: exit.code().unwrap() })
-        }
+        let result = execution.run().await;
+
+        // FIXME: Bad - Order of lines is messed up
+        let (stdout, stderr) = execution.get_logs();
+        self.logs += stdout.unwrap();
+        self.logs += stderr.unwrap();
+
+        result
     }
 
     fn ssh_target(&self) -> String {

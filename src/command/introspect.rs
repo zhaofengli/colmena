@@ -24,7 +24,7 @@ For example, to retrieve the configuration of one node, you may write something 
 }
 
 pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
-    let mut hive = util::hive_from_args(local_args).unwrap();
+    let hive = util::hive_from_args(local_args).unwrap();
 
     if !(local_args.is_present("expression") ^ local_args.is_present("expression_file")) {
         log::error!("Either an expression (-E) xor a .nix file containing an expression should be specified, not both.");

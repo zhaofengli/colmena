@@ -1,16 +1,113 @@
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::convert::AsRef;
 use std::fs;
+use std::path::PathBuf;
+use std::process::Stdio;
 
 use clap::{App, Arg, ArgMatches};
+use console::style;
+use futures::future::join3;
 use glob::Pattern as GlobPattern;
+use indicatif::ProgressBar;
+use tokio::io::{AsyncRead, AsyncBufReadExt, BufReader};
+use tokio::process::Command;
 
-use super::nix::{DeploymentConfig, Hive, NixResult};
+use super::nix::{NodeConfig, Hive, NixResult, NixError};
 
 enum NodeFilter {
     NameFilter(GlobPattern),
     TagFilter(GlobPattern),
 }
+
+/// Non-interactive execution of an arbitrary Nix command.
+pub struct CommandExecution {
+    label: String,
+    command: Command,
+    progress_bar: Option<ProgressBar>,
+    stdout: Option<String>,
+    stderr: Option<String>,
+}
+
+impl CommandExecution {
+    pub fn new<S: AsRef<str>>(label: S, command: Command) -> Self {
+        Self {
+            label: label.as_ref().to_string(),
+            command,
+            progress_bar: None,
+            stdout: None,
+            stderr: None,
+        }
+    }
+
+    /// Provides a ProgressBar to use to display output.
+    pub fn set_progress_bar(&mut self, bar: ProgressBar) {
+        self.progress_bar = Some(bar);
+    }
+
+    /// Retrieve logs from the last invocation.
+    pub fn get_logs(&self) -> (Option<&String>, Option<&String>) {
+        (self.stdout.as_ref(), self.stderr.as_ref())
+    }
+
+    /// Run the command.
+    pub async fn run(&mut self) -> NixResult<()> {
+        self.command.stdin(Stdio::null());
+        self.command.stdout(Stdio::piped());
+        self.command.stderr(Stdio::piped());
+
+        self.stdout = Some(String::new());
+        self.stderr = Some(String::new());
+
+        let mut child = self.command.spawn()?;
+
+        let stdout = BufReader::new(child.stdout.take().unwrap());
+        let stderr = BufReader::new(child.stderr.take().unwrap());
+
+        async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, label: &str, mut progress_bar: Option<ProgressBar>) -> String {
+            let mut log = String::new();
+
+            loop {
+                let mut line = String::new();
+                let len = stream.read_line(&mut line).await.unwrap();
+
+                if len == 0 {
+                    break;
+                }
+
+                let trimmed = line.trim_end();
+                if let Some(progress_bar) = progress_bar.as_mut() {
+                    progress_bar.set_message(trimmed);
+                } else {
+                    eprintln!("{} | {}", style(label).cyan(), trimmed);
+                }
+
+                log += trimmed;
+                log += "\n";
+            }
+
+            log
+        }
+
+        let futures = join3(
+            capture_stream(stdout, &self.label, self.progress_bar.clone()),
+            capture_stream(stderr, &self.label, self.progress_bar.clone()),
+            child.wait(),
+        );
+
+        let (stdout_str, stderr_str, wait) = futures.await;
+        self.stdout = Some(stdout_str);
+        self.stderr = Some(stderr_str);
+
+        let exit = wait?;
+
+        if exit.success() {
+            Ok(())
+        } else {
+            Err(NixError::NixFailure { exit_code: exit.code().unwrap() })
+        }
+    }
+}
+
 
 pub fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
     let path = match args.occurrences_of("config") {
@@ -84,7 +181,7 @@ pub fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
     Ok(hive)
 }
 
-pub fn filter_nodes(nodes: &HashMap<String, DeploymentConfig>, filter: &str) -> Vec<String> {
+pub fn filter_nodes(nodes: &HashMap<String, NodeConfig>, filter: &str) -> Vec<String> {
     let filters: Vec<NodeFilter> = filter.split(",").map(|pattern| {
         use NodeFilter::*;
         if let Some(tag_pattern) = pattern.strip_prefix("@") {

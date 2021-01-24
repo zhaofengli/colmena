@@ -1,10 +1,12 @@
 use std::env;
+use std::collections::HashMap;
+use std::sync::Arc;
 
 use clap::{Arg, App, SubCommand, ArgMatches};
 use tokio::fs;
 use tokio::process::Command;
 
-use crate::nix::{DeploymentTask, DeploymentGoal, Host};
+use crate::nix::{Deployment, DeploymentGoal, Host};
 use crate::nix::host;
 use crate::util;
 
@@ -57,7 +59,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
         }
     }
 
-    let mut hive = util::hive_from_args(local_args).unwrap();
+    let hive = util::hive_from_args(local_args).unwrap();
     let hostname = hostname::get().expect("Could not get hostname")
         .to_string_lossy().into_owned();
     let goal = DeploymentGoal::from_str(local_args.value_of("goal").unwrap()).unwrap();
@@ -79,16 +81,12 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
         }
     };
 
-    log::info!("Building local node configuration...");
-    let profile = {
-        let selected_nodes: Vec<String> = vec![hostname.clone()];
-        let mut profiles = hive.build_selected(selected_nodes).await
-            .expect("Failed to build local configurations");
-        profiles.remove(&hostname).unwrap()
-    };
+    let mut targets = HashMap::new();
+    targets.insert(hostname.clone(), target);
 
-    let mut task = DeploymentTask::new(hostname, target, profile, goal);
-    task.execute().await.unwrap();
+    let deployment = Arc::new(Deployment::new(hive, targets, goal));
+
+    deployment.execute().await;
 }
 
 async fn escalate() -> ! {

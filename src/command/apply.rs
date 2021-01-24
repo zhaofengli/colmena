@@ -1,24 +1,47 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+
 use clap::{Arg, App, SubCommand, ArgMatches};
 
-use crate::nix::{DeploymentTask, DeploymentGoal};
-use crate::nix::host::CopyOptions;
-use crate::deployment::deploy;
+use crate::nix::deployment::{
+    Deployment,
+    DeploymentGoal,
+    DeploymentOptions,
+    EvaluationNodeLimit,
+    ParallelismLimit,
+};
+use crate::nix::host::local as localhost;
 use crate::util;
 
-pub fn subcommand() -> App<'static, 'static> {
-    let command = SubCommand::with_name("apply")
-        .about("Apply configurations on remote machines")
-        .arg(Arg::with_name("goal")
-            .help("Deployment goal")
-            .long_help("Same as the targets for switch-to-configuration.\n\"push\" means only copying the closures to remote nodes.")
-            .default_value("switch")
-            .index(1)
-            .possible_values(&["push", "switch", "boot", "test", "dry-activate"]))
+pub fn register_deploy_args<'a, 'b>(command: App<'a, 'b>) -> App<'a, 'b> {
+    command
+        .arg(Arg::with_name("eval-node-limit")
+            .long("eval-node-limit")
+            .value_name("LIMIT")
+            .help("Evaluation node limit")
+            .long_help(r#"Limits the maximum number of hosts to be evaluated at once.
+
+The evaluation process is RAM-intensive. The default behavior is to limit the maximum number of host evaluated at the same time based on naive heuristics.
+
+Set to 0 to disable the limit.
+"#)
+            .default_value("auto")
+            .takes_value(true)
+            .validator(|s| {
+                if s == "auto" {
+                    return Ok(());
+                }
+
+                match s.parse::<usize>() {
+                    Ok(_) => Ok(()),
+                    Err(_) => Err(String::from("The value must be a valid number")),
+                }
+            }))
         .arg(Arg::with_name("parallel")
             .short("p")
             .long("parallel")
             .value_name("LIMIT")
-            .help("Parallelism limit")
+            .help("Deploy parallelism limit")
             .long_help(r#"Limits the maximum number of hosts to be deployed in parallel.
 
 Set to 0 to disable parallemism limit.
@@ -31,11 +54,32 @@ Set to 0 to disable parallemism limit.
                     Err(_) => Err(String::from("The value must be a valid number")),
                 }
             }))
+        .arg(Arg::with_name("parallel-build")
+            .long("parallel-build")
+            .value_name("LIMIT")
+            .help("Build parallelism limit")
+            .long_help("Limits the maximum number of parallel build processes.")
+            .default_value("2")
+            .takes_value(true)
+            .validator(|s| {
+                if s == "0" {
+                    return Err(String::from("The value must be non-zero"));
+                }
+                match s.parse::<usize>() {
+                    Ok(_) => Ok(()),
+                    Err(_) => Err(String::from("The value must be a valid number")),
+                }
+            }))
         .arg(Arg::with_name("verbose")
             .short("v")
             .long("verbose")
             .help("Be verbose")
             .long_help("Deactivates the progress spinner and prints every line of output.")
+            .takes_value(false))
+        .arg(Arg::with_name("no-build-substitutes")
+            .long("no-build-substitutes")
+            .help("Do not use substitutes during build")
+            .long_help("Disables the use of substituters when building.")
             .takes_value(false))
         .arg(Arg::with_name("no-substitutes")
             .long("no-substitutes")
@@ -47,13 +91,25 @@ Set to 0 to disable parallemism limit.
             .help("Do not use gzip")
             .long_help("Disables the use of gzip when copying closures to the remote host.")
             .takes_value(false))
+}
+
+pub fn subcommand() -> App<'static, 'static> {
+    let command = SubCommand::with_name("apply")
+        .about("Apply configurations on remote machines")
+        .arg(Arg::with_name("goal")
+            .help("Deployment goal")
+            .long_help("Same as the targets for switch-to-configuration.\n\"push\" means only copying the closures to remote nodes.")
+            .default_value("switch")
+            .index(1)
+            .possible_values(&["build", "push", "switch", "boot", "test", "dry-activate"]))
     ;
+    let command = register_deploy_args(command);
 
     util::register_selector_args(command)
 }
 
 pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
-    let mut hive = util::hive_from_args(local_args).unwrap();
+    let hive = util::hive_from_args(local_args).unwrap();
 
     log::info!("Enumerating nodes...");
     let all_nodes = hive.deployment_info().await.unwrap();
@@ -70,50 +126,70 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
         quit::with_code(2);
     }
 
-    if selected_nodes.len() == all_nodes.len() {
-        log::info!("Building all node configurations...");
-    } else {
-        log::info!("Selected {} out of {} hosts. Building node configurations...", selected_nodes.len(), all_nodes.len());
-    }
-
-    // Some ugly argument mangling :/
-    let mut profiles = hive.build_selected(selected_nodes).await.unwrap();
     let goal = DeploymentGoal::from_str(local_args.value_of("goal").unwrap()).unwrap();
-    let verbose = local_args.is_present("verbose");
-
-    let max_parallelism = local_args.value_of("parallel").unwrap().parse::<usize>().unwrap();
-    let max_parallelism = match max_parallelism {
-        0 => None,
-        _ => Some(max_parallelism),
-    };
-
-    let mut task_list: Vec<DeploymentTask> = Vec::new();
-    let mut skip_list: Vec<String> = Vec::new();
-    for (name, profile) in profiles.drain() {
-        let target = all_nodes.get(&name).unwrap().to_ssh_host();
-
-        match target {
-            Some(target) => {
-                let mut task = DeploymentTask::new(name, target, profile, goal);
-                let options = CopyOptions::default()
-                    .gzip(!local_args.is_present("no-gzip"))
-                    .use_substitutes(!local_args.is_present("no-substitutes"))
-                ;
-
-                task.set_copy_options(options);
-                task_list.push(task);
+    let mut targets = HashMap::new();
+    for node in &selected_nodes {
+        let host = all_nodes.get(node).unwrap().to_ssh_host();
+        match host {
+            Some(host) => {
+                targets.insert(node.clone(), host);
             }
             None => {
-                skip_list.push(name);
+                if goal == DeploymentGoal::Build {
+                    targets.insert(node.clone(), localhost());
+                }
             }
         }
     }
 
-    if skip_list.len() != 0 {
-        log::info!("Applying configurations ({} skipped)...", skip_list.len());
+    if targets.len() == all_nodes.len() {
+        log::info!("Selected all {} nodes.", targets.len());
+    } else if targets.len() == selected_nodes.len() {
+        log::info!("Selected {} out of {} hosts.", targets.len(), all_nodes.len());
     } else {
-        log::info!("Applying configurations...");
+        log::info!("Selected {} out of {} hosts ({} skipped)", targets.len(), all_nodes.len(), selected_nodes.len() - targets.len());
     }
 
-    deploy(task_list, max_parallelism, !verbose).await;
+    let mut deployment = Deployment::new(hive, targets, goal);
+
+    let mut options = DeploymentOptions::default();
+    options.set_substituters_build(!local_args.is_present("no-build-substitutes"));
+    options.set_substituters_push(!local_args.is_present("no-substitutes"));
+    options.set_gzip(!local_args.is_present("no-gzip"));
+    options.set_progress_bar(!local_args.is_present("verbose"));
+    deployment.set_options(options);
+
+    let mut parallelism_limit = ParallelismLimit::default();
+    parallelism_limit.set_apply_limit({
+        let limit = local_args.value_of("parallel").unwrap().parse::<usize>().unwrap();
+        if limit == 0 {
+            selected_nodes.len() // HACK
+        } else {
+            local_args.value_of("parallel").unwrap().parse::<usize>().unwrap()
+        }
+    });
+    parallelism_limit.set_build_limit({
+        let limit = local_args.value_of("parallel").unwrap().parse::<usize>().unwrap();
+        if limit == 0 {
+            panic!("The build parallelism limit must not be 0");
+        }
+        limit
+    });
+    deployment.set_parallelism_limit(parallelism_limit);
+
+    let evaluation_node_limit = match local_args.value_of("eval-node-limit").unwrap() {
+        "auto" => EvaluationNodeLimit::Heuristic,
+        number => {
+            let number = number.parse::<usize>().unwrap();
+            if number == 0 {
+                EvaluationNodeLimit::None
+            } else {
+                EvaluationNodeLimit::Manual(number)
+            }
+        }
+    };
+    deployment.set_evaluation_node_limit(evaluation_node_limit);
+
+    let deployment = Arc::new(deployment);
+    deployment.execute().await;
 }
