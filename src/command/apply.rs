@@ -76,11 +76,6 @@ Set to 0 to disable parallemism limit.
             .help("Be verbose")
             .long_help("Deactivates the progress spinner and prints every line of output.")
             .takes_value(false))
-        .arg(Arg::with_name("no-build-substitutes")
-            .long("no-build-substitutes")
-            .help("Do not use substitutes during build")
-            .long_help("Disables the use of substituters when building.")
-            .takes_value(false))
         .arg(Arg::with_name("no-substitutes")
             .long("no-substitutes")
             .help("Do not use substitutes")
@@ -153,7 +148,6 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     let mut deployment = Deployment::new(hive, targets, goal);
 
     let mut options = DeploymentOptions::default();
-    options.set_substituters_build(!local_args.is_present("no-build-substitutes"));
     options.set_substituters_push(!local_args.is_present("no-substitutes"));
     options.set_gzip(!local_args.is_present("no-gzip"));
     options.set_progress_bar(!local_args.is_present("verbose"));

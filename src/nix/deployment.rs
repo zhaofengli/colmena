@@ -508,9 +508,6 @@ pub struct DeploymentOptions {
     /// If set to false, verbose logs will be displayed instead.
     progress_bar: bool,
 
-    /// Whether to use binary caches when building.
-    substituters_build: bool,
-
     /// Whether to use binary caches when copying closures to remote hosts.
     substituters_push: bool,
 
@@ -522,7 +519,6 @@ impl Default for DeploymentOptions {
     fn default() -> Self {
         Self {
             progress_bar: true,
-            substituters_build: true,
             substituters_push: true,
             gzip: true,
         }
@@ -532,10 +528,6 @@ impl Default for DeploymentOptions {
 impl DeploymentOptions {
     pub fn set_progress_bar(&mut self, value: bool) {
         self.progress_bar = value;
-    }
-
-    pub fn set_substituters_build(&mut self, value: bool) {
-        self.substituters_build = value;
     }
 
     pub fn set_substituters_push(&mut self, value: bool) {
