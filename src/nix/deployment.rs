@@ -276,7 +276,9 @@ impl Deployment {
                         "Evaluating configurations for {} nodes"
                     );
 
-                    let drv = match arc_self.hive.eval_selected(&chunk, Some(bar.clone())).await {
+                    let (eval, logs) = arc_self.hive.eval_selected(&chunk, Some(bar.clone())).await;
+
+                    let drv = match eval {
                         Ok(drv) => {
                             bar.finish_and_clear();
                             drv
@@ -287,7 +289,7 @@ impl Deployment {
 
                             let mut results = arc_self.results.lock().await;
                             let stage = DeploymentStage::Evaluate(chunk.clone());
-                            results.push(DeploymentResult::failure(stage, None));
+                            results.push(DeploymentResult::failure(stage, logs));
                             return;
                         }
                     };

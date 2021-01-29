@@ -149,7 +149,9 @@ impl Host for Local {
 
         execution.run().await?;
 
-        let (stdout, _) = execution.get_logs();
+        let (stdout, stderr) = execution.get_logs();
+        self.logs += stderr.unwrap();
+
         stdout.unwrap().lines().map(|p| p.to_string().try_into()).collect()
     }
     async fn activate(&mut self, profile: &Profile, goal: DeploymentGoal) -> NixResult<()> {

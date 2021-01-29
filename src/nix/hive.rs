@@ -59,8 +59,15 @@ impl Hive {
     /// Evaluation may take up a lot of memory, so we make it possible
     /// to split up the evaluation process into chunks and run them
     /// concurrently with other processes (e.g., build and apply).
-    pub async fn eval_selected(&self, nodes: &Vec<String>, progress_bar: Option<ProgressBar>) -> NixResult<StoreDerivation<ProfileMap>> {
-        let nodes_expr = SerializedNixExpresssion::new(nodes)?;
+    pub async fn eval_selected(&self, nodes: &Vec<String>, progress_bar: Option<ProgressBar>) -> (NixResult<StoreDerivation<ProfileMap>>, Option<String>) {
+        // FIXME: The return type is ugly...
+
+        let nodes_expr = SerializedNixExpresssion::new(nodes);
+        if let Err(e) = nodes_expr {
+            return (Err(e), None);
+        }
+        let nodes_expr = nodes_expr.unwrap();
+
         let expr = format!("hive.buildSelected {{ names = {}; }}", nodes_expr.expression());
 
         let command = self.nix_instantiate(&expr).instantiate();
@@ -71,11 +78,21 @@ impl Hive {
         }
 
         let eval = execution
-            .capture_store_path().await?;
-        let drv = eval.to_derivation()
-            .expect("The result should be a store derivation");
+            .capture_store_path().await;
 
-        Ok(drv)
+        let (_, stderr) = execution.get_logs();
+
+        match eval {
+            Ok(path) => {
+                let drv = path.to_derivation()
+                    .expect("The result should be a store derivation");
+
+                (Ok(drv), stderr.cloned())
+            }
+            Err(e) => {
+                (Err(e), stderr.cloned())
+            }
+        }
     }
 
     /// Evaluates an expression using values from the configuration
