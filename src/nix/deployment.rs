@@ -145,7 +145,7 @@ impl DeploymentResult {
     fn failure(stage: DeploymentStage, logs: Option<String>) -> Self {
         Self {
             stage,
-            success: true,
+            success: false,
             logs,
         }
     }
