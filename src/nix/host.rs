@@ -147,12 +147,17 @@ impl Host for Local {
             execution.set_progress_bar(bar.clone());
         }
 
-        execution.run().await?;
+        let result = execution.run().await;
 
         let (stdout, stderr) = execution.get_logs();
         self.logs += stderr.unwrap();
 
-        stdout.unwrap().lines().map(|p| p.to_string().try_into()).collect()
+        match result {
+            Ok(()) => {
+                stdout.unwrap().lines().map(|p| p.to_string().try_into()).collect()
+            }
+            Err(e) => Err(e),
+        }
     }
     async fn activate(&mut self, profile: &Profile, goal: DeploymentGoal) -> NixResult<()> {
         if goal.should_switch_profile() {

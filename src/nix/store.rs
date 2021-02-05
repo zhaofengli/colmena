@@ -2,6 +2,7 @@ use std::convert::{TryFrom, TryInto};
 use std::marker::PhantomData;
 use std::path::{Path, PathBuf};
 use std::ops::Deref;
+use std::fmt;
 
 use serde::{Serialize, Deserialize};
 
@@ -82,5 +83,11 @@ impl<T: TryFrom<Vec<StorePath>, Error=NixError>> StoreDerivation<T> {
     pub async fn realize(&self, host: &mut dyn Host) -> NixResult<T> {
         let paths: Vec<StorePath> = host.realize(&self.path).await?;
         paths.try_into()
+    }
+}
+
+impl<T: TryFrom<Vec<StorePath>>> fmt::Display for StoreDerivation<T> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self.path)
     }
 }
