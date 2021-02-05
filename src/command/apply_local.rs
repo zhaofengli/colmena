@@ -23,6 +23,10 @@ pub fn subcommand() -> App<'static, 'static> {
             .long("sudo")
             .help("Attempt to escalate privileges if not run as root")
             .takes_value(false))
+        .arg(Arg::with_name("node")
+            .long("node")
+            .help("Override the node name to use")
+            .takes_value(true))
         .arg(Arg::with_name("we-are-launched-by-sudo")
             .long("we-are-launched-by-sudo")
             .hidden(true)
@@ -60,8 +64,12 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     }
 
     let hive = util::hive_from_args(local_args).unwrap();
-    let hostname = hostname::get().expect("Could not get hostname")
-        .to_string_lossy().into_owned();
+    let hostname = if local_args.is_present("node") {
+        local_args.value_of("node").unwrap().to_owned()
+    } else {
+        hostname::get().expect("Could not get hostname")
+            .to_string_lossy().into_owned()
+    };
     let goal = DeploymentGoal::from_str(local_args.value_of("goal").unwrap()).unwrap();
 
     log::info!("Enumerating nodes...");
