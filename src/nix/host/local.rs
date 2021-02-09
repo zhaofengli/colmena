@@ -130,7 +130,13 @@ impl Local {
                 .arg(&temp_path);
 
             let mut execution = CommandExecution::new("local", command);
-            execution.run().await?;
+            let exit = execution.run().await;
+
+            let (stdout, stderr) = execution.get_logs();
+            self.logs += stdout.unwrap();
+            self.logs += stderr.unwrap();
+
+            exit?;
         }
         {
             let mut command = Command::new("chown");
@@ -139,7 +145,13 @@ impl Local {
                 .arg(&temp_path);
 
             let mut execution = CommandExecution::new("local", command);
-            execution.run().await?;
+            let exit = execution.run().await;
+
+            let (stdout, stderr) = execution.get_logs();
+            self.logs += stdout.unwrap();
+            self.logs += stderr.unwrap();
+
+            exit?;
         }
 
         let parent_dir = dest_path.parent().unwrap();

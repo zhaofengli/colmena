@@ -3,13 +3,14 @@ use std::convert::TryInto;
 use std::process::Stdio;
 
 use async_trait::async_trait;
+use futures::future::join3;
 use indicatif::ProgressBar;
 use tokio::process::Command;
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncWriteExt, BufReader};
 
 use super::{CopyDirection, CopyOptions, Host};
 use crate::nix::{StorePath, Profile, DeploymentGoal, NixResult, NixCommand, NixError, Key, SYSTEM_PROFILE};
-use crate::util::CommandExecution;
+use crate::util::{CommandExecution, capture_stream};
 
 const DEPLOY_KEY_TEMPLATE: &'static str = include_str!("./deploy-key.template");
 
@@ -168,8 +169,8 @@ impl Ssh {
         let mut command = self.ssh(&["sh", "-c", &remote_command]);
 
         command.stdin(Stdio::piped());
-        command.stderr(Stdio::null());
-        command.stdout(Stdio::null());
+        command.stderr(Stdio::piped());
+        command.stdout(Stdio::piped());
 
         let mut child = command.spawn()?;
 
@@ -178,7 +179,20 @@ impl Ssh {
         stdin.flush().await?;
         drop(stdin);
 
-        let exit = child.wait().await?;
+        let stdout = BufReader::new(child.stdout.take().unwrap());
+        let stderr = BufReader::new(child.stderr.take().unwrap());
+
+        let futures = join3(
+            capture_stream(stdout, &self.friendly_name, self.progress_bar.clone()),
+            capture_stream(stderr, &self.friendly_name, self.progress_bar.clone()),
+            child.wait(),
+        );
+        let (stdout_str, stderr_str, exit) = futures.await;
+        self.logs += &stdout_str;
+        self.logs += &stderr_str;
+
+        let exit = exit?;
+
         if exit.success() {
             Ok(())
         } else {

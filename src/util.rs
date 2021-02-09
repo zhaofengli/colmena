@@ -63,31 +63,6 @@ impl CommandExecution {
         let stdout = BufReader::new(child.stdout.take().unwrap());
         let stderr = BufReader::new(child.stderr.take().unwrap());
 
-        async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, label: &str, mut progress_bar: Option<ProgressBar>) -> String {
-            let mut log = String::new();
-
-            loop {
-                let mut line = String::new();
-                let len = stream.read_line(&mut line).await.unwrap();
-
-                if len == 0 {
-                    break;
-                }
-
-                let trimmed = line.trim_end();
-                if let Some(progress_bar) = progress_bar.as_mut() {
-                    progress_bar.set_message(trimmed);
-                } else {
-                    eprintln!("{} | {}", style(label).cyan(), trimmed);
-                }
-
-                log += trimmed;
-                log += "\n";
-            }
-
-            log
-        }
-
         let futures = join3(
             capture_stream(stdout, &self.label, self.progress_bar.clone()),
             capture_stream(stderr, &self.label, self.progress_bar.clone()),
@@ -242,4 +217,29 @@ fn canonicalize_cli_path(path: String) -> PathBuf {
     } else {
         path.into()
     }
+}
+
+pub async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, label: &str, mut progress_bar: Option<ProgressBar>) -> String {
+    let mut log = String::new();
+
+    loop {
+        let mut line = String::new();
+        let len = stream.read_line(&mut line).await.unwrap();
+
+        if len == 0 {
+            break;
+        }
+
+        let trimmed = line.trim_end();
+        if let Some(progress_bar) = progress_bar.as_mut() {
+            progress_bar.set_message(trimmed);
+        } else {
+            eprintln!("{} | {}", style(label).cyan(), trimmed);
+        }
+
+        log += trimmed;
+        log += "\n";
+    }
+
+    log
 }

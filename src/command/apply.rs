@@ -175,10 +175,15 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
 
     let mut options = DeploymentOptions::default();
     options.set_substituters_push(!local_args.is_present("no-substitutes"));
-    options.set_upload_keys(!local_args.is_present("no-upload-keys"));
     options.set_gzip(!local_args.is_present("no-gzip"));
     options.set_progress_bar(!local_args.is_present("verbose"));
+    options.set_upload_keys(!local_args.is_present("no-keys"));
     deployment.set_options(options);
+
+    if local_args.is_present("no-keys") && goal_arg == "keys" {
+        log::error!("--no-keys cannot be used when the goal is to upload keys");
+        quit::with_code(1);
+    }
 
     let mut parallelism_limit = ParallelismLimit::default();
     parallelism_limit.set_apply_limit({
