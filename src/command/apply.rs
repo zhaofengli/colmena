@@ -6,6 +6,7 @@ use clap::{Arg, App, SubCommand, ArgMatches};
 use crate::nix::deployment::{
     Deployment,
     DeploymentGoal,
+    DeploymentTarget,
     DeploymentOptions,
     EvaluationNodeLimit,
     ParallelismLimit,
@@ -76,6 +77,15 @@ Set to 0 to disable parallemism limit.
             .help("Be verbose")
             .long_help("Deactivates the progress spinner and prints every line of output.")
             .takes_value(false))
+        .arg(Arg::with_name("no-keys")
+            .long("no-keys")
+            .help("Do not upload keys")
+            .long_help(r#"Do not upload secret keys set in `deployment.keys`.
+
+By default, Colmena will upload keys set in `deployment.keys` before deploying the new profile on a node.
+To upload keys without building or deploying the rest of the configuration, use `colmena upload-keys`.
+"#)
+            .takes_value(false))
         .arg(Arg::with_name("no-substitutes")
             .long("no-substitutes")
             .help("Do not use substitutes")
@@ -96,7 +106,7 @@ pub fn subcommand() -> App<'static, 'static> {
             .long_help("Same as the targets for switch-to-configuration.\n\"push\" means only copying the closures to remote nodes.")
             .default_value("switch")
             .index(1)
-            .possible_values(&["build", "push", "switch", "boot", "test", "dry-activate"]))
+            .possible_values(&["build", "push", "switch", "boot", "test", "dry-activate", "keys"]))
     ;
     let command = register_deploy_args(command);
 
@@ -121,17 +131,33 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
         quit::with_code(2);
     }
 
-    let goal = DeploymentGoal::from_str(local_args.value_of("goal").unwrap()).unwrap();
+    // FIXME: This is ugly :/ Make an enum wrapper for this fake "keys" goal
+    let goal_arg = local_args.value_of("goal").unwrap();
+    let goal = if goal_arg == "keys" {
+        DeploymentGoal::Build
+    } else {
+        DeploymentGoal::from_str(goal_arg).unwrap()
+    };
+
+    let build_only = goal == DeploymentGoal::Build && goal_arg != "keys";
+
     let mut targets = HashMap::new();
     for node in &selected_nodes {
-        let host = all_nodes.get(node).unwrap().to_ssh_host();
+        let config = all_nodes.get(node).unwrap();
+        let host = config.to_ssh_host();
         match host {
             Some(host) => {
-                targets.insert(node.clone(), host);
+                targets.insert(
+                    node.clone(),
+                    DeploymentTarget::new(host, config.clone()),
+                );
             }
             None => {
-                if goal == DeploymentGoal::Build {
-                    targets.insert(node.clone(), localhost());
+                if build_only {
+                    targets.insert(
+                        node.clone(),
+                        DeploymentTarget::new(localhost(), config.clone()),
+                    );
                 }
             }
         }
@@ -149,6 +175,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
 
     let mut options = DeploymentOptions::default();
     options.set_substituters_push(!local_args.is_present("no-substitutes"));
+    options.set_upload_keys(!local_args.is_present("no-upload-keys"));
     options.set_gzip(!local_args.is_present("no-gzip"));
     options.set_progress_bar(!local_args.is_present("verbose"));
     deployment.set_options(options);
@@ -185,5 +212,10 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     deployment.set_evaluation_node_limit(evaluation_node_limit);
 
     let deployment = Arc::new(deployment);
-    deployment.execute().await;
+
+    if goal_arg == "keys" {
+        deployment.upload_keys().await;
+    } else {
+        deployment.execute().await;
+    }
 }

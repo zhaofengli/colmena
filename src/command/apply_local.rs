@@ -6,7 +6,12 @@ use clap::{Arg, App, SubCommand, ArgMatches};
 use tokio::fs;
 use tokio::process::Command;
 
-use crate::nix::{Deployment, DeploymentGoal, Host};
+use crate::nix::deployment::{
+    Deployment,
+    DeploymentGoal,
+    DeploymentTarget,
+    DeploymentOptions,
+};
 use crate::nix::host;
 use crate::util;
 
@@ -21,7 +26,20 @@ pub fn subcommand() -> App<'static, 'static> {
             .possible_values(&["push", "switch", "boot", "test", "dry-activate"]))
         .arg(Arg::with_name("sudo")
             .long("sudo")
-            .help("Attempt to escalate privileges if not run as root")
+            .help("Attempt to escalate privileges if not run as root"))
+        .arg(Arg::with_name("verbose")
+            .short("v")
+            .long("verbose")
+            .help("Be verbose")
+            .long_help("Deactivates the progress spinner and prints every line of output.")
+            .takes_value(false))
+        .arg(Arg::with_name("no-keys")
+            .long("no-keys")
+            .help("Do not deploy keys")
+            .long_help(r#"Do not deploy secret keys set in `deployment.keys`.
+
+By default, Colmena will deploy keys set in `deployment.keys` before activating the profile on this host.
+"#)
             .takes_value(false))
         .arg(Arg::with_name("node")
             .long("node")
@@ -75,14 +93,17 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     log::info!("Enumerating nodes...");
     let all_nodes = hive.deployment_info().await.unwrap();
 
-    let target: Box<dyn Host> = {
+    let target: DeploymentTarget = {
         if let Some(info) = all_nodes.get(&hostname) {
             if !info.allows_local_deployment() {
                 log::error!("Local deployment is not enabled for host {}.", hostname);
                 log::error!("Hint: Set deployment.allowLocalDeployment to true.");
                 quit::with_code(2);
             }
-            host::local()
+            DeploymentTarget::new(
+                host::local(),
+                info.clone(),
+            )
         } else {
             log::error!("Host {} is not present in the Hive configuration.", hostname);
             quit::with_code(2);
@@ -92,8 +113,13 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     let mut targets = HashMap::new();
     targets.insert(hostname.clone(), target);
 
-    let deployment = Arc::new(Deployment::new(hive, targets, goal));
+    let mut deployment = Deployment::new(hive, targets, goal);
+    let mut options = DeploymentOptions::default();
+    options.set_upload_keys(!local_args.is_present("no-upload-keys"));
+    options.set_progress_bar(!local_args.is_present("verbose"));
+    deployment.set_options(options);
 
+    let deployment = Arc::new(deployment);
     deployment.execute().await;
 }
 

@@ -1,0 +1,15 @@
+
+set -euo pipefail
+
+destination=%DESTINATION%
+tmp=$destination.tmp
+user=%USER%
+group=%GROUP%
+permissions=%PERMISSIONS%
+
+mkdir -p $(dirname "$destination")
+touch "$tmp"
+chown "$user:$group" $tmp
+chmod "$permissions" $tmp
+cat <&0 >$tmp
+mv "$tmp" "$destination"

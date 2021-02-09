@@ -150,6 +150,35 @@ As an example, the following `hive.nix` includes a node (`laptop`) that is meant
 
 On `laptop`, run `colmena apply-local --sudo` to activate the configuration.
 
+## Secrets
+
+Colmena allows you to upload secret files to nodes that will not be stored in the Nix store.
+It implements a subset of the `deployment.keys` options supported by NixOps.
+
+For example, to deploy ACME credentials for use with `security.acme`:
+
+```
+{
+  shared-box = {
+    security.acme.certs."my-site.tld".credentialsFile = "/run/keys/acme-credentials.secret";
+    deployment.keys."acme-credentials.secret" = {
+      text = ''
+        PDNS_API_URL=https://dns.provider
+        PDNS_API_KEY=top-secret-api-key
+      '';
+      destDir = "/run/keys"; # Default: /run/keys
+      owner = "acme";        # Default: root
+      group = "nginx";       # Default: root
+      mode = "0640";         # Default: 0600
+    };
+    # Rest of configuration...
+  };
+}
+```
+
+Take note that if you use the default path (`/run/keys`), the secret files are only stored in-memory and will not survive reboots.
+To upload your secrets without performing a full deployment, use `colmena upload-keys`.
+
 ## Current limitations
 
 - It's required to use SSH keys to log into the remote hosts, and interactive authentication will not work.

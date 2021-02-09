@@ -1,4 +1,6 @@
+use std::collections::HashMap;
 use std::convert::TryFrom;
+use std::path::{Component as PathComponent, Path};
 use std::process::Stdio;
 
 use async_trait::async_trait;
@@ -6,12 +8,13 @@ use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use snafu::Snafu;
 use tokio::process::Command;
+use validator::{Validate, ValidationErrors, ValidationError as ValidationErrorType};
 
 use crate::util::CommandExecution;
 
 pub mod host;
 pub use host::{Host, CopyDirection, CopyOptions};
-use host::SSH;
+use host::Ssh;
 
 pub mod hive;
 pub use hive::Hive;
@@ -19,11 +22,14 @@ pub use hive::Hive;
 pub mod store;
 pub use store::{StorePath, StoreDerivation};
 
+pub mod key;
+pub use key::Key;
+
 pub mod profile;
 pub use profile::{Profile, ProfileMap};
 
 pub mod deployment;
-pub use deployment::{DeploymentGoal, Deployment};
+pub use deployment::{DeploymentGoal, DeploymentTarget, Deployment};
 
 pub const SYSTEM_PROFILE: &'static str = "/nix/var/nix/profiles/system";
 
@@ -50,6 +56,9 @@ pub enum NixError {
     #[snafu(display("Invalid Nix store path"))]
     InvalidStorePath,
 
+    #[snafu(display("Validation error"))]
+    ValidationError { errors: ValidationErrors },
+
     #[snafu(display("Invalid NixOS system profile"))]
     InvalidProfile,
 
@@ -63,7 +72,13 @@ impl From<std::io::Error> for NixError {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+impl From<ValidationErrors> for NixError {
+    fn from(errors: ValidationErrors) -> Self {
+        Self::ValidationError { errors }
+    }
+}
+
+#[derive(Debug, Clone, Validate, Deserialize)]
 pub struct NodeConfig {
     #[serde(rename = "targetHost")]
     target_host: Option<String>,
@@ -74,6 +89,9 @@ pub struct NodeConfig {
     #[serde(rename = "allowLocalDeployment")]
     allow_local_deployment: bool,
     tags: Vec<String>,
+
+    #[validate(custom = "validate_keys")]
+    keys: HashMap<String, Key>,
 }
 
 impl NodeConfig {
@@ -82,7 +100,7 @@ impl NodeConfig {
 
     pub fn to_ssh_host(&self) -> Option<Box<dyn Host>> {
         self.target_host.as_ref().map(|target_host| {
-            let host = SSH::new(self.target_user.clone(), target_host.clone());
+            let host = Ssh::new(self.target_user.clone(), target_host.clone());
             let host: Box<dyn Host> = Box::new(host);
             host
         })
@@ -181,4 +199,24 @@ impl NixCommand for CommandExecution {
         let path = output.trim_end().to_owned();
         StorePath::try_from(path)
     }
+}
+
+fn validate_keys(keys: &HashMap<String, Key>) -> Result<(), ValidationErrorType> {
+    // Bad secret names:
+    // - /etc/passwd
+    // - ../../../../../etc/passwd
+
+    for name in keys.keys() {
+        let path = Path::new(name);
+        if path.has_root() {
+            return Err(ValidationErrorType::new("Secret key name cannot be absolute"));
+        }
+
+        for component in path.components() {
+            if component == PathComponent::ParentDir {
+                return Err(ValidationErrorType::new("Secret key name cannot refer to parent directory"));
+            }
+        }
+    }
+    Ok(())
 }

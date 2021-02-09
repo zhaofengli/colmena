@@ -66,6 +66,7 @@ For a sample configuration, see <https://github.com/zhaofengli/colmena>.
     bind_command!(apply_local, app);
     bind_command!(build, app);
     bind_command!(introspect, app);
+    bind_command!(upload_keys, app);
 
     let matches = app.clone().get_matches();
 
@@ -73,6 +74,7 @@ For a sample configuration, see <https://github.com/zhaofengli/colmena>.
     command!("apply-local", apply_local, matches);
     command!(build, matches);
     command!(introspect, matches);
+    command!("upload-keys", upload_keys, matches);
 
     app.print_long_help().unwrap();
 }

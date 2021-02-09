@@ -6,6 +6,7 @@ use indicatif::ProgressBar;
 use tempfile::{NamedTempFile, TempPath};
 use tokio::process::Command;
 use serde::Serialize;
+use validator::Validate;
 
 use super::{
     StoreDerivation,
@@ -27,7 +28,7 @@ pub struct Hive {
 
 impl Hive {
     pub fn new<P: AsRef<Path>>(hive: P) -> NixResult<Self> {
-        let mut eval_nix = NamedTempFile::new().unwrap();
+        let mut eval_nix = NamedTempFile::new()?;
         eval_nix.write_all(HIVE_EVAL).unwrap();
 
         Ok(Self {
@@ -51,7 +52,14 @@ impl Hive {
         let s: String = self.nix_instantiate("hive.deploymentConfigJson").eval()
             .capture_json().await?;
 
-        Ok(serde_json::from_str(&s).unwrap())
+        let configs: HashMap<String, NodeConfig> = serde_json::from_str(&s).unwrap();
+        for config in configs.values() {
+            config.validate()?;
+            for key in config.keys.values() {
+                key.validate()?;
+            }
+        }
+        Ok(configs)
     }
 
     /// Evaluates selected nodes.

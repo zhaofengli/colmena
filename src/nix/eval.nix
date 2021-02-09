@@ -23,13 +23,12 @@ let
     nodeNixpkgs = {};
   };
 
+  types = lib.types;
+
   # Colmena-specific options
   #
   # Largely compatible with NixOps/Morph.
-  deploymentOptions = { name, lib, ... }:
-  let
-    types = lib.types;
-  in {
+  deploymentOptions = { name, lib, ... }: {
     options = {
       deployment = {
         targetHost = lib.mkOption {
@@ -75,6 +74,55 @@ let
           type = types.listOf types.str;
           default = [];
         };
+        keys = lib.mkOption {
+          description = ''
+            A set of secrets to be deployed to the node.
+
+            Secrets are transferred to the node out-of-band and
+            never ends up in the Nix store.
+          '';
+          type = types.attrsOf keyType;
+          default = {};
+        };
+      };
+    };
+  };
+
+  keyType = types.submodule {
+    options = {
+      text = lib.mkOption {
+        description = ''
+          Content of the key.
+        '';
+        type = types.str;
+      };
+      destDir = lib.mkOption {
+        description = ''
+          Destination directory on the host.
+        '';
+        default = "/run/keys";
+        type = types.str;
+      };
+      user = lib.mkOption {
+        description = ''
+          The group that will own the file.
+        '';
+        default = "root";
+        type = types.str;
+      };
+      group = lib.mkOption {
+        description = ''
+          The group that will own the file.
+        '';
+        default = "root";
+        type = types.str;
+      };
+      permissions = lib.mkOption {
+        description = ''
+          Permissions to set for the file.
+        '';
+        default = "0600";
+        type = types.str;
       };
     };
   };
