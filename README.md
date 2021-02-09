@@ -77,7 +77,7 @@ Here is a sample `hive.nix` with two nodes, with some common configurations appl
 }
 ```
 
-The full set of options can be found at `src/eval.nix`.
+The full set of options can be found at `src/nix/eval.nix`.
 Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to deploy it to all nodes.
 
 ## `colmena introspect`
@@ -167,7 +167,7 @@ For example, to deploy ACME credentials for use with `security.acme`:
         PDNS_API_KEY=top-secret-api-key
       '';
       destDir = "/run/keys"; # Default: /run/keys
-      owner = "acme";        # Default: root
+      user = "acme";         # Default: root
       group = "nginx";       # Default: root
       mode = "0640";         # Default: 0600
     };
