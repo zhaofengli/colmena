@@ -66,6 +66,11 @@ Here is a sample `hive.nix` with two nodes, with some common configurations appl
     # can override it like:
     deployment.targetHost = "host-b.mydomain.tld";
 
+    # It's also possible to override the target SSH port.
+    # For further customization, use the SSH_CONFIG_FILE
+    # environment variable to specify a ssh_config file.
+    deployment.targetPort = 1234;
+
     time.timeZone = "America/Los_Angeles";
 
     boot.loader.grub.device = "/dev/sda";
@@ -179,10 +184,13 @@ For example, to deploy ACME credentials for use with `security.acme`:
 Take note that if you use the default path (`/run/keys`), the secret files are only stored in-memory and will not survive reboots.
 To upload your secrets without performing a full deployment, use `colmena upload-keys`.
 
+## Environment variables
+
+- `SSH_CONFIG_FILE`: Path to a `ssh_config` file
+
 ## Current limitations
 
 - It's required to use SSH keys to log into the remote hosts, and interactive authentication will not work.
-- There is no option to override SSH or `nix-copy-closure` options.
 - Error reporting is lacking.
 
 ## Licensing

@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::env;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use clap::{Arg, App, SubCommand, ArgMatches};
@@ -131,6 +133,9 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
         quit::with_code(2);
     }
 
+    let ssh_config = env::var("SSH_CONFIG_FILE")
+        .ok().map(PathBuf::from);
+
     // FIXME: This is ugly :/ Make an enum wrapper for this fake "keys" goal
     let goal_arg = local_args.value_of("goal").unwrap();
     let goal = if goal_arg == "keys" {
@@ -146,10 +151,14 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
         let config = all_nodes.get(node).unwrap();
         let host = config.to_ssh_host();
         match host {
-            Some(host) => {
+            Some(mut host) => {
+                if let Some(ssh_config) = ssh_config.as_ref() {
+                    host.set_ssh_config(ssh_config.clone());
+                }
+
                 targets.insert(
                     node.clone(),
-                    Target::new(host, config.clone()),
+                    Target::new(host.upcast(), config.clone()),
                 );
             }
             None => {

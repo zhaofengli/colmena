@@ -86,6 +86,9 @@ pub struct NodeConfig {
     #[serde(rename = "targetUser")]
     target_user: String,
 
+    #[serde(rename = "targetPort")]
+    target_port: Option<u16>,
+
     #[serde(rename = "allowLocalDeployment")]
     allow_local_deployment: bool,
     tags: Vec<String>,
@@ -98,10 +101,14 @@ impl NodeConfig {
     pub fn tags(&self) -> &[String] { &self.tags }
     pub fn allows_local_deployment(&self) -> bool { self.allow_local_deployment }
 
-    pub fn to_ssh_host(&self) -> Option<Box<dyn Host>> {
+    pub fn to_ssh_host(&self) -> Option<Ssh> {
         self.target_host.as_ref().map(|target_host| {
-            let host = Ssh::new(self.target_user.clone(), target_host.clone());
-            let host: Box<dyn Host> = Box::new(host);
+            let mut host = Ssh::new(self.target_user.clone(), target_host.clone());
+
+            if let Some(target_port) = self.target_port {
+                host.set_port(target_port);
+            }
+
             host
         })
     }

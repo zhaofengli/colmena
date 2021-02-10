@@ -41,6 +41,16 @@ let
           type = types.nullOr types.str;
           default = name;
         };
+        targetPort = lib.mkOption {
+          description = ''
+            The target SSH port for deployment.
+
+            By default, the port is the standard port (22) or taken
+            from your ssh_config.
+          '';
+          type = types.nullOr types.ints.unsigned;
+          default = null;
+        };
         targetUser = lib.mkOption {
           description = ''
             The user to use to log into the remote node.

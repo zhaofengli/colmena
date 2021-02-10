@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 use std::convert::TryInto;
+use std::path::PathBuf;
 use std::process::Stdio;
 
 use async_trait::async_trait;
@@ -22,6 +23,12 @@ pub struct Ssh {
 
     /// The hostname or IP address to connect to.
     host: String,
+
+    /// The port to connect to.
+    port: Option<u16>,
+
+    /// Local path to a ssh_config file.
+    ssh_config: Option<PathBuf>,
 
     friendly_name: String,
     path_cache: HashSet<StorePath>,
@@ -81,11 +88,25 @@ impl Ssh {
         Self {
             user,
             host,
+            port: None,
+            ssh_config: None,
             friendly_name,
             path_cache: HashSet::new(),
             progress_bar: ProcessProgress::default(),
             logs: String::new(),
         }
+    }
+
+    pub fn set_port(&mut self, port: u16) {
+        self.port = Some(port);
+    }
+
+    pub fn set_ssh_config(&mut self, ssh_config: PathBuf) {
+        self.ssh_config = Some(ssh_config);
+    }
+
+    pub fn upcast(self) -> Box<dyn Host> {
+        Box::new(self)
     }
 
     async fn run_command(&mut self, command: Command) -> NixResult<()> {
@@ -136,20 +157,41 @@ impl Ssh {
         command
     }
 
-    fn ssh(&self, command: &[&str]) -> Command {
+    fn ssh_options(&self) -> Vec<String> {
         // TODO: Allow configuation of SSH parameters
 
+        let mut options: Vec<String> = ["-o", "StrictHostKeyChecking=accept-new", "-T"]
+            .iter().map(|s| s.to_string()).collect();
+
+        if let Some(port) = self.port {
+            options.push("-p".to_string());
+            options.push(port.to_string());
+        }
+
+        if let Some(ssh_config) = self.ssh_config.as_ref() {
+            options.push("-F".to_string());
+            options.push(ssh_config.to_str().unwrap().to_string());
+        }
+
+        options
+    }
+
+    fn ssh(&self, command: &[&str]) -> Command {
+        let options = self.ssh_options();
+        let options_str = options.join(" ");
+
         let mut cmd = Command::new("ssh");
-        cmd.arg(self.ssh_target())
-            .args(&["-o", "StrictHostKeyChecking=accept-new", "-T"])
+
+        cmd
+            .arg(self.ssh_target())
+            .args(&options)
             .arg("--")
-            .args(command);
+            .args(command)
+            .env("NIX_SSHOPTS", options_str);
 
         cmd
     }
-}
 
-impl Ssh {
     /// Uploads a single key.
     async fn upload_key(&mut self, name: &str, key: &Key) -> NixResult<()> {
         self.progress_bar.log(&format!("Deploying key {}", name));
