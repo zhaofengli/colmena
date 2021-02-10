@@ -109,6 +109,23 @@ impl Ssh {
         Box::new(self)
     }
 
+    /// Returns a Tokio Command to run an arbitrary command on the host.
+    pub fn ssh(&self, command: &[&str]) -> Command {
+        let options = self.ssh_options();
+        let options_str = options.join(" ");
+
+        let mut cmd = Command::new("ssh");
+
+        cmd
+            .arg(self.ssh_target())
+            .args(&options)
+            .arg("--")
+            .args(command)
+            .env("NIX_SSHOPTS", options_str);
+
+        cmd
+    }
+
     async fn run_command(&mut self, command: Command) -> NixResult<()> {
         let mut execution = CommandExecution::new(command);
 
@@ -174,22 +191,6 @@ impl Ssh {
         }
 
         options
-    }
-
-    fn ssh(&self, command: &[&str]) -> Command {
-        let options = self.ssh_options();
-        let options_str = options.join(" ");
-
-        let mut cmd = Command::new("ssh");
-
-        cmd
-            .arg(self.ssh_target())
-            .args(&options)
-            .arg("--")
-            .args(command)
-            .env("NIX_SSHOPTS", options_str);
-
-        cmd
     }
 
     /// Uploads a single key.

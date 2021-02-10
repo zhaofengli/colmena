@@ -180,6 +180,11 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
         log::info!("Selected {} out of {} hosts ({} skipped)", targets.len(), all_nodes.len(), selected_nodes.len() - targets.len());
     }
 
+    if targets.len() == 0 {
+        log::warn!("No selected nodes are accessible over SSH. Exiting...");
+        quit::with_code(2);
+    }
+
     let mut deployment = Deployment::new(hive, targets, goal);
 
     let mut options = DeploymentOptions::default();
