@@ -3,6 +3,20 @@
 Colmena is a simple, stateless NixOS deployment tool modeled after [NixOps](https://github.com/NixOS/nixops) and [Morph](https://github.com/DBCDK/morph), written in Rust.
 It's a thin wrapper over Nix commands like `nix-instantiate` and `nix-copy-closure`, and supports parallel deployment.
 
+<pre>
+$ <b>colmena apply --on @tag-a</b>
+[INFO ] Enumerating nodes...
+[INFO ] Selected 7 out of 45 hosts.
+  (...) ✅ 0s Successfully built
+  <b>sigma</b> 🕗 7s copying path '/nix/store/h6qpk8rwm3dh3zsl1wlj1jharzf8aw9f-unit-haigha-agent.service' to 'ssh://root@sigma.redacted'...
+  <b>theta</b> ✅ 7s Activation successful
+  <b>gamma</b> 🕘 8s Starting...
+  <b>alpha</b> ✅ 1s Activation successful
+<b>epsilon</b> 🕗 7s copying path '/nix/store/fhh4rfixny8b21l6jqzk7nqwxva5k20h-nixos-system-epsilon-20.09pre-git' to 'ssh://root@epsilon.redacted'...
+   <b>beta</b> 🕗 7s removing obsolete file /boot/kernels/z28ayg10kpnlrz0s2qrb9pzv82lc20s2-initrd-linux-5.4.89-initrd
+  <b>kappa</b> ✅ 2s Activation successful
+</pre>
+
 Colmena is still an early prototype.
 
 ## Installation
@@ -160,9 +174,9 @@ On `laptop`, run `colmena apply-local --sudo` to activate the configuration.
 Colmena allows you to upload secret files to nodes that will not be stored in the Nix store.
 It implements a subset of the `deployment.keys` options supported by NixOps.
 
-For example, to deploy ACME credentials for use with `security.acme`:
+For example, to deploy DNS-01 credentials for use with `security.acme`:
 
-```
+```nix
 {
   shared-box = {
     security.acme.certs."my-site.tld".credentialsFile = "/run/keys/acme-credentials.secret";
@@ -183,6 +197,15 @@ For example, to deploy ACME credentials for use with `security.acme`:
 
 Take note that if you use the default path (`/run/keys`), the secret files are only stored in-memory and will not survive reboots.
 To upload your secrets without performing a full deployment, use `colmena upload-keys`.
+
+## Parallelism
+
+Colmena is built from the ground up to support parallel deployments.
+Evaluation, build, and deployment of node configurations can happen at the same time.
+This parallelism can be controlled primarily through two flags:
+
+- `--limit <number>`: Number of hosts to deploy at once in the final step (pushing closures and activating new profiles).
+- `--eval-node-limit <number>`: By default, Colmena will automatically determine the maximum number of nodes to evaluate at the same time according to available RAM. This flag allows you to set the limit to a predetermined value.
 
 ## Environment variables
 
