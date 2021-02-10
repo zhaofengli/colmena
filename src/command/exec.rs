@@ -131,7 +131,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     let progress = Arc::new(progress);
     let command: Arc<Vec<String>> = Arc::new(local_args.values_of("command").unwrap().map(|s| s.to_string()).collect());
 
-    progress.run(async move |progress| {
+    progress.run(|progress| async move {
         let mut futures = Vec::new();
 
         for (name, host) in hosts.drain() {

@@ -1,11 +1,8 @@
 {
-  pkgs ? import ./pkgs.nix {},
+  pkgs ? import ./pkgs.nix,
 }: let
   lib = pkgs.lib;
-  rustPlatform = if pkgs ? pinnedRust then pkgs.makeRustPlatform {
-    rustc = pkgs.pinnedRust;
-    cargo = pkgs.pinnedRust;
-  } else pkgs.rustPlatform;
+  rustPlatform = pkgs.rustPlatform;
 in rustPlatform.buildRustPackage {
   name = "colmena-dev";
   version = "0.1.0";

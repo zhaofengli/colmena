@@ -261,7 +261,7 @@ impl Deployment {
 
         {
             let arc_self = self.clone();
-            progress.run(async move |progress| {
+            progress.run(|progress| async move {
                 let mut futures = Vec::new();
 
                 for node in self.target_names.iter() {
@@ -324,7 +324,7 @@ impl Deployment {
             let arc_self = self.clone();
             let eval_limit = arc_self.clone().eval_limit();
 
-            progress.run(async move |progress| {
+            progress.run(|progress| async move {
                 let mut futures = Vec::new();
 
                 for chunk in self.target_names.chunks(eval_limit) {
