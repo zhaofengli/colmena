@@ -8,6 +8,7 @@ edition = "2018"
 
 [dependencies]
 async-trait = "0.1.42"
+atty = "0.2"
 clap = "2.33.3"
 console = "0.13.0"
 env_logger = "0.8.2"

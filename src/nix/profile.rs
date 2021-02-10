@@ -5,7 +5,7 @@ use std::fs;
 use std::path::Path;
 
 use super::{
-    DeploymentGoal,
+    Goal,
     NixResult,
     NixError,
     StorePath,
@@ -32,7 +32,7 @@ impl Profile {
     }
 
     /// Returns the command to activate this profile.
-    pub fn activation_command(&self, goal: DeploymentGoal) -> Option<Vec<String>> {
+    pub fn activation_command(&self, goal: Goal) -> Option<Vec<String>> {
         if let Some(goal) = goal.as_str() {
             let path = self.as_path().join("bin/switch-to-configuration");
             let switch_to_configuration = path.to_str()

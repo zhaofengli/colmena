@@ -4,13 +4,13 @@ use std::process::Stdio;
 
 use async_trait::async_trait;
 use futures::future::join3;
-use indicatif::ProgressBar;
 use tokio::process::Command;
 use tokio::io::{AsyncWriteExt, BufReader};
 
 use super::{CopyDirection, CopyOptions, Host};
-use crate::nix::{StorePath, Profile, DeploymentGoal, NixResult, NixCommand, NixError, Key, SYSTEM_PROFILE};
+use crate::nix::{StorePath, Profile, Goal, NixResult, NixCommand, NixError, Key, SYSTEM_PROFILE};
 use crate::util::{CommandExecution, capture_stream};
+use crate::progress::ProcessProgress;
 
 const DEPLOY_KEY_TEMPLATE: &'static str = include_str!("./deploy-key.template");
 
@@ -25,7 +25,7 @@ pub struct Ssh {
 
     friendly_name: String,
     path_cache: HashSet<StorePath>,
-    progress_bar: Option<ProgressBar>,
+    progress_bar: ProcessProgress,
     logs: String,
 }
 
@@ -55,7 +55,7 @@ impl Host for Ssh {
 
         Ok(())
     }
-    async fn activate(&mut self, profile: &Profile, goal: DeploymentGoal) -> NixResult<()> {
+    async fn activate(&mut self, profile: &Profile, goal: Goal) -> NixResult<()> {
         if goal.should_switch_profile() {
             let path = profile.as_path().to_str().unwrap();
             let set_profile = self.ssh(&["nix-env", "--profile", SYSTEM_PROFILE, "--set", path]);
@@ -67,8 +67,8 @@ impl Host for Ssh {
         let command = self.ssh(&v);
         self.run_command(command).await
     }
-    fn set_progress_bar(&mut self, bar: ProgressBar) {
-        self.progress_bar = Some(bar);
+    fn set_progress_bar(&mut self, bar: ProcessProgress) {
+        self.progress_bar = bar;
     }
     async fn dump_logs(&self) -> Option<&str> {
         Some(&self.logs)
@@ -83,17 +83,15 @@ impl Ssh {
             host,
             friendly_name,
             path_cache: HashSet::new(),
-            progress_bar: None,
+            progress_bar: ProcessProgress::default(),
             logs: String::new(),
         }
     }
 
     async fn run_command(&mut self, command: Command) -> NixResult<()> {
-        let mut execution = CommandExecution::new(&self.friendly_name, command);
+        let mut execution = CommandExecution::new(command);
 
-        if let Some(bar) = self.progress_bar.as_ref() {
-            execution.set_progress_bar(bar.clone());
-        }
+        execution.set_progress_bar(self.progress_bar.clone());
 
         let result = execution.run().await;
 
@@ -154,9 +152,7 @@ impl Ssh {
 impl Ssh {
     /// Uploads a single key.
     async fn upload_key(&mut self, name: &str, key: &Key) -> NixResult<()> {
-        if let Some(progress_bar) = self.progress_bar.as_ref() {
-            progress_bar.set_message(&format!("Deploying key {}", name));
-        }
+        self.progress_bar.log(&format!("Deploying key {}", name));
 
         let dest_path = key.dest_dir.join(name);
 
@@ -183,8 +179,8 @@ impl Ssh {
         let stderr = BufReader::new(child.stderr.take().unwrap());
 
         let futures = join3(
-            capture_stream(stdout, &self.friendly_name, self.progress_bar.clone()),
-            capture_stream(stderr, &self.friendly_name, self.progress_bar.clone()),
+            capture_stream(stdout, self.progress_bar.clone()),
+            capture_stream(stderr, self.progress_bar.clone()),
             child.wait(),
         );
         let (stdout_str, stderr_str, exit) = futures.await;

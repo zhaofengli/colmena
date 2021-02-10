@@ -1,3 +1,5 @@
+#![feature(async_closure)]
+
 use std::env;
 use clap::{App, AppSettings, Arg};
 

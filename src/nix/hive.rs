@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use indicatif::ProgressBar;
 use tempfile::{NamedTempFile, TempPath};
 use tokio::process::Command;
 use serde::Serialize;
@@ -16,6 +15,7 @@ use super::{
 };
 use super::NixCommand;
 use crate::util::CommandExecution;
+use crate::progress::ProcessProgress;
 
 const HIVE_EVAL: &'static [u8] = include_bytes!("eval.nix");
 
@@ -67,7 +67,7 @@ impl Hive {
     /// Evaluation may take up a lot of memory, so we make it possible
     /// to split up the evaluation process into chunks and run them
     /// concurrently with other processes (e.g., build and apply).
-    pub async fn eval_selected(&self, nodes: &Vec<String>, progress_bar: Option<ProgressBar>) -> (NixResult<StoreDerivation<ProfileMap>>, Option<String>) {
+    pub async fn eval_selected(&self, nodes: &Vec<String>, progress_bar: ProcessProgress) -> (NixResult<StoreDerivation<ProfileMap>>, Option<String>) {
         // FIXME: The return type is ugly...
 
         let nodes_expr = SerializedNixExpresssion::new(nodes);
@@ -79,11 +79,8 @@ impl Hive {
         let expr = format!("hive.buildSelected {{ names = {}; }}", nodes_expr.expression());
 
         let command = self.nix_instantiate(&expr).instantiate();
-        let mut execution = CommandExecution::new("(eval)", command);
-
-        if let Some(bar) = progress_bar {
-            execution.set_progress_bar(bar);
-        }
+        let mut execution = CommandExecution::new(command);
+        execution.set_progress_bar(progress_bar);
 
         let eval = execution
             .capture_store_path().await;

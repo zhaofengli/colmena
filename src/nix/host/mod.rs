@@ -1,9 +1,9 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
-use indicatif::ProgressBar;
 
-use super::{StorePath, Profile, DeploymentGoal, NixResult, NixError, Key};
+use super::{StorePath, Profile, Goal, NixResult, NixError, Key};
+use crate::progress::ProcessProgress;
 
 mod ssh;
 pub use ssh::Ssh;
@@ -84,7 +84,7 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     }
 
     /// Pushes and optionally activates a profile to the host.
-    async fn deploy(&mut self, profile: &Profile, goal: DeploymentGoal, copy_options: CopyOptions) -> NixResult<()> {
+    async fn deploy(&mut self, profile: &Profile, goal: Goal, copy_options: CopyOptions) -> NixResult<()> {
         self.copy_closure(profile.as_store_path(), CopyDirection::ToRemote, copy_options).await?;
 
         if goal.requires_activation() {
@@ -104,13 +104,13 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     /// Activates a system profile on the host, if it runs NixOS.
     ///
     /// The profile must already exist on the host. You should probably use deploy instead.
-    async fn activate(&mut self, profile: &Profile, goal: DeploymentGoal) -> NixResult<()> {
+    async fn activate(&mut self, profile: &Profile, goal: Goal) -> NixResult<()> {
         Err(NixError::Unsupported)
     }
 
     #[allow(unused_variables)] 
-    /// Provides a ProgressBar to use during operations.
-    fn set_progress_bar(&mut self, bar: ProgressBar) {
+    /// Provides a ProcessProgress to use during operations.
+    fn set_progress_bar(&mut self, bar: ProcessProgress) {
     }
 
     /// Dumps human-readable unstructured log messages related to the host.

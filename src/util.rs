@@ -1,18 +1,16 @@
 use std::collections::HashMap;
-use std::convert::AsRef;
 use std::fs;
 use std::path::PathBuf;
 use std::process::Stdio;
 
 use clap::{App, Arg, ArgMatches};
-use console::style;
 use futures::future::join3;
 use glob::Pattern as GlobPattern;
-use indicatif::ProgressBar;
 use tokio::io::{AsyncRead, AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
 use super::nix::{NodeConfig, Hive, NixResult, NixError};
+use super::progress::ProcessProgress;
 
 enum NodeFilter {
     NameFilter(GlobPattern),
@@ -21,27 +19,25 @@ enum NodeFilter {
 
 /// Non-interactive execution of an arbitrary Nix command.
 pub struct CommandExecution {
-    label: String,
     command: Command,
-    progress_bar: Option<ProgressBar>,
+    progress_bar: ProcessProgress,
     stdout: Option<String>,
     stderr: Option<String>,
 }
 
 impl CommandExecution {
-    pub fn new<S: AsRef<str>>(label: S, command: Command) -> Self {
+    pub fn new(command: Command) -> Self {
         Self {
-            label: label.as_ref().to_string(),
             command,
-            progress_bar: None,
+            progress_bar: ProcessProgress::default(),
             stdout: None,
             stderr: None,
         }
     }
 
-    /// Provides a ProgressBar to use to display output.
-    pub fn set_progress_bar(&mut self, bar: ProgressBar) {
-        self.progress_bar = Some(bar);
+    /// Provides a ProcessProgress to use to display output.
+    pub fn set_progress_bar(&mut self, bar: ProcessProgress) {
+        self.progress_bar = bar;
     }
 
     /// Retrieve logs from the last invocation.
@@ -64,8 +60,8 @@ impl CommandExecution {
         let stderr = BufReader::new(child.stderr.take().unwrap());
 
         let futures = join3(
-            capture_stream(stdout, &self.label, self.progress_bar.clone()),
-            capture_stream(stderr, &self.label, self.progress_bar.clone()),
+            capture_stream(stdout, self.progress_bar.clone()),
+            capture_stream(stderr, self.progress_bar.clone()),
             child.wait(),
         );
 
@@ -219,7 +215,7 @@ fn canonicalize_cli_path(path: String) -> PathBuf {
     }
 }
 
-pub async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, label: &str, mut progress_bar: Option<ProgressBar>) -> String {
+pub async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, mut progress_bar: ProcessProgress) -> String {
     let mut log = String::new();
 
     loop {
@@ -231,11 +227,7 @@ pub async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, labe
         }
 
         let trimmed = line.trim_end();
-        if let Some(progress_bar) = progress_bar.as_mut() {
-            progress_bar.set_message(trimmed);
-        } else {
-            eprintln!("{} | {}", style(label).cyan(), trimmed);
-        }
+        progress_bar.log(trimmed);
 
         log += trimmed;
         log += "\n";

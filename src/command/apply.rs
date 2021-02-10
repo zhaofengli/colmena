@@ -5,8 +5,8 @@ use clap::{Arg, App, SubCommand, ArgMatches};
 
 use crate::nix::deployment::{
     Deployment,
-    DeploymentGoal,
-    DeploymentTarget,
+    Goal,
+    Target,
     DeploymentOptions,
     EvaluationNodeLimit,
     ParallelismLimit,
@@ -134,12 +134,12 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     // FIXME: This is ugly :/ Make an enum wrapper for this fake "keys" goal
     let goal_arg = local_args.value_of("goal").unwrap();
     let goal = if goal_arg == "keys" {
-        DeploymentGoal::Build
+        Goal::Build
     } else {
-        DeploymentGoal::from_str(goal_arg).unwrap()
+        Goal::from_str(goal_arg).unwrap()
     };
 
-    let build_only = goal == DeploymentGoal::Build && goal_arg != "keys";
+    let build_only = goal == Goal::Build && goal_arg != "keys";
 
     let mut targets = HashMap::new();
     for node in &selected_nodes {
@@ -149,14 +149,14 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
             Some(host) => {
                 targets.insert(
                     node.clone(),
-                    DeploymentTarget::new(host, config.clone()),
+                    Target::new(host, config.clone()),
                 );
             }
             None => {
                 if build_only {
                     targets.insert(
                         node.clone(),
-                        DeploymentTarget::new(localhost(), config.clone()),
+                        Target::new(localhost(), config.clone()),
                     );
                 }
             }

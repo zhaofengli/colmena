@@ -8,8 +8,8 @@ use tokio::process::Command;
 
 use crate::nix::deployment::{
     Deployment,
-    DeploymentGoal,
-    DeploymentTarget,
+    Goal,
+    Target,
     DeploymentOptions,
 };
 use crate::nix::host;
@@ -88,19 +88,19 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
         hostname::get().expect("Could not get hostname")
             .to_string_lossy().into_owned()
     };
-    let goal = DeploymentGoal::from_str(local_args.value_of("goal").unwrap()).unwrap();
+    let goal = Goal::from_str(local_args.value_of("goal").unwrap()).unwrap();
 
     log::info!("Enumerating nodes...");
     let all_nodes = hive.deployment_info().await.unwrap();
 
-    let target: DeploymentTarget = {
+    let target: Target = {
         if let Some(info) = all_nodes.get(&hostname) {
             if !info.allows_local_deployment() {
                 log::error!("Local deployment is not enabled for host {}.", hostname);
                 log::error!("Hint: Set deployment.allowLocalDeployment to true.");
                 quit::with_code(2);
             }
-            DeploymentTarget::new(
+            Target::new(
                 host::local(),
                 info.clone(),
             )

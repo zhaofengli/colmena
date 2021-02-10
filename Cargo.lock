@@ -96,6 +96,7 @@ name = "colmena"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "atty",
  "clap",
  "console",
  "env_logger",

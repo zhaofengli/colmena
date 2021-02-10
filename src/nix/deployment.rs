@@ -3,12 +3,10 @@ use std::sync::Arc;
 use std::collections::HashMap;
 
 use futures::future::join_all;
-use futures::join;
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle, ProgressDrawTarget};
 use tokio::sync::{Mutex, Semaphore};
 
 use super::{Hive, Host, CopyOptions, NodeConfig, Profile, StoreDerivation, ProfileMap, host};
-use crate::progress::get_spinner_styles;
+use crate::progress::{Progress, ProcessProgress, OutputStyle};
 
 /// Amount of RAM reserved for the system, in MB. 
 const EVAL_RESERVE_MB: u64 = 1024;
@@ -19,26 +17,21 @@ const EVAL_PER_HOST_MB: u64 = 512;
 const BATCH_OPERATION_LABEL: &'static str = "(...)";
 
 macro_rules! set_up_batch_progress_bar {
-    ($multi:ident, $style:ident, $chunk:ident, $single_text:expr, $batch_text:expr) => {{
-        let bar = $multi.add(ProgressBar::new(100));
-        bar.set_style($style.clone());
-        bar.enable_steady_tick(100);
-
+    ($progress:ident, $style:ident, $chunk:ident, $single_text:expr, $batch_text:expr) => {{
         if $chunk.len() == 1 {
-            bar.set_prefix(&$chunk[0]);
-            bar.set_message($single_text);
+            let mut bar = $progress.create_process_progress($chunk[0].to_string());
+            bar.log($single_text);
+            bar
         } else {
-            bar.set_prefix(BATCH_OPERATION_LABEL);
-            bar.set_message(&format!($batch_text, $chunk.len()));
+            let mut bar = $progress.create_process_progress(BATCH_OPERATION_LABEL.to_string());
+            bar.log(&format!($batch_text, $chunk.len()));
+            bar
         }
-        bar.inc(0);
-
-        bar
     }};
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub enum DeploymentGoal {
+pub enum Goal {
     /// Build the configurations only.
     Build,
 
@@ -58,7 +51,7 @@ pub enum DeploymentGoal {
     DryActivate,
 }
 
-impl DeploymentGoal {
+impl Goal {
     pub fn from_str(s: &str) -> Option<Self> {
         match s {
             "build" => Some(Self::Build),
@@ -72,7 +65,7 @@ impl DeploymentGoal {
     }
 
     pub fn as_str(&self) -> Option<&'static str> {
-        use DeploymentGoal::*;
+        use Goal::*;
         match self {
             Build => None,
             Push => None,
@@ -84,7 +77,7 @@ impl DeploymentGoal {
     }
 
     pub fn success_str(&self) -> Option<&'static str> {
-        use DeploymentGoal::*;
+        use Goal::*;
         match self {
             Build => Some("Configuration built"),
             Push => Some("Pushed"),
@@ -96,7 +89,7 @@ impl DeploymentGoal {
     }
 
     pub fn should_switch_profile(&self) -> bool {
-        use DeploymentGoal::*;
+        use Goal::*;
         match self {
             Boot | Switch => true,
             _ => false,
@@ -104,7 +97,7 @@ impl DeploymentGoal {
     }
 
     pub fn requires_activation(&self) -> bool {
-        use DeploymentGoal::*;
+        use Goal::*;
         match self {
             Build | Push => false,
             _ => true,
@@ -114,7 +107,7 @@ impl DeploymentGoal {
 
 /// Internal deployment stages.
 #[derive(Debug)]
-enum DeploymentStage {
+enum Stage {
     Evaluate(Vec<String>),
     Build(Vec<String>),
     Apply(String),
@@ -124,7 +117,7 @@ enum DeploymentStage {
 #[derive(Debug)]
 struct DeploymentResult {
     /// Stage in which the deployment ended.
-    stage: DeploymentStage,
+    stage: Stage,
 
     /// Whether the deployment succeeded or not.
     success: bool,
@@ -134,7 +127,7 @@ struct DeploymentResult {
 }
 
 impl DeploymentResult {
-    fn success(stage: DeploymentStage, logs: Option<String>) -> Self {
+    fn success(stage: Stage, logs: Option<String>) -> Self {
         Self {
             stage,
             success: true,
@@ -142,7 +135,7 @@ impl DeploymentResult {
         }
     }
 
-    fn failure(stage: DeploymentStage, logs: Option<String>) -> Self {
+    fn failure(stage: Stage, logs: Option<String>) -> Self {
         Self {
             stage,
             success: false,
@@ -155,7 +148,7 @@ impl DeploymentResult {
     }
 
     fn print(&self) {
-        use DeploymentStage::*;
+        use Stage::*;
 
         if self.is_successful() {
             unimplemented!();
@@ -197,12 +190,12 @@ impl DeploymentResult {
 
 /// A deployment target.
 #[derive(Debug)]
-pub struct DeploymentTarget {
+pub struct Target {
     host: Box<dyn Host>,
     config: NodeConfig,
 }
 
-impl DeploymentTarget {
+impl Target {
     pub fn new(host: Box<dyn Host>, config: NodeConfig) -> Self {
         Self { host, config }
     }
@@ -211,10 +204,10 @@ impl DeploymentTarget {
 #[derive(Debug)]
 pub struct Deployment {
     hive: Hive,
-    goal: DeploymentGoal,
+    goal: Goal,
     target_names: Vec<String>,
-    targets: Mutex<HashMap<String, DeploymentTarget>>,
-    progress_alignment: usize,
+    targets: Mutex<HashMap<String, Target>>,
+    label_width: usize,
     parallelism_limit: ParallelismLimit,
     evaluation_node_limit: EvaluationNodeLimit,
     options: DeploymentOptions,
@@ -222,11 +215,10 @@ pub struct Deployment {
 }
 
 impl Deployment {
-    pub fn new(hive: Hive, targets: HashMap<String, DeploymentTarget>, goal: DeploymentGoal) -> Self {
+    pub fn new(hive: Hive, targets: HashMap<String, Target>, goal: Goal) -> Self {
         let target_names: Vec<String> = targets.keys().cloned().collect();
 
-
-        let progress_alignment = if let Some(len) = target_names.iter().map(|n| n.len()).max() {
+        let label_width = if let Some(len) = target_names.iter().map(|n| n.len()).max() {
             max(BATCH_OPERATION_LABEL.len(), len)
         } else {
             BATCH_OPERATION_LABEL.len()
@@ -237,7 +229,7 @@ impl Deployment {
             goal,
             target_names,
             targets: Mutex::new(targets),
-            progress_alignment,
+            label_width,
             parallelism_limit: ParallelismLimit::default(),
             evaluation_node_limit: EvaluationNodeLimit::default(),
             options: DeploymentOptions::default(),
@@ -257,213 +249,171 @@ impl Deployment {
         self.evaluation_node_limit = limit;
     }
 
-    // FIXME: Duplication
-
     /// Uploads keys only (user-facing)
     pub async fn upload_keys(self: Arc<Self>) {
-        let multi = Arc::new(MultiProgress::new());
-        let root_bar = Arc::new(multi.add(ProgressBar::new(100)));
-        multi.set_draw_target(ProgressDrawTarget::stderr_nohz());
-
-        {
-            let (style, _) = self.spinner_styles();
-            root_bar.set_message("Uploading keys...");
-            root_bar.set_style(style);
-            root_bar.tick();
-            root_bar.enable_steady_tick(100);
-        }
-
-        let arc_self = self.clone();
-        let mut futures = Vec::new();
-
-        for node in self.target_names.iter() {
-            let node = node.to_owned();
-
-            let mut target = {
-                let mut targets = arc_self.targets.lock().await;
-                targets.remove(&node).unwrap()
-            };
-            let multi = multi.clone();
-            let arc_self = self.clone();
-            futures.push(tokio::spawn(async move {
-                let permit = arc_self.parallelism_limit.apply.acquire().await.unwrap();
-                let bar = multi.add(ProgressBar::new(100));
-                let (style, fail_style) = arc_self.spinner_styles();
-                bar.set_style(style);
-                bar.set_prefix(&node);
-                bar.tick();
-                bar.enable_steady_tick(100);
-
-                if let Err(e) = target.host.upload_keys(&target.config.keys).await {
-                    bar.set_style(fail_style);
-                    bar.abandon_with_message(&format!("Failed to upload keys: {}", e));
-
-                    let mut results = arc_self.results.lock().await;
-                    let stage = DeploymentStage::Apply(node.to_string());
-                    let logs = target.host.dump_logs().await.map(|s| s.to_string());
-                    results.push(DeploymentResult::failure(stage, logs));
-                    return;
-                } else {
-                    bar.finish_with_message("Keys uploaded");
-                }
-
-                drop(permit);
-            }));
-        }
-
-        let wait_for_tasks = tokio::spawn(async move {
-            join_all(futures).await;
-            root_bar.finish_with_message("Finished");
-        });
-
-        let tasks_result = if self.options.progress_bar {
-            let wait_for_bars = tokio::task::spawn_blocking(move || {
-                multi.join().unwrap();
-            });
-
-            let (tasks_result, _) = join!(wait_for_tasks, wait_for_bars);
-
-            tasks_result
-        } else {
-            wait_for_tasks.await
+        let progress = {
+            let mut progress = Progress::default();
+            progress.set_label_width(self.label_width);
+            Arc::new(progress)
         };
 
-        if let Err(e) = tasks_result {
-            log::error!("Deployment process failed: {}", e);
+        let arc_self = self.clone();
+
+        {
+            let arc_self = self.clone();
+            progress.run(async move |progress| {
+                let mut futures = Vec::new();
+
+                for node in self.target_names.iter() {
+                    let node = node.to_owned();
+
+                    let mut target = {
+                        let mut targets = arc_self.targets.lock().await;
+                        targets.remove(&node).unwrap()
+                    };
+
+                    let arc_self = self.clone();
+                    let progress = progress.clone();
+                    // how come the bars show up only when initialized here???
+                    futures.push(tokio::spawn(async move {
+                        let permit = arc_self.parallelism_limit.apply.acquire().await.unwrap();
+                        let mut process = progress.create_process_progress(node.clone());
+
+                        process.log("Uploading keys...");
+
+                        if let Err(e) = target.host.upload_keys(&target.config.keys).await {
+                            process.failure(&format!("Failed to upload keys: {}", e));
+
+                            let mut results = arc_self.results.lock().await;
+                            let stage = Stage::Apply(node.to_string());
+                            let logs = target.host.dump_logs().await.map(|s| s.to_string());
+                            results.push(DeploymentResult::failure(stage, logs));
+                            return;
+                        } else {
+                            process.success("Keys uploaded");
+                        }
+
+                        drop(permit);
+                    }));
+                }
+
+                join_all(futures).await
+            }).await;
         }
 
-        self.print_logs().await;
+        arc_self.print_logs().await;
     }
 
     /// Executes the deployment (user-facing)
     ///
     /// Self must be wrapped inside an Arc.
     pub async fn execute(self: Arc<Self>) {
-        let multi = Arc::new(MultiProgress::new());
-        let root_bar = Arc::new(multi.add(ProgressBar::new(100)));
-        multi.set_draw_target(ProgressDrawTarget::stderr_nohz());
-
-        {
-            let (style, _) = self.spinner_styles();
-            root_bar.set_message("Running...");
-            root_bar.set_style(style);
-            root_bar.tick();
-            root_bar.enable_steady_tick(100);
-        }
+        let progress = {
+            let mut progress = if !self.options.progress_bar {
+                Progress::with_style(OutputStyle::Plain)
+            } else {
+                Progress::default()
+            };
+            progress.set_label_width(self.label_width);
+            Arc::new(progress)
+        };
 
         let arc_self = self.clone();
-        let eval_limit = arc_self.clone().eval_limit();
 
-        // FIXME: Saner logging
-        let mut futures = Vec::new();
-
-        for chunk in self.target_names.chunks(eval_limit) {
+        {
             let arc_self = self.clone();
-            let multi = multi.clone();
-            let (style, _) = self.spinner_styles();
+            let eval_limit = arc_self.clone().eval_limit();
 
-            // FIXME: Eww
-            let chunk: Vec<String> = chunk.iter().map(|s| s.to_string()).collect();
-
-            futures.push(tokio::spawn(async move {
-                let drv = {
-                    // Evaluation phase
-                    let permit = arc_self.parallelism_limit.evaluation.acquire().await.unwrap();
-
-                    let bar = set_up_batch_progress_bar!(multi, style, chunk,
-                        "Evaluating configuration...",
-                        "Evaluating configurations for {} nodes"
-                    );
-
-                    let arc_self = arc_self.clone();
-                    let drv = match arc_self.eval_profiles(&chunk, bar).await {
-                        Some(drv) => drv,
-                        None => {
-                            return;
-                        }
-                    };
-
-                    drop(permit);
-                    drv
-                };
-
-                let profiles = {
-                    // Build phase
-                    let permit = arc_self.parallelism_limit.build.acquire().await.unwrap();
-
-                    let bar = set_up_batch_progress_bar!(multi, style, chunk,
-                        "Building configuration...",
-                        "Building configurations for {} nodes"
-                    );
-
-                    let goal = arc_self.goal;
-                    let arc_self = arc_self.clone();
-                    let profiles = arc_self.build_profiles(&chunk, drv, bar.clone()).await;
-
-                    let profiles = match profiles {
-                        Some(profiles) => profiles,
-                        None => {
-                            return;
-                        }
-                    };
-
-                    if goal != DeploymentGoal::Build {
-                        bar.finish_and_clear();
-                    }
-
-                    drop(permit);
-                    profiles
-                };
-
-                // Should we continue?
-                if arc_self.goal == DeploymentGoal::Build {
-                    return;
-                }
-
-                // Apply phase
+            progress.run(async move |progress| {
                 let mut futures = Vec::new();
-                for node in chunk {
-                    let arc_self = arc_self.clone();
-                    let multi = multi.clone();
 
-                    let target = {
-                        let mut targets = arc_self.targets.lock().await;
-                        targets.remove(&node).unwrap()
-                    };
-                    let profile = profiles.get(&node).cloned()
-                        .expect(&format!("Somehow profile for {} was not built", node));
+                for chunk in self.target_names.chunks(eval_limit) {
+                    let arc_self = arc_self.clone();
+                    let progress = progress.clone();
+
+                    // FIXME: Eww
+                    let chunk: Vec<String> = chunk.iter().map(|s| s.to_string()).collect();
 
                     futures.push(tokio::spawn(async move {
-                        arc_self.apply_profile(&node, target, profile, multi).await
+                        let drv = {
+                            // Evaluation phase
+                            let permit = arc_self.parallelism_limit.evaluation.acquire().await.unwrap();
+
+                            let bar = set_up_batch_progress_bar!(progress, style, chunk,
+                                "Evaluating configuration...",
+                                "Evaluating configurations for {} nodes"
+                            );
+
+                            let arc_self = arc_self.clone();
+                            let drv = match arc_self.eval_profiles(&chunk, bar).await {
+                                Some(drv) => drv,
+                                None => {
+                                    return;
+                                }
+                            };
+
+                            drop(permit);
+                            drv
+                        };
+
+                        let profiles = {
+                            // Build phase
+                            let permit = arc_self.parallelism_limit.build.acquire().await.unwrap();
+                            let bar = set_up_batch_progress_bar!(progress, style, chunk,
+                                "Building configuration...",
+                                "Building configurations for {} nodes"
+                            );
+
+                            let goal = arc_self.goal;
+                            let arc_self = arc_self.clone();
+                            let profiles = arc_self.build_profiles(&chunk, drv, bar.clone()).await;
+
+                            let profiles = match profiles {
+                                Some(profiles) => profiles,
+                                None => {
+                                    return;
+                                }
+                            };
+
+                            if goal != Goal::Build {
+                                bar.success_quiet();
+                            }
+
+                            drop(permit);
+                            profiles
+                        };
+
+                        // Should we continue?
+                        if arc_self.goal == Goal::Build {
+                            return;
+                        }
+
+                        // Apply phase
+                        let mut futures = Vec::new();
+                        for node in chunk {
+                            let arc_self = arc_self.clone();
+                            let progress = progress.clone();
+
+                            let target = {
+                                let mut targets = arc_self.targets.lock().await;
+                                targets.remove(&node).unwrap()
+                            };
+                            let profile = profiles.get(&node).cloned()
+                                .expect(&format!("Somehow profile for {} was not built", node));
+
+                            futures.push(tokio::spawn(async move {
+                                arc_self.apply_profile(&node, target, profile, progress).await
+                            }));
+                        }
+
                     }));
                 }
 
                 join_all(futures).await;
-            }));
+            }).await;
         }
 
-        let wait_for_tasks = tokio::spawn(async move {
-            join_all(futures).await;
-            root_bar.finish_with_message("Finished");
-        });
-
-        let tasks_result = if self.options.progress_bar {
-            let wait_for_bars = tokio::task::spawn_blocking(move || {
-                multi.join().unwrap();
-            });
-
-            let (tasks_result, _) = join!(wait_for_tasks, wait_for_bars);
-
-            tasks_result
-        } else {
-            wait_for_tasks.await
-        };
-
-        if let Err(e) = tasks_result {
-            log::error!("Deployment process failed: {}", e);
-        }
-
-        self.print_logs().await;
+        arc_self.print_logs().await;
     }
 
     async fn print_logs(&self) {
@@ -475,53 +425,47 @@ impl Deployment {
         }
     }
 
-    async fn eval_profiles(self: Arc<Self>, chunk: &Vec<String>, progress: ProgressBar) -> Option<StoreDerivation<ProfileMap>> {
-        let (eval, logs) = self.hive.eval_selected(&chunk, Some(progress.clone())).await;
+    async fn eval_profiles(self: Arc<Self>, chunk: &Vec<String>, progress: ProcessProgress) -> Option<StoreDerivation<ProfileMap>> {
+        let (eval, logs) = self.hive.eval_selected(&chunk, progress.clone()).await;
 
         match eval {
             Ok(drv) => {
-                progress.finish_and_clear();
+                progress.success_quiet();
                 Some(drv)
             }
             Err(e) => {
-                let (_, fail_style) = self.spinner_styles();
-                progress.set_style(fail_style.clone());
-                progress.abandon_with_message(&format!("Evalation failed: {}", e));
+                progress.failure(&format!("Evalation failed: {}", e));
 
                 let mut results = self.results.lock().await;
-                let stage = DeploymentStage::Evaluate(chunk.clone());
+                let stage = Stage::Evaluate(chunk.clone());
                 results.push(DeploymentResult::failure(stage, logs));
                 None
             }
         }
     }
 
-    async fn build_profiles(self: Arc<Self>, chunk: &Vec<String>, derivation: StoreDerivation<ProfileMap>, progress: ProgressBar) -> Option<ProfileMap> {
+    async fn build_profiles(self: Arc<Self>, chunk: &Vec<String>, derivation: StoreDerivation<ProfileMap>, progress: ProcessProgress) -> Option<ProfileMap> {
         // FIXME: Remote build?
         let mut builder = host::local();
 
-        if self.options.progress_bar {
-            builder.set_progress_bar(progress.clone());
-        }
+        builder.set_progress_bar(progress.clone());
 
         match derivation.realize(&mut *builder).await {
             Ok(profiles) => {
-                progress.finish_with_message("Successfully built");
+                progress.success("Successfully built");
 
                 let mut results = self.results.lock().await;
-                let stage = DeploymentStage::Build(chunk.clone());
+                let stage = Stage::Build(chunk.clone());
                 let logs = builder.dump_logs().await.map(|s| s.to_string());
                 results.push(DeploymentResult::success(stage, logs));
 
                 Some(profiles)
             }
             Err(e) => {
-                let (_, fail_style) = self.spinner_styles();
-                progress.set_style(fail_style);
-                progress.abandon_with_message(&format!("Build failed: {}", e));
+                progress.failure(&format!("Build failed: {}", e));
 
                 let mut results = self.results.lock().await;
-                let stage = DeploymentStage::Build(chunk.clone());
+                let stage = Stage::Build(chunk.clone());
                 let logs = builder.dump_logs().await.map(|s| s.to_string());
                 results.push(DeploymentResult::failure(stage, logs));
                 None
@@ -529,65 +473,52 @@ impl Deployment {
         }
     }
 
-    async fn apply_profile(self: Arc<Self>, name: &str, mut target: DeploymentTarget, profile: Profile, multi: Arc<MultiProgress>) {
-        let (style, fail_style) = self.spinner_styles();
+    async fn apply_profile(self: Arc<Self>, name: &str, mut target: Target, profile: Profile, multi: Arc<Progress>) {
         let permit = self.parallelism_limit.apply.acquire().await.unwrap();
 
-        let bar = multi.add(ProgressBar::new(100));
-        bar.set_style(style);
-        bar.set_prefix(name);
-        bar.tick();
-        bar.enable_steady_tick(100);
+        let mut bar = multi.create_process_progress(name.to_string());
 
         if self.options.upload_keys && !target.config.keys.is_empty() {
-            bar.set_message("Uploading keys...");
+            bar.log("Uploading keys...");
 
             if let Err(e) = target.host.upload_keys(&target.config.keys).await {
-                bar.set_style(fail_style);
-                bar.abandon_with_message(&format!("Failed to upload keys: {}", e));
+                bar.failure(&format!("Failed to upload keys: {}", e));
 
                 let mut results = self.results.lock().await;
-                let stage = DeploymentStage::Apply(name.to_string());
+                let stage = Stage::Apply(name.to_string());
                 let logs = target.host.dump_logs().await.map(|s| s.to_string());
                 results.push(DeploymentResult::failure(stage, logs));
                 return;
             }
         }
 
-        bar.set_message("Starting...");
+        bar.log("Starting...");
 
-        if self.options.progress_bar {
-            target.host.set_progress_bar(bar.clone());
-        }
+        target.host.set_progress_bar(bar.clone());
 
         let copy_options = self.options.to_copy_options()
             .include_outputs(true);
 
         match target.host.deploy(&profile, self.goal, copy_options).await {
             Ok(_) => {
-                bar.finish_with_message(self.goal.success_str().unwrap());
+                bar.success(self.goal.success_str().unwrap());
 
                 let mut results = self.results.lock().await;
-                let stage = DeploymentStage::Apply(name.to_string());
+                let stage = Stage::Apply(name.to_string());
                 let logs = target.host.dump_logs().await.map(|s| s.to_string());
                 results.push(DeploymentResult::success(stage, logs));
             }
             Err(e) => {
-                bar.set_style(fail_style);
-                bar.abandon_with_message(&format!("Failed: {}", e));
+                bar.failure(&format!("Failed: {}", e));
 
                 let mut results = self.results.lock().await;
-                let stage = DeploymentStage::Apply(name.to_string());
+                let stage = Stage::Apply(name.to_string());
                 let logs = target.host.dump_logs().await.map(|s| s.to_string());
                 results.push(DeploymentResult::failure(stage, logs));
             }
         }
 
         drop(permit);
-    }
-
-    fn spinner_styles(&self) -> (ProgressStyle, ProgressStyle) {
-        get_spinner_styles(self.progress_alignment)
     }
 
     fn eval_limit(&self) -> usize {

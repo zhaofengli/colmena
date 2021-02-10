@@ -29,7 +29,7 @@ pub mod profile;
 pub use profile::{Profile, ProfileMap};
 
 pub mod deployment;
-pub use deployment::{DeploymentGoal, DeploymentTarget, Deployment};
+pub use deployment::{Goal, Target, Deployment};
 
 pub const SYSTEM_PROFILE: &'static str = "/nix/var/nix/profiles/system";
 
