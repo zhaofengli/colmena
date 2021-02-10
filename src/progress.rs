@@ -72,9 +72,9 @@ impl Progress {
         self.label_width = width;
     }
 
-    /// Returns a handle for a process to display progress information.
-    pub fn create_process_progress(&self, label: String) -> ProcessProgress {
-        let mut progress = ProcessProgress::new(label.clone(), self.label_width);
+    /// Returns a handle for a task to display progress information.
+    pub fn create_task_progress(&self, label: String) -> TaskProgress {
+        let mut progress = TaskProgress::new(label.clone(), self.label_width);
 
         if let Some(multi) = self.multi.as_ref() {
             let bar = multi.add(IndicatifBar::new(100));
@@ -89,7 +89,7 @@ impl Progress {
         progress
     }
 
-    /// Runs code that may initate multiple processes.
+    /// Runs code that may initate multiple tasks.
     pub async fn run<F: Future, U>(self: Arc<Self>, func: U) -> F::Output
         where U: FnOnce(Arc<Progress>) -> F
     {
@@ -146,16 +146,16 @@ impl Default for Progress {
     }
 }
 
-/// Progress display for a single process.
+/// Progress display for a single task.
 #[derive(Debug, Clone)]
-pub struct ProcessProgress {
+pub struct TaskProgress {
     label: String,
     label_width: usize,
     bar: Option<IndicatifBar>,
     quiet: bool,
 }
 
-impl ProcessProgress {
+impl TaskProgress {
     fn new(label: String, label_width: usize) -> Self {
         Self {
             label,
@@ -183,7 +183,7 @@ impl ProcessProgress {
         }
     }
 
-    /// Marks the process as successful, consuming the spinner.
+    /// Marks the task as successful and leave the spinner intact.
     pub fn success(self, message: &str) {
         if self.quiet {
             return;
@@ -197,7 +197,7 @@ impl ProcessProgress {
         }
     }
 
-    /// Marks the process as successful, consuming the spinner.
+    /// Marks the task as successful and remove the spinner.
     pub fn success_quiet(self) {
         if self.quiet {
             return;
@@ -208,7 +208,7 @@ impl ProcessProgress {
         }
     }
 
-    /// Marks the process as unsuccessful, consuming the spinner.
+    /// Marks the task as unsuccessful.
     pub fn failure(self, message: &str) {
         if self.quiet {
             return;
@@ -229,8 +229,8 @@ impl ProcessProgress {
     }
 }
 
-impl Default for ProcessProgress {
-    /// Creates a ProcessProgress that does nothing.
+impl Default for TaskProgress {
+    /// Creates a TaskProgress that does nothing.
     fn default() -> Self {
         Self {
             label: String::new(),

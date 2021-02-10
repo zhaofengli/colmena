@@ -11,7 +11,7 @@ use tokio::io::{AsyncWriteExt, BufReader};
 use super::{CopyDirection, CopyOptions, Host};
 use crate::nix::{StorePath, Profile, Goal, NixResult, NixCommand, NixError, Key, SYSTEM_PROFILE};
 use crate::util::{CommandExecution, capture_stream};
-use crate::progress::ProcessProgress;
+use crate::progress::TaskProgress;
 
 const DEPLOY_KEY_TEMPLATE: &'static str = include_str!("./deploy-key.template");
 
@@ -32,7 +32,7 @@ pub struct Ssh {
 
     friendly_name: String,
     path_cache: HashSet<StorePath>,
-    progress_bar: ProcessProgress,
+    progress_bar: TaskProgress,
     logs: String,
 }
 
@@ -74,7 +74,7 @@ impl Host for Ssh {
         let command = self.ssh(&v);
         self.run_command(command).await
     }
-    fn set_progress_bar(&mut self, bar: ProcessProgress) {
+    fn set_progress_bar(&mut self, bar: TaskProgress) {
         self.progress_bar = bar;
     }
     async fn dump_logs(&self) -> Option<&str> {
@@ -92,7 +92,7 @@ impl Ssh {
             ssh_config: None,
             friendly_name,
             path_cache: HashSet::new(),
-            progress_bar: ProcessProgress::default(),
+            progress_bar: TaskProgress::default(),
             logs: String::new(),
         }
     }

@@ -10,7 +10,7 @@ use tokio::io::{AsyncRead, AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
 use super::nix::{NodeConfig, Hive, NixResult, NixError};
-use super::progress::ProcessProgress;
+use super::progress::TaskProgress;
 
 enum NodeFilter {
     NameFilter(GlobPattern),
@@ -20,7 +20,7 @@ enum NodeFilter {
 /// Non-interactive execution of an arbitrary Nix command.
 pub struct CommandExecution {
     command: Command,
-    progress_bar: ProcessProgress,
+    progress_bar: TaskProgress,
     stdout: Option<String>,
     stderr: Option<String>,
 }
@@ -29,14 +29,14 @@ impl CommandExecution {
     pub fn new(command: Command) -> Self {
         Self {
             command,
-            progress_bar: ProcessProgress::default(),
+            progress_bar: TaskProgress::default(),
             stdout: None,
             stderr: None,
         }
     }
 
-    /// Provides a ProcessProgress to use to display output.
-    pub fn set_progress_bar(&mut self, bar: ProcessProgress) {
+    /// Provides a TaskProgress to use to display output.
+    pub fn set_progress_bar(&mut self, bar: TaskProgress) {
         self.progress_bar = bar;
     }
 
@@ -215,7 +215,7 @@ fn canonicalize_cli_path(path: String) -> PathBuf {
     }
 }
 
-pub async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, mut progress_bar: ProcessProgress) -> String {
+pub async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, mut progress_bar: TaskProgress) -> String {
     let mut log = String::new();
 
     loop {

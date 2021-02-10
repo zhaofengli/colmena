@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 
 use super::{StorePath, Profile, Goal, NixResult, NixError, Key};
-use crate::progress::ProcessProgress;
+use crate::progress::TaskProgress;
 
 mod ssh;
 pub use ssh::Ssh;
@@ -109,8 +109,8 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     }
 
     #[allow(unused_variables)] 
-    /// Provides a ProcessProgress to use during operations.
-    fn set_progress_bar(&mut self, bar: ProcessProgress) {
+    /// Provides a TaskProgress to use during operations.
+    fn set_progress_bar(&mut self, bar: TaskProgress) {
     }
 
     /// Dumps human-readable unstructured log messages related to the host.

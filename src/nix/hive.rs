@@ -15,7 +15,7 @@ use super::{
 };
 use super::NixCommand;
 use crate::util::CommandExecution;
-use crate::progress::ProcessProgress;
+use crate::progress::TaskProgress;
 
 const HIVE_EVAL: &'static [u8] = include_bytes!("eval.nix");
 
@@ -67,7 +67,7 @@ impl Hive {
     /// Evaluation may take up a lot of memory, so we make it possible
     /// to split up the evaluation process into chunks and run them
     /// concurrently with other processes (e.g., build and apply).
-    pub async fn eval_selected(&self, nodes: &Vec<String>, progress_bar: ProcessProgress) -> (NixResult<StoreDerivation<ProfileMap>>, Option<String>) {
+    pub async fn eval_selected(&self, nodes: &Vec<String>, progress_bar: TaskProgress) -> (NixResult<StoreDerivation<ProfileMap>>, Option<String>) {
         // FIXME: The return type is ugly...
 
         let nodes_expr = SerializedNixExpresssion::new(nodes);

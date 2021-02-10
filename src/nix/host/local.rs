@@ -10,7 +10,7 @@ use tempfile::NamedTempFile;
 use super::{CopyDirection, CopyOptions, Host};
 use crate::nix::{StorePath, Profile, Goal, NixResult, NixCommand, Key, SYSTEM_PROFILE};
 use crate::util::CommandExecution;
-use crate::progress::ProcessProgress;
+use crate::progress::TaskProgress;
 
 /// The local machine running Colmena.
 ///
@@ -18,14 +18,14 @@ use crate::progress::ProcessProgress;
 /// (e.g., building Linux derivations on macOS).
 #[derive(Debug)]
 pub struct Local {
-    progress_bar: ProcessProgress,
+    progress_bar: TaskProgress,
     logs: String,
 }
 
 impl Local {
     pub fn new() -> Self {
         Self {
-            progress_bar: ProcessProgress::default(),
+            progress_bar: TaskProgress::default(),
             logs: String::new(),
         }
     }
@@ -94,7 +94,7 @@ impl Host for Local {
 
         result
     }
-    fn set_progress_bar(&mut self, bar: ProcessProgress) {
+    fn set_progress_bar(&mut self, bar: TaskProgress) {
         self.progress_bar = bar;
     }
     async fn dump_logs(&self) -> Option<&str> {

@@ -6,7 +6,7 @@ use futures::future::join_all;
 use tokio::sync::{Mutex, Semaphore};
 
 use super::{Hive, Host, CopyOptions, NodeConfig, Profile, StoreDerivation, ProfileMap, host};
-use crate::progress::{Progress, ProcessProgress, OutputStyle};
+use crate::progress::{Progress, TaskProgress, OutputStyle};
 
 /// Amount of RAM reserved for the system, in MB. 
 const EVAL_RESERVE_MB: u64 = 1024;
@@ -19,11 +19,11 @@ const BATCH_OPERATION_LABEL: &'static str = "(...)";
 macro_rules! set_up_batch_progress_bar {
     ($progress:ident, $style:ident, $chunk:ident, $single_text:expr, $batch_text:expr) => {{
         if $chunk.len() == 1 {
-            let mut bar = $progress.create_process_progress($chunk[0].to_string());
+            let mut bar = $progress.create_task_progress($chunk[0].to_string());
             bar.log($single_text);
             bar
         } else {
-            let mut bar = $progress.create_process_progress(BATCH_OPERATION_LABEL.to_string());
+            let mut bar = $progress.create_task_progress(BATCH_OPERATION_LABEL.to_string());
             bar.log(&format!($batch_text, $chunk.len()));
             bar
         }
@@ -276,12 +276,12 @@ impl Deployment {
                     let progress = progress.clone();
                     futures.push(async move {
                         let permit = arc_self.parallelism_limit.apply.acquire().await.unwrap();
-                        let mut process = progress.create_process_progress(node.clone());
+                        let mut task = progress.create_task_progress(node.clone());
 
-                        process.log("Uploading keys...");
+                        task.log("Uploading keys...");
 
                         if let Err(e) = target.host.upload_keys(&target.config.keys).await {
-                            process.failure(&format!("Failed to upload keys: {}", e));
+                            task.failure(&format!("Failed to upload keys: {}", e));
 
                             let mut results = arc_self.results.lock().await;
                             let stage = Stage::Apply(node.to_string());
@@ -289,7 +289,7 @@ impl Deployment {
                             results.push(DeploymentResult::failure(stage, logs));
                             return;
                         } else {
-                            process.success("Keys uploaded");
+                            task.success("Keys uploaded");
                         }
 
                         drop(permit);
@@ -424,7 +424,7 @@ impl Deployment {
         }
     }
 
-    async fn eval_profiles(self: Arc<Self>, chunk: &Vec<String>, progress: ProcessProgress) -> Option<StoreDerivation<ProfileMap>> {
+    async fn eval_profiles(self: Arc<Self>, chunk: &Vec<String>, progress: TaskProgress) -> Option<StoreDerivation<ProfileMap>> {
         let (eval, logs) = self.hive.eval_selected(&chunk, progress.clone()).await;
 
         match eval {
@@ -443,7 +443,7 @@ impl Deployment {
         }
     }
 
-    async fn build_profiles(self: Arc<Self>, chunk: &Vec<String>, derivation: StoreDerivation<ProfileMap>, progress: ProcessProgress) -> Option<ProfileMap> {
+    async fn build_profiles(self: Arc<Self>, chunk: &Vec<String>, derivation: StoreDerivation<ProfileMap>, progress: TaskProgress) -> Option<ProfileMap> {
         // FIXME: Remote build?
         let mut builder = host::local();
 
@@ -475,7 +475,7 @@ impl Deployment {
     async fn apply_profile(self: Arc<Self>, name: &str, mut target: Target, profile: Profile, multi: Arc<Progress>) {
         let permit = self.parallelism_limit.apply.acquire().await.unwrap();
 
-        let mut bar = multi.create_process_progress(name.to_string());
+        let mut bar = multi.create_task_progress(name.to_string());
 
         if self.options.upload_keys && !target.config.keys.is_empty() {
             bar.log("Uploading keys...");
