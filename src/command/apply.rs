@@ -57,22 +57,6 @@ Set to 0 to disable parallemism limit.
                     Err(_) => Err(String::from("The value must be a valid number")),
                 }
             }))
-        .arg(Arg::with_name("parallel-build")
-            .long("parallel-build")
-            .value_name("LIMIT")
-            .help("Build parallelism limit")
-            .long_help("Limits the maximum number of parallel build processes.")
-            .default_value("2")
-            .takes_value(true)
-            .validator(|s| {
-                if s == "0" {
-                    return Err(String::from("The value must be non-zero"));
-                }
-                match s.parse::<usize>() {
-                    Ok(_) => Ok(()),
-                    Err(_) => Err(String::from("The value must be a valid number")),
-                }
-            }))
         .arg(Arg::with_name("verbose")
             .short("v")
             .long("verbose")
