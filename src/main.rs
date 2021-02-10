@@ -27,7 +27,7 @@ macro_rules! bind_command {
     };
 }
 
-#[tokio::main(flavor = "multi_thread")]
+#[tokio::main]
 async fn main() {
     init_logging();
 

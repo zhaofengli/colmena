@@ -274,8 +274,7 @@ impl Deployment {
 
                     let arc_self = self.clone();
                     let progress = progress.clone();
-                    // how come the bars show up only when initialized here???
-                    futures.push(tokio::spawn(async move {
+                    futures.push(async move {
                         let permit = arc_self.parallelism_limit.apply.acquire().await.unwrap();
                         let mut process = progress.create_process_progress(node.clone());
 
@@ -294,7 +293,7 @@ impl Deployment {
                         }
 
                         drop(permit);
-                    }));
+                    });
                 }
 
                 join_all(futures).await
@@ -334,7 +333,7 @@ impl Deployment {
                     // FIXME: Eww
                     let chunk: Vec<String> = chunk.iter().map(|s| s.to_string()).collect();
 
-                    futures.push(tokio::spawn(async move {
+                    futures.push(async move {
                         let drv = {
                             // Evaluation phase
                             let permit = arc_self.parallelism_limit.evaluation.acquire().await.unwrap();
@@ -401,12 +400,12 @@ impl Deployment {
                             let profile = profiles.get(&node).cloned()
                                 .expect(&format!("Somehow profile for {} was not built", node));
 
-                            futures.push(tokio::spawn(async move {
+                            futures.push(async move {
                                 arc_self.apply_profile(&node, target, profile, progress).await
-                            }));
+                            });
                         }
-
-                    }));
+                        join_all(futures).await;
+                    });
                 }
 
                 join_all(futures).await;

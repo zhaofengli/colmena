@@ -139,7 +139,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
             let command = command.clone();
             let progress = progress.clone();
 
-            futures.push(tokio::spawn(async move {
+            futures.push(async move {
                 let permit = match parallel_sp.as_ref() {
                     Some(sp) => Some(sp.acquire().await.unwrap()),
                     None => None,
@@ -166,7 +166,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
                 }
 
                 drop(permit);
-            }));
+            });
         }
 
         join_all(futures).await;
