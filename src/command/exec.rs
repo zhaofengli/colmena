@@ -13,7 +13,7 @@ use crate::util::{self, CommandExecution};
 
 pub fn subcommand() -> App<'static, 'static> {
     let command = SubCommand::with_name("exec")
-        .about("Run a command against remote hosts")
+        .about("Run a command on remote machines")
         .long_about(r#"Run a command on remote machines
 
 By default, Colmena will print out all output lines. Use --oneline for a condensed status output with each node taking up a single line.
