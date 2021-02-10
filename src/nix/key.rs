@@ -1,12 +1,18 @@
-use std::path::PathBuf;
+use std::{
+    io::{self, Cursor},
+    path::PathBuf,
+};
 
 use regex::Regex;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
+use tokio::{fs::File, io::AsyncRead};
 use validator::{Validate, ValidationError};
 
 #[derive(Debug, Clone, Validate, Serialize, Deserialize)]
 pub struct Key {
-    pub(crate) text: String,
+    pub(crate) text: Option<String>,
+    #[serde(rename = "keyFile")]
+    pub(crate) key_file: Option<String>,
     #[validate(custom = "validate_dest_dir")]
     #[serde(rename = "destDir")]
     pub(super) dest_dir: PathBuf,
@@ -15,6 +21,18 @@ pub struct Key {
     #[validate(custom = "validate_unix_name")]
     pub(super) group: String,
     pub(super) permissions: String,
+}
+
+impl Key {
+    pub(crate) async fn reader(&'_ self,) -> Result<Box<dyn AsyncRead + Send + Unpin + '_>, io::Error> {
+        if let Some(ref t) = self.text {
+            Ok(Box::new(Cursor::new(t)))
+        } else if let Some(ref p) = self.key_file {
+            Ok(Box::new(File::open(p).await?))
+        } else {
+            unreachable!("Neither `text` nor `keyFile` set. This should have been validated by Nix assertions.");
+        }
+    }
 }
 
 fn validate_unix_name(name: &str) -> Result<(), ValidationError> {

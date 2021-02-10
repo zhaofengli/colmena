@@ -214,7 +214,8 @@ impl Ssh {
         let mut child = command.spawn()?;
 
         let mut stdin = child.stdin.take().unwrap();
-        stdin.write_all(key.text.as_bytes()).await?;
+        let mut reader = key.reader().await?;
+        tokio::io::copy(reader.as_mut(), &mut stdin).await?;
         stdin.flush().await?;
         drop(stdin);
 
