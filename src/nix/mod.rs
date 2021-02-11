@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::path::{Component as PathComponent, Path};
+use std::path::Path;
 use std::process::Stdio;
 
 use async_trait::async_trait;
@@ -219,10 +219,8 @@ fn validate_keys(keys: &HashMap<String, Key>) -> Result<(), ValidationErrorType>
             return Err(ValidationErrorType::new("Secret key name cannot be absolute"));
         }
 
-        for component in path.components() {
-            if component == PathComponent::ParentDir {
-                return Err(ValidationErrorType::new("Secret key name cannot refer to parent directory"));
-            }
+        if path.components().collect::<Vec<_>>().len() != 1 {
+            return Err(ValidationErrorType::new("Secret key name cannot contain path separators"));
         }
     }
     Ok(())
