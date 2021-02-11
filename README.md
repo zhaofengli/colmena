@@ -181,10 +181,10 @@ For example, to deploy DNS-01 credentials for use with `security.acme`:
   shared-box = {
     security.acme.certs."my-site.tld".credentialsFile = "/run/keys/acme-credentials.secret";
     deployment.keys."acme-credentials.secret" = {
-      text = ''
-        PDNS_API_URL=https://dns.provider
-        PDNS_API_KEY=top-secret-api-key
-      '';
+      # Alternatively, `text` (string) or `keyFile` (path to file)
+      # may be specified.
+      keyCommand = [ "vault" "read" "-field=env" "secret/dns01" ];
+
       destDir = "/run/keys"; # Default: /run/keys
       user = "acme";         # Default: root
       group = "nginx";       # Default: root
