@@ -281,7 +281,7 @@ impl Deployment {
                         task.log("Uploading keys...");
 
                         if let Err(e) = target.host.upload_keys(&target.config.keys).await {
-                            task.failure(&format!("Failed to upload keys: {}", e));
+                            task.failure_err(&e);
 
                             let mut results = arc_self.results.lock().await;
                             let stage = Stage::Apply(node.to_string());
@@ -481,7 +481,7 @@ impl Deployment {
             bar.log("Uploading keys...");
 
             if let Err(e) = target.host.upload_keys(&target.config.keys).await {
-                bar.failure(&format!("Failed to upload keys: {}", e));
+                bar.failure_err(&e);
 
                 let mut results = self.results.lock().await;
                 let stage = Stage::Apply(name.to_string());

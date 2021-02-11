@@ -224,6 +224,10 @@ impl TaskProgress {
         }
     }
 
+    pub fn failure_err<E: std::error::Error>(self, error: &E) {
+        self.failure(&error.to_string())
+    }
+
     fn plain_print(&self, style: Style, line: &str) {
         eprintln!("{:>width$} | {}", style.apply_to(&self.label), line, width = self.label_width);
     }

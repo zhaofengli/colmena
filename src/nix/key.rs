@@ -2,17 +2,33 @@ use std::{
     convert::TryFrom,
     io::{self, Cursor},
     path::{Path, PathBuf},
-    process::Stdio,
+    process::{ExitStatus, Stdio},
 };
 
 use regex::Regex;
 use serde::{Deserialize, Serialize};
+use snafu::Snafu;
 use tokio::{
     fs::File,
     io::AsyncRead,
     process::Command,
 };
 use validator::{Validate, ValidationError};
+
+#[non_exhaustive]
+#[derive(Debug, Snafu)]
+pub enum KeyError {
+    #[snafu(display("I/O Error: {}", error))]
+    IoError { error: io::Error },
+    #[snafu(display("Key command failed: {}, stderr: {}", status, stderr))]
+    KeyCommandStatus { status: ExitStatus, stderr: String },
+}
+
+impl From<std::io::Error> for KeyError {
+    fn from(error: std::io::Error) -> Self {
+        Self::IoError { error }
+    }
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(try_from = "KeySources")]
@@ -78,7 +94,7 @@ pub struct Key {
 }
 
 impl Key {
-    pub async fn reader(&'_ self,) -> Result<Box<dyn AsyncRead + Send + Unpin + '_>, io::Error> {
+    pub async fn reader(&'_ self) -> Result<Box<dyn AsyncRead + Send + Unpin + '_>, KeyError> {
         match &self.source {
             KeySource::Text(content) => {
                 Ok(Box::new(Cursor::new(content)))
@@ -87,15 +103,25 @@ impl Key {
                 let pathname = &command[0];
                 let argv = &command[1..];
 
-                let stdout = Command::new(pathname)
+                let output = Command::new(pathname)
                     .args(argv)
                     .stdin(Stdio::null())
                     .stdout(Stdio::piped())
-                    .stderr(Stdio::null())
+                    .stderr(Stdio::piped())
                     .spawn()?
-                    .stdout.take().unwrap();
+                    .wait_with_output().await?;
 
-                Ok(Box::new(stdout))
+                if output.status.success() {
+                    Ok(Box::new(Cursor::new(output.stdout)))
+                } else {
+                    Err(KeyError::KeyCommandStatus {
+                        status: output.status,
+                        stderr: std::str::from_utf8(&output.stderr)
+                            .unwrap_or_default()
+                            .trim_end()
+                            .into(),
+                    })
+                }
             }
             KeySource::File(path) => {
                 Ok(Box::new(File::open(path).await?))

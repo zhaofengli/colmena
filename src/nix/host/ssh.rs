@@ -211,10 +211,10 @@ impl Ssh {
         command.stderr(Stdio::piped());
         command.stdout(Stdio::piped());
 
-        let mut child = command.spawn()?;
-
-        let mut stdin = child.stdin.take().unwrap();
         let mut reader = key.reader().await?;
+
+        let mut child = command.spawn()?;
+        let mut stdin = child.stdin.take().unwrap();
         tokio::io::copy(reader.as_mut(), &mut stdin).await?;
         stdin.flush().await?;
         drop(stdin);
