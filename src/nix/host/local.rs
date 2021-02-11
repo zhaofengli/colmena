@@ -1,9 +1,9 @@
 use std::convert::TryInto;
 use std::collections::HashMap;
 use std::fs;
-use std::io::Write;
 
 use async_trait::async_trait;
+use tokio::fs::OpenOptions;
 use tokio::process::Command;
 use tempfile::NamedTempFile;
 
@@ -109,10 +109,11 @@ impl Local {
 
         let dest_path = key.dest_dir.join(name);
 
-        let mut temp = NamedTempFile::new()?;
-        temp.write_all(key.text.as_bytes())?;
-
+        let temp = NamedTempFile::new()?;
         let (_, temp_path) = temp.keep().map_err(|pe| pe.error)?;
+        let mut reader = key.reader().await?;
+        let mut writer = OpenOptions::new().write(true).open(&temp_path).await?;
+        tokio::io::copy(reader.as_mut(), &mut writer).await?;
 
         // Well, we need the userspace chmod program to parse the
         // permission, for NixOps compatibility
@@ -149,7 +150,13 @@ impl Local {
 
         let parent_dir = dest_path.parent().unwrap();
         fs::create_dir_all(parent_dir)?;
-        fs::rename(temp_path, dest_path)?;
+
+        if fs::rename(&temp_path, &dest_path).is_err() {
+            // Linux can not rename across different filesystems, try copy-then-remove
+            let copy_result = fs::copy(&temp_path, &dest_path);
+            fs::remove_file(&temp_path)?;
+            copy_result?;
+        }
 
         Ok(())
     }

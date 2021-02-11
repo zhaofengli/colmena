@@ -103,8 +103,19 @@ let
       text = lib.mkOption {
         description = ''
           Content of the key.
+          Either `keyFile` or `text` must be set.
         '';
-        type = types.str;
+        default = null;
+        type = types.nullOr types.str;
+      };
+      keyFile = lib.mkOption {
+        description = ''
+          Path of the local file to read the key from.
+          Either `keyFile` or `text` must be set.
+        '';
+        default = null;
+        apply = value: if value == null then null else toString value;
+        type = types.nullOr types.path;
       };
       destDir = lib.mkOption {
         description = ''
@@ -178,8 +189,17 @@ let
       then mkNixpkgs "meta.nodeNixpkgs.${name}" hive.meta.nodeNixpkgs.${name}
       else pkgs;
     evalConfig = import (npkgs.path + "/nixos/lib/eval-config.nix");
+    assertionModule = { config, ... }: {
+      assertions = lib.mapAttrsToList (key: opts: {
+        assertion = (opts.text == null) != (opts.keyFile == null);
+        message =
+          let prefix = "${name}.deployment.keys.${key}";
+          in "Exactly one of `${prefix}.text` and `${prefix}.keyFile` must be set.";
+        }) config.deployment.keys;
+    };
   in evalConfig {
     modules = [
+      assertionModule
       deploymentOptions
       hive.defaults
       config
