@@ -31,6 +31,9 @@ pub use profile::{Profile, ProfileMap};
 pub mod deployment;
 pub use deployment::{Goal, Target, Deployment};
 
+#[cfg(test)]
+mod tests;
+
 pub const SYSTEM_PROFILE: &'static str = "/nix/var/nix/profiles/system";
 
 pub type NixResult<T> = Result<T, NixError>;

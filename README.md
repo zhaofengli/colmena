@@ -1,5 +1,7 @@
 # Colmena
 
+![Build](https://github.com/zhaofengli/colmena/workflows/Build/badge.svg)
+
 Colmena is a simple, stateless NixOS deployment tool modeled after [NixOps](https://github.com/NixOS/nixops) and [Morph](https://github.com/DBCDK/morph), written in Rust.
 It's a thin wrapper over Nix commands like `nix-instantiate` and `nix-copy-closure`, and supports parallel deployment.
 

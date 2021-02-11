@@ -14,5 +14,8 @@ in rustPlatform.buildRustPackage {
       src = ./.;
     };
   };
-  cargoSha256 = "1ibhn8bbcx0y9gjl42d9ba478j6a5dr928v0ds61vwn7lbm68dzr";
+  cargoSha256 = "0rkpv9afkg33i1d0yjlq34zrdqy3i6ldbdag0hgsvxi3v3jfg4qv";
+
+  # Recursive Nix is not stable yet
+  doCheck = false;
 }
