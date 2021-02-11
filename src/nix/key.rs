@@ -1,4 +1,5 @@
 use std::{
+    convert::TryFrom,
     io::{self, Cursor},
     path::{Path, PathBuf},
     process::Stdio,
@@ -14,6 +15,7 @@ use tokio::{
 use validator::{Validate, ValidationError};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(try_from = "KeySources")]
 enum KeySource {
     #[serde(rename = "text")]
     Text(String),
@@ -23,6 +25,38 @@ enum KeySource {
 
     #[serde(rename = "keyFile")]
     File(PathBuf),
+}
+
+impl TryFrom<KeySources> for KeySource {
+    type Error = String;
+
+    fn try_from(ks: KeySources) -> Result<Self, Self::Error> {
+        match (ks.text, ks.command, ks.file) {
+            (Some(text), None, None) => {
+                Ok(KeySource::Text(text))
+            }
+            (None, Some(command), None) => {
+                Ok(KeySource::Command(command))
+            }
+            (None, None, Some(file)) => {
+                Ok(KeySource::File(file))
+            }
+            x => {
+                Err(format!("Somehow 0 or more than 1 key source was specified: {:?}", x))
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+struct KeySources {
+    text: Option<String>,
+
+    #[serde(rename = "keyCommand")]
+    command: Option<Vec<String>>,
+
+    #[serde(rename = "keyFile")]
+    file: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Validate, Serialize, Deserialize)]
