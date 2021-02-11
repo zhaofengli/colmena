@@ -59,6 +59,9 @@ pub enum NixError {
     #[snafu(display("Validation error"))]
     ValidationError { errors: ValidationErrors },
 
+    #[snafu(display("Failed to upload keys: {}", error))]
+    KeyError { error: key::KeyError },
+
     #[snafu(display("Invalid NixOS system profile"))]
     InvalidProfile,
 
@@ -69,6 +72,12 @@ pub enum NixError {
 impl From<std::io::Error> for NixError {
     fn from(error: std::io::Error) -> Self {
         Self::IoError { error }
+    }
+}
+
+impl From<key::KeyError> for NixError {
+    fn from(error: key::KeyError) -> Self {
+        Self::KeyError { error }
     }
 }
 
