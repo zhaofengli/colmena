@@ -107,7 +107,7 @@ impl Local {
     async fn upload_key(&mut self, name: &str, key: &Key) -> NixResult<()> {
         self.progress_bar.log(&format!("Deploying key {}", name));
 
-        let dest_path = key.dest_dir.join(name);
+        let dest_path = key.dest_dir().join(name);
 
         let temp = NamedTempFile::new()?;
         let (_, temp_path) = temp.keep().map_err(|pe| pe.error)?;
@@ -120,7 +120,7 @@ impl Local {
         {
             let mut command = Command::new("chmod");
             command
-                .arg(&key.permissions)
+                .arg(&key.permissions())
                 .arg(&temp_path);
 
             let mut execution = CommandExecution::new(command);
@@ -135,7 +135,7 @@ impl Local {
         {
             let mut command = Command::new("chown");
             command
-                .arg(&format!("{}:{}", key.user, key.group))
+                .arg(&format!("{}:{}", key.user(), key.group()))
                 .arg(&temp_path);
 
             let mut execution = CommandExecution::new(command);

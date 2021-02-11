@@ -1,6 +1,6 @@
 use std::{
     io::{self, Cursor},
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
 use regex::Regex;
@@ -8,31 +8,55 @@ use serde::{Deserialize, Serialize};
 use tokio::{fs::File, io::AsyncRead};
 use validator::{Validate, ValidationError};
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+enum KeySource {
+    #[serde(rename = "text")]
+    Text(String),
+
+    #[serde(rename = "keyCommand")]
+    Command(Vec<String>),
+
+    #[serde(rename = "keyFile")]
+    File(PathBuf),
+}
+
 #[derive(Debug, Clone, Validate, Serialize, Deserialize)]
 pub struct Key {
-    pub(crate) text: Option<String>,
-    #[serde(rename = "keyFile")]
-    pub(crate) key_file: Option<String>,
+    #[serde(flatten)]
+    source: KeySource,
+
     #[validate(custom = "validate_dest_dir")]
     #[serde(rename = "destDir")]
-    pub(super) dest_dir: PathBuf,
+    dest_dir: PathBuf,
+
     #[validate(custom = "validate_unix_name")]
-    pub(super) user: String,
+    user: String,
+
     #[validate(custom = "validate_unix_name")]
-    pub(super) group: String,
-    pub(super) permissions: String,
+    group: String,
+
+    permissions: String,
 }
 
 impl Key {
-    pub(crate) async fn reader(&'_ self,) -> Result<Box<dyn AsyncRead + Send + Unpin + '_>, io::Error> {
-        if let Some(ref t) = self.text {
-            Ok(Box::new(Cursor::new(t)))
-        } else if let Some(ref p) = self.key_file {
-            Ok(Box::new(File::open(p).await?))
-        } else {
-            unreachable!("Neither `text` nor `keyFile` set. This should have been validated by Nix assertions.");
+    pub async fn reader(&'_ self,) -> Result<Box<dyn AsyncRead + Send + Unpin + '_>, io::Error> {
+        match &self.source {
+            KeySource::Text(content) => {
+                Ok(Box::new(Cursor::new(content)))
+            }
+            KeySource::Command(_command) => {
+                todo!("Implement keyCommand support")
+            }
+            KeySource::File(path) => {
+                Ok(Box::new(File::open(path).await?))
+            }
         }
     }
+
+    pub fn dest_dir(&self) -> &Path { &self.dest_dir }
+    pub fn user(&self) -> &str { &self.user }
+    pub fn group(&self) -> &str { &self.user }
+    pub fn permissions(&self) -> &str { &self.permissions }
 }
 
 fn validate_unix_name(name: &str) -> Result<(), ValidationError> {

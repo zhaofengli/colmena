@@ -197,13 +197,13 @@ impl Ssh {
     async fn upload_key(&mut self, name: &str, key: &Key) -> NixResult<()> {
         self.progress_bar.log(&format!("Deploying key {}", name));
 
-        let dest_path = key.dest_dir.join(name);
+        let dest_path = key.dest_dir().join(name);
 
         let remote_command = DEPLOY_KEY_TEMPLATE.to_string()
             .replace("%DESTINATION%", dest_path.to_str().unwrap())
-            .replace("%USER%", &key.user)
-            .replace("%GROUP%", &key.group)
-            .replace("%PERMISSIONS%", &key.permissions);
+            .replace("%USER%", &key.user())
+            .replace("%GROUP%", &key.group())
+            .replace("%PERMISSIONS%", &key.permissions());
 
         let mut command = self.ssh(&["sh", "-c", &remote_command]);
 
