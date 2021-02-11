@@ -1,11 +1,16 @@
 use std::{
     io::{self, Cursor},
     path::{Path, PathBuf},
+    process::Stdio,
 };
 
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use tokio::{fs::File, io::AsyncRead};
+use tokio::{
+    fs::File,
+    io::AsyncRead,
+    process::Command,
+};
 use validator::{Validate, ValidationError};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -44,8 +49,19 @@ impl Key {
             KeySource::Text(content) => {
                 Ok(Box::new(Cursor::new(content)))
             }
-            KeySource::Command(_command) => {
-                todo!("Implement keyCommand support")
+            KeySource::Command(command) => {
+                let pathname = &command[0];
+                let argv = &command[1..];
+
+                let stdout = Command::new(pathname)
+                    .args(argv)
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::null())
+                    .spawn()?
+                    .stdout.take().unwrap();
+
+                Ok(Box::new(stdout))
             }
             KeySource::File(path) => {
                 Ok(Box::new(File::open(path).await?))

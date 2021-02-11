@@ -103,7 +103,7 @@ let
       text = lib.mkOption {
         description = ''
           Content of the key.
-          Either `keyFile` or `text` must be set.
+          One of `text`, `keyCommand` and `keyFile` must be set.
         '';
         default = null;
         type = types.nullOr types.str;
@@ -111,11 +111,21 @@ let
       keyFile = lib.mkOption {
         description = ''
           Path of the local file to read the key from.
-          Either `keyFile` or `text` must be set.
+          One of `text`, `keyCommand` and `keyFile` must be set.
         '';
         default = null;
         apply = value: if value == null then null else toString value;
         type = types.nullOr types.path;
+      };
+      keyCommand = lib.mkOption {
+        description = ''
+          Command to run to generate the key.
+          One of `text`, `keyCommand` and `keyFile` must be set.
+        '';
+        default = null;
+        type = let
+          nonEmptyList = types.addCheck (types.listOf types.str) (l: length l > 0);
+        in types.nullOr nonEmptyList;
       };
       destDir = lib.mkOption {
         description = ''
@@ -190,11 +200,13 @@ let
       else pkgs;
     evalConfig = import (npkgs.path + "/nixos/lib/eval-config.nix");
     assertionModule = { config, ... }: {
-      assertions = lib.mapAttrsToList (key: opts: {
-        assertion = (opts.text == null) != (opts.keyFile == null);
+      assertions = lib.mapAttrsToList (key: opts: let
+        nonNulls = l: filter (x: x != null) l;
+      in {
+        assertion = length (nonNulls [opts.text opts.keyCommand opts.keyFile]) == 1;
         message =
           let prefix = "${name}.deployment.keys.${key}";
-          in "Exactly one of `${prefix}.text` and `${prefix}.keyFile` must be set.";
+          in "Exactly one of `${prefix}.text`, `${prefix}.keyCommand` and `${prefix}.keyFile` must be set.";
         }) config.deployment.keys;
     };
   in evalConfig {
