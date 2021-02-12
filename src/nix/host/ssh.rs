@@ -5,6 +5,7 @@ use std::process::Stdio;
 
 use async_trait::async_trait;
 use futures::future::join3;
+use shell_escape::unix::escape;
 use tokio::process::Command;
 use tokio::io::{AsyncWriteExt, BufReader};
 
@@ -199,13 +200,14 @@ impl Ssh {
 
         let dest_path = key.dest_dir().join(name);
 
-        let remote_command = DEPLOY_KEY_TEMPLATE.to_string()
+        let key_script = DEPLOY_KEY_TEMPLATE.to_string()
             .replace("%DESTINATION%", dest_path.to_str().unwrap())
-            .replace("%USER%", &key.user())
-            .replace("%GROUP%", &key.group())
-            .replace("%PERMISSIONS%", &key.permissions());
+            .replace("%USER%", &escape(key.user().into()))
+            .replace("%GROUP%", &escape(key.group().into()))
+            .replace("%PERMISSIONS%", &escape(key.permissions().into()));
+        let key_script = escape(key_script.into());
 
-        let mut command = self.ssh(&["sh", "-c", &remote_command]);
+        let mut command = self.ssh(&["sh", "-c", &key_script]);
 
         command.stdin(Stdio::piped());
         command.stderr(Stdio::piped());
