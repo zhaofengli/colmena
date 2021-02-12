@@ -11,19 +11,45 @@ let
     defaults = {};
   };
 
-  defaultMeta = {
-    name = "hive";
-    description = "A Colmena Hive";
-
-    # Can be a path, a lambda, or an initialized Nixpkgs attrset
-    nixpkgs = <nixpkgs>;
-
-    # Per-node Nixpkgs overrides
-    # Keys are hostnames.
-    nodeNixpkgs = {};
-  };
-
   types = lib.types;
+
+  # Hive-wide options
+  metaOptions = { lib, ... }: {
+    options = {
+      name = lib.mkOption {
+        description = ''
+          Name of the configuration.
+        '';
+        type = types.str;
+        default = "hive";
+      };
+      description = lib.mkOption {
+        description = ''
+          A short description for the configuration.
+        '';
+        type = types.str;
+        default = "A Colmena Hive";
+      };
+      nixpkgs = lib.mkOption {
+        description = ''
+          Pinned Nixpkgs. Accepts one of the following:
+
+          - A path to a Nixpkgs checkout
+          - The Nixpkgs lambda (e.g., import <nixpkgs>)
+          - An initialized Nixpkgs attribute set
+        '';
+        type = types.unspecified;
+        default = <nixpkgs>;
+      };
+      nodeNixpkgs = lib.mkOption {
+        description = ''
+          Node-specific Nixpkgs overrides.
+        '';
+        type = types.attrsOf types.unspecified;
+        default = {};
+      };
+    };
+  };
 
   # Colmena-specific options
   #
@@ -158,18 +184,22 @@ let
     };
   };
 
-  userMeta =
+  uncheckedUserMeta =
     if rawHive ? meta && rawHive ? network then
       throw "Only one of `network` and `meta` may be specified. `meta` should be used as `network` is for NixOps compatibility."
     else if rawHive ? meta then rawHive.meta
     else if rawHive ? network then rawHive.network
     else {};
 
+  userMeta = (lib.modules.evalModules {
+    modules = [ metaOptions uncheckedUserMeta ];
+  }).config;
+
   # The final hive will always have the meta key instead of network.
   hive = let 
     mergedHive = removeAttrs (defaultHive // rawHive) [ "meta" "network" ];
     meta = {
-      meta = lib.recursiveUpdate defaultMeta userMeta;
+      meta = userMeta;
     };
   in mergedHive // meta;
 
@@ -189,7 +219,11 @@ let
       - A Nixpkgs attribute set
     '';
 
-  pkgs = mkNixpkgs "meta.nixpkgs" (defaultMeta // userMeta).nixpkgs;
+  pkgs = let
+    # Can't rely on the module system yet
+    nixpkgsConf = if uncheckedUserMeta ? nixpkgs then uncheckedUserMeta.nixpkgs else <nixpkgs>;
+  in mkNixpkgs "meta.nixpkgs" nixpkgsConf;
+
   lib = pkgs.lib;
   reservedNames = [ "defaults" "network" "meta" ];
 
