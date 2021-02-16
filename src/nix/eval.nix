@@ -253,6 +253,7 @@ let
     specialArgs = {
       inherit name nodes;
       modulesPath = npkgs.path + "/nixos/modules";
+      pkgs = npkgs;
     };
   };
 
