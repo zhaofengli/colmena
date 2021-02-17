@@ -552,7 +552,7 @@ impl Default for ParallelismLimit {
 }
 
 impl ParallelismLimit {
-    // Do we actually want this to be configurable?
+    // Do we actually want them to be configurable?
     /*
     /// Sets the concurrent evaluation limit.
     ///
@@ -562,12 +562,12 @@ impl ParallelismLimit {
     pub fn set_evaluation_limit(&mut self, limit: usize) {
         self.evaluation = Semaphore::new(limit);
     }
-    */
 
     /// Sets the concurrent build limit.
     pub fn set_build_limit(&mut self, limit: usize) {
         self.build = Semaphore::new(limit);
     }
+    */
 
     /// Sets the concurrent apply limit.
     pub fn set_apply_limit(&mut self, limit: usize) {

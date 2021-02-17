@@ -192,13 +192,6 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
             local_args.value_of("parallel").unwrap().parse::<usize>().unwrap()
         }
     });
-    parallelism_limit.set_build_limit({
-        let limit = local_args.value_of("parallel").unwrap().parse::<usize>().unwrap();
-        if limit == 0 {
-            panic!("The build parallelism limit must not be 0");
-        }
-        limit
-    });
     deployment.set_parallelism_limit(parallelism_limit);
 
     let evaluation_node_limit = match local_args.value_of("eval-node-limit").unwrap() {
