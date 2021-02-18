@@ -156,7 +156,7 @@ pub struct TaskProgress {
 }
 
 impl TaskProgress {
-    fn new(label: String, label_width: usize) -> Self {
+    pub fn new(label: String, label_width: usize) -> Self {
         Self {
             label,
             label_width,
