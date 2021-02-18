@@ -243,9 +243,28 @@ let
           in "Exactly one of `${prefix}.text`, `${prefix}.keyCommand` and `${prefix}.keyFile` must be set.";
         }) config.deployment.keys;
     };
+
+    # Here we need to merge the configurations in meta.nixpkgs
+    # and in machine config.
+    nixpkgsModule = { config, lib, ... }: {
+      nixpkgs.overlays = lib.mkBefore npkgs.overlays;
+      nixpkgs.config = lib.mkOptionDefault npkgs.config;
+
+      # The merging of nixpkgs.config seems to be broken.
+      # Let's warn the user if not all config attributes set in
+      # meta.nixpkgs are overridden.
+      warnings = let
+        metaKeys = attrNames npkgs.config;
+        nodeKeys = attrNames config.nixpkgs.config;
+        remainingKeys = filter (k: ! elem k nodeKeys) metaKeys;
+      in
+        lib.optional (length remainingKeys != 0)
+        "The following Nixpkgs configuration keys set in meta.nixpkgs will be ignored: ${toString remainingKeys}";
+    };
   in evalConfig {
     modules = [
       assertionModule
+      nixpkgsModule
       deploymentOptions
       hive.defaults
       config
@@ -253,7 +272,6 @@ let
     specialArgs = {
       inherit name nodes;
       modulesPath = npkgs.path + "/nixos/modules";
-      pkgs = npkgs;
     };
   };
 

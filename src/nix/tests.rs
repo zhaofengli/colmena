@@ -1,6 +1,7 @@
 //! Integration-ish tests
 
 use super::*;
+use crate::progress::TaskProgress;
 
 use std::collections::HashSet;
 use std::hash::Hash;
@@ -55,6 +56,22 @@ impl TempHive {
     pub fn invalid(text: &str) {
         let hive = Self::new(text);
         assert!(block_on(hive.deployment_info()).is_err());
+    }
+
+    /// Asserts that the specified nodes can be fully evaluated.
+    pub fn eval_success(text: &str, nodes: Vec<String>) {
+        let hive = Self::new(text);
+        let progress = TaskProgress::new("tests".to_string(), 5);
+        let (profiles, _) = block_on(hive.eval_selected(&nodes, progress));
+        assert!(profiles.is_ok());
+    }
+
+    /// Asserts that the specified nodes will fail to evaluate.
+    pub fn eval_failure(text: &str, nodes: Vec<String>) {
+        let hive = Self::new(text);
+        let progress = TaskProgress::new("tests".to_string(), 5);
+        let (profiles, _) = block_on(hive.eval_selected(&nodes, progress));
+        assert!(profiles.is_err());
     }
 }
 
@@ -209,4 +226,150 @@ fn test_parse_key_file() {
         };
       }
     "#);
+}
+
+#[test]
+fn test_eval_non_existent_pkg() {
+    // Sanity check
+    TempHive::eval_failure(r#"
+      {
+        test = { pkgs, ... }: {
+          boot.isContainer = true;
+          environment.systemPackages = with pkgs; [ thisPackageDoesNotExist ];
+        };
+      }
+    "#, vec![ "test".to_string() ]);
+}
+
+// Nixpkgs config tests
+
+#[test]
+fn test_nixpkgs_overlay_meta_nixpkgs() {
+    // Only set overlays in meta.nixpkgs
+    TempHive::eval_success(r#"
+      {
+        meta = {
+          nixpkgs = import <nixpkgs> {
+            overlays = [
+              (self: super: { my-coreutils = super.coreutils; })
+            ];
+          };
+        };
+        test = { pkgs, ... }: {
+          boot.isContainer = true;
+          environment.systemPackages = with pkgs; [ my-coreutils ];
+        };
+      }
+    "#, vec![ "test".to_string() ]);
+}
+
+#[test]
+fn test_nixpkgs_overlay_node_config() {
+    // Only set overlays in node config
+    TempHive::eval_success(r#"
+      {
+        test = { pkgs, ... }: {
+          boot.isContainer = true;
+          nixpkgs.overlays = [
+            (self: super: { my-coreutils = super.coreutils; })
+          ];
+          environment.systemPackages = with pkgs; [ my-coreutils ];
+        };
+      }
+    "#, vec![ "test".to_string() ]);
+}
+
+#[test]
+fn test_nixpkgs_overlay_both() {
+    // Set overlays both in meta.nixpkgs and in node config
+    TempHive::eval_success(r#"
+      {
+        meta = {
+          nixpkgs = import <nixpkgs> {
+            overlays = [
+              (self: super: { meta-coreutils = super.coreutils; })
+            ];
+          };
+        };
+        test = { pkgs, ... }: {
+          boot.isContainer = true;
+          nixpkgs.overlays = [
+            (self: super: { node-busybox = super.busybox; })
+          ];
+          environment.systemPackages = with pkgs; [ meta-coreutils node-busybox ];
+        };
+      }
+    "#, vec![ "test".to_string() ]);
+}
+
+#[test]
+fn test_nixpkgs_config_meta_nixpkgs() {
+    // Set config in meta.nixpkgs
+    TempHive::eval_success(r#"
+      {
+        meta = {
+          nixpkgs = import <nixpkgs> {
+            config = {
+              allowUnfree = true;
+            };
+          };
+        };
+        test = { pkgs, ... }: {
+          boot.isContainer = assert pkgs.config.allowUnfree; true;
+        };
+      }
+    "#, vec![ "test".to_string() ]);
+}
+
+#[test]
+fn test_nixpkgs_config_node_config() {
+    // Set config in node config
+    TempHive::eval_success(r#"
+      {
+        test = { pkgs, ... }: {
+          nixpkgs.config = {
+            allowUnfree = true;
+          };
+          boot.isContainer = assert pkgs.config.allowUnfree; true;
+        };
+      }
+    "#, vec![ "test".to_string() ]);
+}
+
+#[test]
+fn test_nixpkgs_config_override() {
+    // Set same config both in meta.nixpkgs and in node config
+    let template = r#"
+      {
+        meta = {
+          nixpkgs = import <nixpkgs> {
+            config = {
+              allowUnfree = META_VAL;
+            };
+          };
+        };
+        test = { pkgs, ... }: {
+          nixpkgs.config = {
+            allowUnfree = NODE_VAL;
+          };
+          boot.isContainer = assert pkgs.config.allowUnfree == EXPECTED_VAL; true;
+        };
+      }
+    "#;
+
+    TempHive::eval_success(
+        &template
+            .replace("META_VAL", "true")
+            .replace("NODE_VAL", "false")
+            .replace("EXPECTED_VAL", "false"),
+        vec![ "test".to_string() ]
+    );
+
+    TempHive::eval_success(
+        &template
+            .replace("META_VAL", "false")
+            .replace("NODE_VAL", "true")
+            .replace("EXPECTED_VAL", "true"),
+        vec![ "test".to_string() ]
+    );
 }
