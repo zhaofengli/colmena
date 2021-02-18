@@ -156,31 +156,34 @@ impl DeploymentResult {
 
         match &self.stage {
             Evaluate(nodes) => {
-                self.print_failed_nodes("Evaluation of", &nodes);
+                self.print_failed_nodes("Evaluation of", &nodes, true);
             }
             Build(nodes) => {
-                self.print_failed_nodes("Build of", &nodes);
+                self.print_failed_nodes("Build of", &nodes, true);
             }
             Apply(node) => {
-                self.print_failed_nodes("Deployment to", &vec![node.clone()]);
+                self.print_failed_nodes("Deployment to", &vec![node.clone()], false);
             }
         }
     }
 
-    fn print_failed_nodes(&self, prefix: &'static str, nodes: &Vec<String>) {
-        let last_lines: Option<Vec<String>> = self.logs.as_ref().map(|logs| {
-            logs.split("\n").collect::<Vec<&str>>().iter().rev().take(10).rev()
-                .map(|line| line.to_string()).collect()
-        });
-
+    fn print_failed_nodes(&self, prefix: &'static str, nodes: &Vec<String>, full_logs: bool) {
         let msg = if nodes.len() == 1 {
             format!("{} {} failed.", prefix, nodes[0])
         } else {
             format!("{} {} nodes failed.", prefix, nodes.len())
         };
 
-        if let Some(lines) = last_lines {
-            log::error!("{} Last {} lines of logs:", msg, lines.len());
+        if let Some(logs) = self.logs.as_ref() {
+            let mut lines = logs.split("\n").collect::<Vec<&str>>();
+
+            if full_logs {
+                log::error!("{} Logs:", msg);
+            } else {
+                lines = lines.drain(..).rev().take(10).rev().collect();
+                log::error!("{} Last {} lines of logs:", msg, lines.len());
+            }
+
             for line in lines {
                 log::error!("{}", line);
             }
