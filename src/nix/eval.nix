@@ -255,7 +255,7 @@ let
       # meta.nixpkgs are overridden.
       warnings = let
         metaKeys = attrNames npkgs.config;
-        nodeKeys = attrNames config.nixpkgs.config;
+        nodeKeys = [ "doCheckByDefault" "warnings" ] ++ (attrNames config.nixpkgs.config);
         remainingKeys = filter (k: ! elem k nodeKeys) metaKeys;
       in
         lib.optional (length remainingKeys != 0)
