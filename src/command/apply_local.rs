@@ -27,6 +27,12 @@ pub fn subcommand() -> App<'static, 'static> {
         .arg(Arg::with_name("sudo")
             .long("sudo")
             .help("Attempt to escalate privileges if not run as root"))
+        .arg(Arg::with_name("sudo-command")
+            .long("sudo-command")
+            .value_name("COMMAND")
+            .help("Command to use to escalate privileges")
+            .default_value("sudo")
+            .takes_value(true))
         .arg(Arg::with_name("verbose")
             .short("v")
             .long("verbose")
@@ -73,7 +79,9 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
             }
 
             if local_args.is_present("sudo") {
-                escalate().await;
+                let sudo = local_args.value_of("sudo-command").unwrap();
+
+                escalate(sudo).await;
             } else {
                 log::warn!("Colmena was not started by root. This is probably not going to work.");
                 log::warn!("Hint: Add the --sudo flag.");
@@ -123,11 +131,11 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     deployment.execute().await;
 }
 
-async fn escalate() -> ! {
+async fn escalate(sudo: &str) -> ! {
     // Restart ourselves with sudo
     let argv: Vec<String> = env::args().collect();
 
-    let exit = Command::new("sudo")
+    let exit = Command::new(sudo)
         .arg("--")
         .args(argv)
         .arg("--we-are-launched-by-sudo")
