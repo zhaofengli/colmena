@@ -147,6 +147,9 @@ impl Ssh {
     }
 
     fn nix_copy_closure(&self, path: &StorePath, direction: CopyDirection, options: CopyOptions) -> Command {
+        let ssh_options = self.ssh_options();
+        let ssh_options_str = ssh_options.join(" ");
+
         let mut command = Command::new("nix-copy-closure");
         match direction {
             CopyDirection::ToRemote => {
@@ -170,7 +173,8 @@ impl Ssh {
 
         command
             .arg(&self.ssh_target())
-            .arg(path.as_path());
+            .arg(path.as_path())
+            .env("NIX_SSHOPTS", ssh_options_str);
 
         command
     }
