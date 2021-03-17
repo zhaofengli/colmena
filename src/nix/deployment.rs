@@ -377,8 +377,12 @@ impl Deployment {
                                 }
                             };
 
-                            if goal != Goal::Build {
-                                bar.success_quiet();
+                            bar.success_quiet();
+                            if goal == Goal::Build {
+                                for (node, profile) in profiles.iter() {
+                                    let bar = progress.create_task_progress(node.to_string());
+                                    bar.success(&format!("Built {:?}", profile.as_path()));
+                                }
                             }
 
                             drop(permit);
