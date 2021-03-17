@@ -1,8 +1,11 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::ops::{Deref, DerefMut};
 use std::fs;
+use std::ops::{Deref, DerefMut};
 use std::path::Path;
+use std::process::Stdio;
+
+use tokio::process::Command;
 
 use super::{
     Goal,
@@ -108,5 +111,30 @@ impl TryFrom<Vec<StorePath>> for ProfileMap {
                 Ok(Self(checked_map))
             }
         }
+    }
+}
+
+impl ProfileMap {
+    /// Create GC roots for all profiles in the map.
+    ///
+    /// The created links will be located at `{base}/node-{node_name}`.
+    pub async fn create_gc_roots(&self, base: &Path) -> NixResult<()> {
+        // This will actually try to build all profiles, but since they
+        // already exist only the GC roots will be created.
+        for (node, profile) in self.0.iter() {
+            let path = base.join(format!("node-{}", node));
+
+            let mut command = Command::new("nix-store");
+            command.args(&["--no-build-output", "--indirect", "--add-root", path.to_str().unwrap()]);
+            command.args(&["--realise", profile.as_path().to_str().unwrap()]);
+            command.stdout(Stdio::null());
+
+            let status = command.status().await?;
+            if !status.success() {
+                return Err(NixError::NixFailure { exit_code: status.code().unwrap() });
+            }
+        }
+
+        Ok(())
     }
 }

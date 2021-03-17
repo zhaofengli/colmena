@@ -1,6 +1,8 @@
 use std::cmp::max;
-use std::sync::Arc;
 use std::collections::HashMap;
+use std::convert::AsRef;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use futures::future::join_all;
 use tokio::sync::{Mutex, Semaphore};
@@ -367,8 +369,7 @@ impl Deployment {
                             );
 
                             let goal = arc_self.goal;
-                            let arc_self = arc_self.clone();
-                            let profiles = arc_self.build_profiles(&chunk, drv, bar.clone()).await;
+                            let profiles = arc_self.clone().build_profiles(&chunk, drv, bar.clone()).await;
 
                             let profiles = match profiles {
                                 Some(profiles) => profiles,
@@ -382,6 +383,14 @@ impl Deployment {
                                 for (node, profile) in profiles.iter() {
                                     let bar = progress.create_task_progress(node.to_string());
                                     bar.success(&format!("Built {:?}", profile.as_path()));
+                                }
+                            }
+
+                            if let Some(base) = &arc_self.options.gc_roots {
+                                // Create GC roots
+                                if let Err(e) = profiles.create_gc_roots(base).await {
+                                    let bar = progress.create_task_progress(BATCH_OPERATION_LABEL.to_string());
+                                    bar.failure(&format!("Failed to create GC roots: {:?}", e));
                                 }
                             }
 
@@ -582,7 +591,7 @@ impl ParallelismLimit {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Clone, Debug)]
 pub struct DeploymentOptions {
     /// Whether to show condensed progress bars.
     ///
@@ -597,6 +606,9 @@ pub struct DeploymentOptions {
 
     /// Whether to upload keys when deploying.
     upload_keys: bool,
+
+    /// Directory to create GC roots for node profiles in.
+    gc_roots: Option<PathBuf>,
 }
 
 impl Default for DeploymentOptions {
@@ -606,6 +618,7 @@ impl Default for DeploymentOptions {
             substituters_push: true,
             gzip: true,
             upload_keys: true,
+            gc_roots: None,
         }
     }
 }
@@ -625,6 +638,10 @@ impl DeploymentOptions {
 
     pub fn set_upload_keys(&mut self, enable: bool) {
         self.upload_keys = enable;
+    }
+
+    pub fn set_gc_roots<P: AsRef<Path>>(&mut self, path: P) {
+        self.gc_roots = Some(path.as_ref().to_owned());
     }
 
     fn to_copy_options(&self) -> CopyOptions {

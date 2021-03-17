@@ -57,6 +57,15 @@ Set to 0 to disable parallemism limit.
                     Err(_) => Err(String::from("The value must be a valid number")),
                 }
             }))
+        .arg(Arg::with_name("keep-result")
+            .long("keep-result")
+            .help("Create GC roots for built profiles")
+            .long_help(r#"Create GC roots for built profiles.
+
+The built system profiles will be added as GC roots so that they will not be removed by the garbage collector.
+The links will be created under .gcroots in the directory the Hive configuration is located.
+"#)
+            .takes_value(false))
         .arg(Arg::with_name("verbose")
             .short("v")
             .long("verbose")
@@ -101,6 +110,7 @@ pub fn subcommand() -> App<'static, 'static> {
 
 pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     let hive = util::hive_from_args(local_args).unwrap();
+    let hive_base = hive.as_path().parent().unwrap().to_owned();
 
     log::info!("Enumerating nodes...");
     let all_nodes = hive.deployment_info().await.unwrap();
@@ -176,6 +186,11 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     options.set_gzip(!local_args.is_present("no-gzip"));
     options.set_progress_bar(!local_args.is_present("verbose"));
     options.set_upload_keys(!local_args.is_present("no-keys"));
+
+    if local_args.is_present("keep-result") {
+        options.set_gc_roots(hive_base.join(".gcroots"));
+    }
+
     deployment.set_options(options);
 
     if local_args.is_present("no-keys") && goal_arg == "keys" {
