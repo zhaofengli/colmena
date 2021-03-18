@@ -4,17 +4,12 @@ use std::path::PathBuf;
 use std::process::Stdio;
 
 use async_trait::async_trait;
-use futures::future::join3;
-use shell_escape::unix::escape;
 use tokio::process::Command;
-use tokio::io::{AsyncWriteExt, BufReader};
 
-use super::{CopyDirection, CopyOptions, Host};
-use crate::nix::{StorePath, Profile, Goal, NixResult, NixCommand, NixError, Key, SYSTEM_PROFILE};
-use crate::util::{CommandExecution, capture_stream};
+use super::{CopyDirection, CopyOptions, Host, key_uploader};
+use crate::nix::{StorePath, Profile, Goal, NixResult, NixCommand, Key, SYSTEM_PROFILE};
+use crate::util::CommandExecution;
 use crate::progress::TaskProgress;
-
-const DEPLOY_KEY_TEMPLATE: &'static str = include_str!("./deploy-key.template");
 
 /// A remote machine connected over SSH.
 #[derive(Debug)]
@@ -203,13 +198,7 @@ impl Ssh {
         self.progress_bar.log(&format!("Deploying key {}", name));
 
         let dest_path = key.dest_dir().join(name);
-
-        let key_script = DEPLOY_KEY_TEMPLATE.to_string()
-            .replace("%DESTINATION%", dest_path.to_str().unwrap())
-            .replace("%USER%", &escape(key.user().into()))
-            .replace("%GROUP%", &escape(key.group().into()))
-            .replace("%PERMISSIONS%", &escape(key.permissions().into()));
-        let key_script = escape(key_script.into());
+        let key_script = key_uploader::generate_script(key, &dest_path);
 
         let mut command = self.ssh(&["sh", "-c", &key_script]);
 
@@ -217,32 +206,7 @@ impl Ssh {
         command.stderr(Stdio::piped());
         command.stdout(Stdio::piped());
 
-        let mut reader = key.reader().await?;
-
-        let mut child = command.spawn()?;
-        let mut stdin = child.stdin.take().unwrap();
-        tokio::io::copy(reader.as_mut(), &mut stdin).await?;
-        stdin.flush().await?;
-        drop(stdin);
-
-        let stdout = BufReader::new(child.stdout.take().unwrap());
-        let stderr = BufReader::new(child.stderr.take().unwrap());
-
-        let futures = join3(
-            capture_stream(stdout, self.progress_bar.clone()),
-            capture_stream(stderr, self.progress_bar.clone()),
-            child.wait(),
-        );
-        let (stdout_str, stderr_str, exit) = futures.await;
-        self.logs += &stdout_str;
-        self.logs += &stderr_str;
-
-        let exit = exit?;
-
-        if exit.success() {
-            Ok(())
-        } else {
-            Err(NixError::NixFailure { exit_code: exit.code().unwrap() })
-        }
+        let uploader = command.spawn()?;
+        key_uploader::feed_uploader(uploader, key, self.progress_bar.clone(), &mut self.logs).await
     }
 }

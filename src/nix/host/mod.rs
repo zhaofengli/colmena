@@ -11,6 +11,8 @@ pub use ssh::Ssh;
 mod local;
 pub use local::Local;
 
+mod key_uploader;
+
 pub(crate) fn local() -> Box<dyn Host + 'static> {
     Box::new(Local::new())
 }
