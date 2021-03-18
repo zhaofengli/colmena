@@ -467,7 +467,7 @@ impl Deployment {
 
         match derivation.realize(&mut *builder).await {
             Ok(profiles) => {
-                progress.success("Successfully built");
+                progress.success("Build successful");
 
                 let mut results = self.results.lock().await;
                 let stage = Stage::Build(chunk.clone());
