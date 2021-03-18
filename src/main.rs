@@ -79,6 +79,7 @@ For a sample configuration, see <https://github.com/zhaofengli/colmena>.
     command!(exec, matches);
 
     app.print_long_help().unwrap();
+    println!();
 }
 
 fn init_logging() {
