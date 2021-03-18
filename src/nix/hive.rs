@@ -46,7 +46,7 @@ impl Hive {
         &self.hive
     }
 
-    /// Retrieve deployment info for all nodes
+    /// Retrieve deployment info for all nodes.
     pub async fn deployment_info(&self) -> NixResult<HashMap<String, NodeConfig>> {
         // FIXME: Really ugly :(
         let s: String = self.nix_instantiate("hive.deploymentConfigJson").eval()
@@ -60,6 +60,15 @@ impl Hive {
             }
         }
         Ok(configs)
+    }
+
+    /// Retrieve deployment info for a single node.
+    pub async fn deployment_info_for(&self, node: &str) -> NixResult<Option<NodeConfig>> {
+        let expr = format!("toJSON (hive.nodes.\"{}\".config.deployment or null)", node);
+        let s: String = self.nix_instantiate(&expr).eval()
+            .capture_json().await?;
+
+        Ok(serde_json::from_str(&s).unwrap())
     }
 
     /// Evaluates selected nodes.

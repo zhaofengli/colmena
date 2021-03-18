@@ -98,11 +98,8 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     };
     let goal = Goal::from_str(local_args.value_of("goal").unwrap()).unwrap();
 
-    log::info!("Enumerating nodes...");
-    let all_nodes = hive.deployment_info().await.unwrap();
-
     let target: Target = {
-        if let Some(info) = all_nodes.get(&hostname) {
+        if let Some(info) = hive.deployment_info_for(&hostname).await.unwrap() {
             if !info.allows_local_deployment() {
                 log::error!("Local deployment is not enabled for host {}.", hostname);
                 log::error!("Hint: Set deployment.allowLocalDeployment to true.");
