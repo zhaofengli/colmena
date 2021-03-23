@@ -1,6 +1,6 @@
 //! Global CLI Setup.
 
-use clap::{App, AppSettings, Arg};
+use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use crate::command;
 
 macro_rules! register_command {
@@ -24,7 +24,7 @@ macro_rules! handle_command {
     };
 }
 
-pub fn build_cli() -> App<'static, 'static> {
+pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
     let mut app = App::new("Colmena")
         .bin_name("colmena")
         .version("0.1.0")
@@ -57,6 +57,16 @@ For a sample configuration, see <https://github.com/zhaofengli/colmena>.
             .global(true)
             .takes_value(false));
 
+    if include_internal {
+        app = app.subcommand(SubCommand::with_name("gen-completions")
+            .about("Generate shell auto-completion files (Internal)")
+            .setting(AppSettings::Hidden)
+            .arg(Arg::with_name("shell")
+                .index(1)
+                .required(true)
+                .takes_value(true)));
+    }
+
     register_command!(apply, app);
     register_command!(apply_local, app);
     register_command!(build, app);
@@ -68,7 +78,7 @@ For a sample configuration, see <https://github.com/zhaofengli/colmena>.
 }
 
 pub async fn run() {
-    let mut app = build_cli();
+    let mut app = build_cli(true);
     let matches = app.clone().get_matches();
 
     handle_command!(apply, matches);
@@ -78,6 +88,18 @@ pub async fn run() {
     handle_command!("upload-keys", upload_keys, matches);
     handle_command!(exec, matches);
 
+    if let Some(args) = matches.subcommand_matches("gen-completions") {
+        return gen_completions(args);
+    }
+
     app.print_long_help().unwrap();
     println!();
+}
+
+fn gen_completions(args: &ArgMatches<'_>) {
+    let mut app = build_cli(false);
+    let shell: clap::Shell = args.value_of("shell").unwrap()
+        .parse().unwrap();
+
+    app.gen_completions_to("colmena", shell, &mut std::io::stdout());
 }
