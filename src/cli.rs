@@ -26,6 +26,7 @@ macro_rules! handle_command {
 
 pub fn build_cli() -> App<'static, 'static> {
     let mut app = App::new("Colmena")
+        .bin_name("colmena")
         .version("0.1.0")
         .author("Zhaofeng Li <hello@zhaofeng.li>")
         .about("NixOS deployment tool")
