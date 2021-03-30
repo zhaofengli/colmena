@@ -37,6 +37,11 @@ Enter a shell with `colmena` with:
 nix-shell
 ```
 
+Or with flakes:
+```
+nix shell
+```
+
 Colmena should work with your existing NixOps and Morph configurations with minimal modification.
 Here is a sample `hive.nix` with two nodes, with some common configurations applied to both nodes:
 
@@ -98,7 +103,54 @@ Here is a sample `hive.nix` with two nodes, with some common configurations appl
 }
 ```
 
-The full set of options can be found at `src/nix/eval.nix`.
+It's also possible to build a hive from a flake:
+
+```nix
+{
+  description = "Example Colmena flake";
+
+  inputs = {
+    nixos.url = "nixpkgs/release-20.09";
+    nixpkgs.url = "nixpkgs/release-20.09";
+    unstable.url = "nixpkgs";
+
+    colmena.url = "github:zhaofengli/colmena/main";
+  };
+
+  outputs = inputs@{ self, nixos, colmena, ... }:
+    let
+      system = "x86_64-linux";
+
+      inherit (nixos.lib) nixosSystem;
+      inherit (colmena.lib.${system}) mkColmenaHive;
+
+      makeHost = config:
+        nixosSystem {
+          inherit system;
+          modules = [ config ] ++ colmena.nixosModules;
+        };
+    in {
+      # One NixOS configuration per host...
+      nixosConfigurations.foobar = makeHost {
+        deployment.targetHost = "foobar.mysite.com";
+        boot.loader.grub.device = "/dev/sda";
+
+        fileSystems."/" = {
+          device = "/dev/sda";
+          fsType = "ext4";
+        };
+      };
+
+      # This is what Colmena looks for
+      colmena = mkColmenaHive {
+        inherit system;
+        nodes = self.nixosConfigurations;
+      };
+    };
+}
+```
+
+The full set of options can be found at `src/nix/modules.nix`.
 Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to deploy it to all nodes.
 
 ## `colmena introspect`
