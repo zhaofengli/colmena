@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::fs;
-use std::path::PathBuf;
+use std::env;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
 use clap::{App, Arg, ArgMatches};
@@ -9,7 +10,7 @@ use glob::Pattern as GlobPattern;
 use tokio::io::{AsyncRead, AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
-use super::nix::{NodeConfig, Hive, NixResult, NixError};
+use super::nix::{NodeConfig, Hive, HivePath, NixResult, NixError};
 use super::progress::TaskProgress;
 
 enum NodeFilter {
@@ -80,71 +81,96 @@ impl CommandExecution {
 }
 
 
-pub fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
-    let path = match args.occurrences_of("config") {
-        0 => {
-            // traverse upwards until we find hive.nix
-            let mut cur = std::env::current_dir()?;
-            let mut hive_path = None;
+fn hive_path_from_args(args: &ArgMatches<'_>) -> Result<HivePath, std::io::Error> {
+    // first see if we have a flake
+    if args.occurrences_of("flake") > 0 {
+        let path = args.value_of("flake").expect("The flake arg should exist").to_owned();
+        return Ok(HivePath::from_flake(path));
+    } else if Path::new("flake.nix").exists() {
+        // use our current directory
+        return Ok(HivePath::from_flake("path:.".to_string()));
+    }
 
-            loop {
-                let mut listing = match fs::read_dir(&cur) {
-                    Ok(listing) => listing,
-                    Err(e) => {
-                        // This can very likely fail in shared environments
-                        // where users aren't able to list /home. It's not
-                        // unexpected.
-                        //
-                        // It may not be immediately obvious to the user that
-                        // we are traversing upwards to find hive.nix.
-                        log::warn!("Could not traverse up ({:?}) to find hive.nix: {}", cur, e);
-                        break;
-                    },
-                };
+    // we've failed to find a flake, check for hive.nix
+    let path = if args.occurrences_of("config") > 0 {
+        let path = args.value_of("config").expect("The config arg should exist").to_owned();
+            canonicalize_cli_path(path)
+    } else {
+        // first, check to see if we have a flake.nix in our current directory
 
-                let found = listing.find_map(|rdirent| {
-                    match rdirent {
-                        Err(e) => Some(Err(e)),
-                        Ok(f) => {
-                            if f.file_name() == "hive.nix" {
-                                Some(Ok(f))
-                            } else {
-                                None
-                            }
+        // traverse upwards until we find hive.nix
+        let mut cur = std::env::current_dir()?;
+        let mut hive_path = None;
+
+        loop {
+            let mut listing = match fs::read_dir(&cur) {
+                Ok(listing) => listing,
+                Err(e) => {
+                    // This can very likely fail in shared environments
+                    // where users aren't able to list /home. It's not
+                    // unexpected.
+                    //
+                    // It may not be immediately obvious to the user that
+                    // we are traversing upwards to find hive.nix.
+                    log::warn!("Could not traverse up ({:?}) to find hive.nix: {}", cur, e);
+                    break;
+                },
+            };
+
+            let found = listing.find_map(|rdirent| {
+                match rdirent {
+                    Err(e) => Some(Err(e)),
+                    Ok(f) => {
+                        if f.file_name() == "hive.nix" {
+                            Some(Ok(f))
+                        } else {
+                            None
                         }
                     }
-                });
+                }
+            });
 
-                if let Some(rdirent) = found {
-                    let dirent = rdirent?;
-                    hive_path = Some(dirent.path());
+            if let Some(rdirent) = found {
+                let dirent = rdirent?;
+                hive_path = Some(dirent.path());
+                break;
+            }
+
+            match cur.parent() {
+                Some(parent) => {
+                    cur = parent.to_owned();
+                }
+                None => {
                     break;
                 }
-
-                match cur.parent() {
-                    Some(parent) => {
-                        cur = parent.to_owned();
-                    }
-                    None => {
-                        break;
-                    }
-                }
             }
-
-            if hive_path.is_none() {
-                log::error!("Could not find `hive.nix` in {:?} or any parent directory", std::env::current_dir()?);
-            }
-
-            hive_path.unwrap()
         }
-        _ => {
-            let path = args.value_of("config").expect("The config arg should exist").to_owned();
-            canonicalize_cli_path(path)
+
+        if hive_path.is_none() {
+            log::error!("Could not find `hive.nix` in {:?} or any parent directory", std::env::current_dir()?);
         }
+
+        hive_path.unwrap()
     };
 
-    let mut hive = Hive::new(path)?;
+    return Ok(HivePath::from_file(&path));
+}
 
+
+pub fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
+    let path = hive_path_from_args(args)?;
+
+    // grab any extra arguments to pass to Nix
+    let extra_args: Vec<String>;
+    if env::var("COLMENA_NIX_ARGS").is_ok() {
+        extra_args = env::var("COLMENA_NIX_ARGS").unwrap()
+            .split_whitespace().map(|s| s.to_string()).collect();
+    } else {
+        extra_args = Vec::new();
+    }
+
+    let mut hive = Hive::new(path, extra_args)?;
+    
     if args.is_present("show-trace") {
         hive.show_trace(true);
     }

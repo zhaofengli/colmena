@@ -17,33 +17,63 @@ use super::NixCommand;
 use crate::util::CommandExecution;
 use crate::progress::TaskProgress;
 
+// Manual evaluator. This is not used for flakes.
 const HIVE_EVAL: &'static [u8] = include_bytes!("eval.nix");
+const HIVE_MODULES: &'static [u8] = include_bytes!("modules.nix");
+
+#[derive(Debug, Clone)]
+pub struct HivePath {
+    // File path if we're using hive.nix,
+    // or a qualified flake path for flakes
+    pub file: Option<PathBuf>,
+    pub flake: Option<String>,
+}
 
 #[derive(Debug)]
 pub struct Hive {
-    hive: PathBuf,
+    pub path: HivePath,
     eval_nix: TempPath,
+    mod_nix: TempPath,
     show_trace: bool,
+
+    // Extra arguments to be passed to `nix eval`
+    extra_args: Vec<String>
+}
+
+impl HivePath {
+    pub fn from_file(path: &Path) -> Self {
+        Self { file: Some(path.to_path_buf()), flake: None }
+    }
+
+    pub fn from_flake(path: String) -> Self {
+        Self { file: None, flake: Some(path) }
+    }
+
+    pub fn is_flake(&self) -> bool {
+        self.flake.is_some()
+    }
 }
 
 impl Hive {
-    pub fn new<P: AsRef<Path>>(hive: P) -> NixResult<Self> {
+    pub fn new(path: HivePath, extra_args: Vec<String>) -> NixResult<Self> {
+        // I hate this, but it's just what we have to do for now...
         let mut eval_nix = NamedTempFile::new()?;
         eval_nix.write_all(HIVE_EVAL).unwrap();
 
+        let mut mod_nix = NamedTempFile::new()?;
+        mod_nix.write_all(HIVE_MODULES).unwrap();
+
         Ok(Self {
-            hive: hive.as_ref().to_owned(),
+            path: path,
             eval_nix: eval_nix.into_temp_path(),
+            mod_nix: mod_nix.into_temp_path(),
             show_trace: false,
+            extra_args: extra_args
         })
     }
 
     pub fn show_trace(&mut self, value: bool) {
         self.show_trace = value;
-    }
-
-    pub fn as_path(&self) -> &Path {
-        &self.hive
     }
 
     /// Retrieve deployment info for all nodes.
@@ -85,9 +115,16 @@ impl Hive {
         }
         let nodes_expr = nodes_expr.unwrap();
 
-        let expr = format!("hive.buildSelected {{ names = {}; }}", nodes_expr.expression());
+        // we need to grab the drvPath output if we're building a flake
+        let path_suffix = if self.path.is_flake() {
+            ".drvPath"
+        } else {
+            ""
+        };
 
-        let command = self.nix_instantiate(&expr).instantiate();
+        let expr = format!("(hive.buildSelected {{ names = {}; }}){}", nodes_expr.expression(), path_suffix);
+
+        let command = self.nix_instantiate(&expr).instantiate(false);
         let mut execution = CommandExecution::new(command);
         execution.set_progress_bar(progress_bar);
 
@@ -134,32 +171,69 @@ impl<'hive> NixInstantiate<'hive> {
         }
     }
 
-    fn instantiate(self) -> Command {
+    fn instantiate(self, for_eval: bool) -> Command {
         // FIXME: unwrap
         // Technically filenames can be arbitrary byte strings (OsStr),
         // but Nix may not like it...
 
-        let mut command = Command::new("nix-instantiate");
-        command
-            .arg("--no-gc-warning")
-            .arg("-E")
-            .arg(format!(
-                "with builtins; let eval = import {}; hive = eval {{ rawHive = import {}; }}; in {}",
-                self.hive.eval_nix.to_str().unwrap(),
-                self.hive.as_path().to_str().unwrap(),
-                self.expression,
-            ));
+        let hive_path = self.hive.path.clone();
+        let mut command = if hive_path.is_flake() {
+            Command::new("nix")
+        } else {
+            Command::new("nix-instantiate")
+        };
+
+        if self.hive.path.is_flake() {
+            command
+                .arg("eval")
+                .arg(format!(
+                    "{}#colmena",
+                    hive_path.flake.unwrap()
+                ))
+                .arg("--impure") // HACK: required for IFD
+                .arg("--apply")
+                .arg(format!(
+                    "(hive: {})",
+                    self.expression
+                ));
+
+                if !for_eval {
+                    // so we don't output quoted JSON
+                    command.arg("--raw");
+                }
+        } else {
+            command
+                .arg("--no-gc-warning")
+                .arg("-E")
+                .arg(format!(
+                    "with builtins; let eval = import {}; hive = eval {{ sharedModules = {}; rawHive = import {}; }}; in {}",
+                    self.hive.eval_nix.to_str().unwrap(),
+                    self.hive.mod_nix.to_str().unwrap(),
+                    hive_path.file.unwrap().to_str().unwrap(),
+                    self.expression,
+                ));
+        };
 
         if self.hive.show_trace {
             command.arg("--show-trace");
+        }
+
+        for extra_arg in &self.hive.extra_args {
+            command.arg(extra_arg);
         }
 
         command
     }
 
     fn eval(self) -> Command {
-        let mut command = self.instantiate();
-        command.arg("--eval").arg("--json");
+        let hive_path = self.hive.path.clone();
+        let mut command = self.instantiate(true);
+
+        if !hive_path.is_flake() {
+            command.arg("--eval");
+        }
+
+        command.arg("--json");
         command
     }
 }

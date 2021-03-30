@@ -18,6 +18,7 @@ use host::Ssh;
 
 pub mod hive;
 pub use hive::Hive;
+pub use hive::HivePath;
 
 pub mod store;
 pub use store::{StorePath, StoreDerivation};

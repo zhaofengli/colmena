@@ -50,6 +50,13 @@ pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
 For a sample configuration, see <https://github.com/zhaofengli/colmena>.
 "#)
             .global(true))
+        .arg(Arg::with_name("flake")
+            .short("i")
+            .long("flake")
+            .value_name("FLAKE")
+            .help("Flake path to build")
+            .long_help(r#"If this argument is not specified, Colmena will look for a flake in the current working directory. If it is not found, it will fall back on the old hive.nix behaviour."#)
+            .global(true))
         .arg(Arg::with_name("show-trace")
             .long("show-trace")
             .help("Show debug information for Nix commands")

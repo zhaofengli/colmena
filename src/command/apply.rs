@@ -110,7 +110,7 @@ pub fn subcommand() -> App<'static, 'static> {
 
 pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     let hive = util::hive_from_args(local_args).unwrap();
-    let hive_base = hive.as_path().parent().unwrap().to_owned();
+    let hive_path = hive.path.clone();
 
     log::info!("Enumerating nodes...");
     let all_nodes = hive.deployment_info().await.unwrap();
@@ -188,7 +188,13 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     options.set_upload_keys(!local_args.is_present("no-keys"));
 
     if local_args.is_present("keep-result") {
-        options.set_gc_roots(hive_base.join(".gcroots"));
+        if hive_path.is_flake() {
+            log::error!("--keep-result cannot be used with flakes");
+            quit::with_code(1);
+        } else {
+            let hive_parent = hive_path.file.unwrap().parent().unwrap().to_owned();
+            options.set_gc_roots(hive_parent.join(".gcroots"));
+        }
     }
 
     deployment.set_options(options);

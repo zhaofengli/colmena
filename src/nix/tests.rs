@@ -33,7 +33,7 @@ impl TempHive {
         let mut temp_file = NamedTempFile::new().unwrap();
         temp_file.write_all(text.as_bytes()).unwrap();
 
-        let hive = Hive::new(temp_file.path()).unwrap();
+        let hive = Hive::new(HivePath::from_file(temp_file.path()), Vec::new()).unwrap();
 
         Self {
             hive,
