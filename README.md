@@ -121,13 +121,14 @@ It's also possible to build a hive from a flake:
     let
       system = "x86_64-linux";
 
+      inherit (builtins) attrValues;
       inherit (nixos.lib) nixosSystem;
       inherit (colmena.lib.${system}) mkColmenaHive;
 
       makeHost = config:
         nixosSystem {
           inherit system;
-          modules = [ config ] ++ colmena.nixosModules;
+          modules = [ config ] ++ (attrValues colmena.nixosModules);
         };
     in {
       # One NixOS configuration per host...

@@ -143,7 +143,6 @@ let
         in "Exactly one of `${prefix}.text`, `${prefix}.keyCommand` and `${prefix}.keyFile` must be set.";
       }) config.deployment.keys;
   };
-in [
-  deploymentOptions
-  assertionModule
-]
+in {
+  inherit deploymentOptions assertionModule;
+}

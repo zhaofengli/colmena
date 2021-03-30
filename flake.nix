@@ -37,7 +37,7 @@
 
         devShell = pkgs.mkShell {
             inputsFrom = [ self.packages.${system}.colmena ];
-            buildInputs = [ pkgs.nixUnstable ];
+            buildInputs = with pkgs; [ rustc cargo nixUnstable ];
         };
 
         checks.colmena = self.defaultPackage.${system}.overrideAttrs (super: { doCheck = true; });

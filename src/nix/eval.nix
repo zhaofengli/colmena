@@ -119,7 +119,7 @@ let
         "The following Nixpkgs configuration keys set in meta.nixpkgs will be ignored: ${toString remainingKeys}";
     };
   in evalConfig {
-    modules = (import sharedModules { inherit lib; })
+    modules = (attrValues (import sharedModules { inherit lib; }))
       ++ [ nixpkgsModule hive.defaults config ]
       ++ (import (npkgs.path + "/nixos/modules/module-list.nix"));
     specialArgs = {
