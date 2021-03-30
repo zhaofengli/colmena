@@ -9,6 +9,11 @@
             url = "github:nmattia/naersk/master";
             inputs.nixpkgs.follows = "nixpkgs";
         };
+
+        flake-compat = {
+            url = "github:edolstra/flake-compat";
+            flake = false;
+        };
     };
 
     outputs = { self, nixpkgs, utils, naersk, ... }: let
