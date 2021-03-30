@@ -94,7 +94,7 @@ impl Hive {
 
     /// Retrieve deployment info for a single node.
     pub async fn deployment_info_for(&self, node: &str) -> NixResult<Option<NodeConfig>> {
-        let expr = format!("toJSON (hive.nodes.\"{}\".config.deployment or null)", node);
+        let expr = format!("builtins.toJSON (hive.nodes.\"{}\".config.deployment or null)", node);
         let s: String = self.nix_instantiate(&expr).eval()
             .capture_json().await?;
 
@@ -148,7 +148,7 @@ impl Hive {
 
     /// Evaluates an expression using values from the configuration
     pub async fn introspect(&self, expression: String) -> NixResult<String> {
-        let expression = format!("toJSON (hive.introspect ({}))", expression);
+        let expression = format!("builtins.toJSON (hive.introspect ({}))", expression);
         self.nix_instantiate(&expression).eval()
             .capture_json().await
     }
