@@ -7,7 +7,7 @@ in {
     mkColmenaHive = { nodes, system }: let
         # convert the deployment config inside the nodes to json
         # nodes must be an attrset of NixOS configurations with hostnames as keys
-        deploymentConfigJson = toJSON (mapAttrs (name: eval: eval.config.deployment) nodes);
+        deploymentConfig = mapAttrs (name: eval: eval.config.deployment) nodes;
         toplevel = mapAttrs (name: eval: eval.config.system.build.toplevel) nodes;
 
         nodeNames = attrNames nodes;
@@ -38,6 +38,6 @@ in {
             inherit lib nodes;
         };
     in {
-        inherit deploymentConfigJson toplevel buildAll buildSelected introspect;
+        inherit deploymentConfig toplevel buildAll buildSelected introspect;
     };
 }

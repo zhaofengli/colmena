@@ -139,7 +139,8 @@ let
     value = evalNode name hive.${name};
   }) nodeNames);
 
-  deploymentConfigJson = toJSON (lib.attrsets.mapAttrs (name: eval: eval.config.deployment) nodes);
+  # the toJSON -> fromJSON here is very hacky, but it's better than doing the double-parse in colmena itself...
+  deploymentConfig = fromJSON (toJSON (lib.attrsets.mapAttrs (name: eval: eval.config.deployment) nodes));
 
   toplevel = lib.attrsets.mapAttrs (name: eval: eval.config.system.build.toplevel) nodes;
 
@@ -163,5 +164,5 @@ let
     inherit pkgs lib nodes;
   };
 in {
-  inherit nodes deploymentConfigJson toplevel buildAll buildSelected introspect;
+  inherit nodes deploymentConfig toplevel buildAll buildSelected introspect;
 }

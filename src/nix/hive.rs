@@ -78,11 +78,9 @@ impl Hive {
 
     /// Retrieve deployment info for all nodes.
     pub async fn deployment_info(&self) -> NixResult<HashMap<String, NodeConfig>> {
-        // FIXME: Really ugly :(
-        let s: String = self.nix_instantiate("hive.deploymentConfigJson").eval()
+        let configs: HashMap<String, NodeConfig> = self.nix_instantiate("hive.deploymentConfig").eval()
             .capture_json().await?;
 
-        let configs: HashMap<String, NodeConfig> = serde_json::from_str(&s).unwrap();
         for config in configs.values() {
             config.validate()?;
             for key in config.keys.values() {
