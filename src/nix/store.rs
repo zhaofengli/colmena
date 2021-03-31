@@ -63,6 +63,24 @@ impl Into<PathBuf> for StorePath {
     }
 }
 
+impl TryFrom<Vec<StorePath>> for StorePath {
+    type Error = NixError;
+
+    fn try_from(paths: Vec<StorePath>) -> NixResult<Self> {
+        match paths.len() {
+            0 => Err(NixError::BadOutput {
+                output: String::from("Build produced no outputs"),
+            }),
+            l if l > 1 => Err(NixError::BadOutput {
+                output: String::from("Build produced multiple outputs"),
+            }),
+            _ => {
+                Ok(paths[0].clone())
+            }
+        }
+    }
+}
+
 /// A store derivation (.drv) that will result in a T when built.
 pub struct StoreDerivation<T: TryFrom<Vec<StorePath>>>{
     path: StorePath,

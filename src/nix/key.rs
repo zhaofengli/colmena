@@ -15,6 +15,8 @@ use tokio::{
 };
 use validator::{Validate, ValidationError};
 
+use super::{StorePath, StoreDerivation, host};
+
 #[non_exhaustive]
 #[derive(Debug, Snafu)]
 pub enum KeyError {
@@ -100,8 +102,20 @@ impl Key {
                 Ok(Box::new(Cursor::new(content)))
             }
             KeySource::Command(command) => {
-                let pathname = &command[0];
+                let mut pathname = command[0].clone();
                 let argv = &command[1..];
+
+                // if the executable is a derivation, realize it and replace it with its output
+                // this is required as they don't get built normally until the build phase...
+                if pathname.starts_with("/nix/store/") && pathname.ends_with(".drv") {
+                    let mut builder = host::local();
+
+                    let path = StorePath::try_from(pathname.clone()).unwrap();
+                    let drv: StoreDerivation<StorePath> = path.to_derivation().unwrap();
+                    let result: StorePath = drv.realize(&mut *builder).await.unwrap();
+
+                    pathname = result.as_path().to_str().unwrap().to_string();
+                }
 
                 let output = Command::new(pathname)
                     .args(argv)
