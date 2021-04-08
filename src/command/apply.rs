@@ -91,6 +91,12 @@ To upload keys without building or deploying the rest of the configuration, use 
             .help("Do not use gzip")
             .long_help("Disables the use of gzip when copying closures to the remote host.")
             .takes_value(false))
+        .arg(Arg::with_name("force-replace-unknown-profiles")
+            .long("force-replace-unknown-profiles")
+            .help("Ignore all targeted nodes deployment.replaceUnknownProfiles setting")
+            .long_help(r#"If `deployment.replaceUnknownProfiles` is set for a target, using this switch
+will treat deployment.replaceUnknownProfiles as though it was set true and perform unknown profile replacement."#)
+            .takes_value(false))
 }
 
 pub fn subcommand() -> App<'static, 'static> {
@@ -186,6 +192,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     options.set_gzip(!local_args.is_present("no-gzip"));
     options.set_progress_bar(!local_args.is_present("verbose"));
     options.set_upload_keys(!local_args.is_present("no-keys"));
+    options.set_force_replace_unknown_profiles(local_args.is_present("force-replace-unknown-profiles"));
 
     if local_args.is_present("keep-result") {
         options.set_gc_roots(hive_base.join(".gcroots"));

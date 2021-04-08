@@ -68,6 +68,9 @@ pub enum NixError {
     #[snafu(display("Invalid NixOS system profile"))]
     InvalidProfile,
 
+    #[snafu(display("Unknown active profile: {}", store_path))]
+    ActiveProfileUnknown { store_path: String },
+
     #[snafu(display("Nix Error: {}", message))]
     Unknown { message: String },
 }
@@ -104,6 +107,9 @@ pub struct NodeConfig {
     #[serde(rename = "allowLocalDeployment")]
     allow_local_deployment: bool,
     tags: Vec<String>,
+
+    #[serde(rename = "replaceUnknownProfiles")]
+    replace_unknown_profiles: bool,
 
     #[validate(custom = "validate_keys")]
     keys: HashMap<String, Key>,

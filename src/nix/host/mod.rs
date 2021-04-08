@@ -102,7 +102,10 @@ pub trait Host: Send + Sync + std::fmt::Debug {
         Err(NixError::Unsupported)
     }
 
-    #[allow(unused_variables)] 
+    /// Check if the active profile is known to the host running Colmena
+    async fn active_derivation_known(&mut self) -> NixResult<bool>;
+
+    #[allow(unused_variables)]
     /// Activates a system profile on the host, if it runs NixOS.
     ///
     /// The profile must already exist on the host. You should probably use deploy instead.

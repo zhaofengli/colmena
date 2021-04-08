@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use tokio::process::Command;
 
 use super::{CopyDirection, CopyOptions, Host, key_uploader};
-use crate::nix::{StorePath, Profile, Goal, NixResult, NixCommand, Key, SYSTEM_PROFILE};
+use crate::nix::{StorePath, Profile, Goal, NixResult, NixCommand, NixError, Key, SYSTEM_PROFILE};
 use crate::util::CommandExecution;
 use crate::progress::TaskProgress;
 
@@ -69,6 +69,27 @@ impl Host for Ssh {
         let v: Vec<&str> = activation_command.iter().map(|s| &**s).collect();
         let command = self.ssh(&v);
         self.run_command(command).await
+    }
+    async fn active_derivation_known(&mut self) -> NixResult<bool> {
+        let paths = self.ssh(&["realpath", SYSTEM_PROFILE])
+            .capture_output()
+            .await;
+
+        match paths {
+            Ok(paths) => {
+                for path in paths.lines().into_iter() {
+                    let remote_profile: StorePath = path.to_string().try_into().unwrap();
+                    if remote_profile.exists() {
+                        return Ok(true);
+                    }
+                    return Err(NixError::ActiveProfileUnknown {
+                        store_path: path.to_string(),
+                    });
+                }
+                return Ok(false);
+            }
+            Err(e) => Err(e),
+        }
     }
     fn set_progress_bar(&mut self, bar: TaskProgress) {
         self.progress_bar = bar;

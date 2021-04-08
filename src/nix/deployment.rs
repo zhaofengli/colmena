@@ -10,10 +10,10 @@ use tokio::sync::{Mutex, Semaphore};
 use super::{Hive, Host, CopyOptions, NodeConfig, Profile, StoreDerivation, ProfileMap, host};
 use crate::progress::{Progress, TaskProgress, OutputStyle};
 
-/// Amount of RAM reserved for the system, in MB. 
+/// Amount of RAM reserved for the system, in MB.
 const EVAL_RESERVE_MB: u64 = 1024;
 
-/// Estimated amount of RAM needed to evaluate one host, in MB. 
+/// Estimated amount of RAM needed to evaluate one host, in MB.
 const EVAL_PER_HOST_MB: u64 = 512;
 
 const BATCH_OPERATION_LABEL: &'static str = "(...)";
@@ -493,6 +493,24 @@ impl Deployment {
 
         let mut bar = multi.create_task_progress(name.to_string());
 
+        // FIXME: Would be nicer to check remote status before spending time evaluating/building
+        if !target.config.replace_unknown_profiles {
+            bar.log("Checking remote profile...");
+            match target.host.active_derivation_known().await {
+                Ok(_) => {
+                    bar.log("Remote profile known");
+                }
+                Err(e) => {
+                    if self.options.force_replace_unknown_profiles {
+                        bar.log("warning: remote profile is unknown, but unknown profiles are being ignored");
+                    } else {
+                        bar.failure(&format!("Failed: {}", e));
+                        return;
+                    }
+                }
+            }
+        }
+
         if self.options.upload_keys && !target.config.keys.is_empty() {
             bar.log("Uploading keys...");
 
@@ -609,6 +627,9 @@ pub struct DeploymentOptions {
 
     /// Directory to create GC roots for node profiles in.
     gc_roots: Option<PathBuf>,
+
+    /// Ignore the node-level `deployment.replaceUnknownProfiles` option.
+    force_replace_unknown_profiles: bool,
 }
 
 impl Default for DeploymentOptions {
@@ -619,6 +640,7 @@ impl Default for DeploymentOptions {
             gzip: true,
             upload_keys: true,
             gc_roots: None,
+            force_replace_unknown_profiles: false,
         }
     }
 }
@@ -642,6 +664,10 @@ impl DeploymentOptions {
 
     pub fn set_gc_roots<P: AsRef<Path>>(&mut self, path: P) {
         self.gc_roots = Some(path.as_ref().to_owned());
+    }
+
+    pub fn set_force_replace_unknown_profiles(&mut self, enable: bool) {
+        self.force_replace_unknown_profiles = enable;
     }
 
     fn to_copy_options(&self) -> CopyOptions {
