@@ -13,8 +13,8 @@ pub use local::Local;
 
 mod key_uploader;
 
-pub(crate) fn local() -> Box<dyn Host + 'static> {
-    Box::new(Local::new())
+pub(crate) fn local(nix_options: Vec<String>) -> Box<dyn Host + 'static> {
+    Box::new(Local::new(nix_options))
 }
 
 #[derive(Copy, Clone, Debug)]

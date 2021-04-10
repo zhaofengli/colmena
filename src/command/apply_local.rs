@@ -100,13 +100,14 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
 
     let target: Target = {
         if let Some(info) = hive.deployment_info_for(&hostname).await.unwrap() {
+            let nix_options = hive.nix_options().await.unwrap();
             if !info.allows_local_deployment() {
                 log::error!("Local deployment is not enabled for host {}.", hostname);
                 log::error!("Hint: Set deployment.allowLocalDeployment to true.");
                 quit::with_code(2);
             }
             Target::new(
-                host::local(),
+                host::local(nix_options),
                 info.clone(),
             )
         } else {

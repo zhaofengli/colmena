@@ -18,13 +18,15 @@ use crate::progress::TaskProgress;
 pub struct Local {
     progress_bar: TaskProgress,
     logs: String,
+    nix_options: Vec<String>,
 }
 
 impl Local {
-    pub fn new() -> Self {
+    pub fn new(nix_options: Vec<String>) -> Self {
         Self {
             progress_bar: TaskProgress::default(),
             logs: String::new(),
+            nix_options,
         }
     }
 }
@@ -36,6 +38,8 @@ impl Host for Local {
     }
     async fn realize_remote(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
         let mut command = Command::new("nix-store");
+
+        command.args(self.nix_options.clone());
         command
             .arg("--no-gc-warning")
             .arg("--realise")

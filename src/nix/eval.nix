@@ -48,6 +48,25 @@ let
         type = types.attrsOf types.unspecified;
         default = {};
       };
+      machinesFile = lib.mkOption {
+        description = ''
+          Use the machines listed in this file when building this hive configuration.
+
+          If your Colmena host has nix configured to allow for remote builds
+          (for nix-daemon, your user being included in trusted-users)
+          you can set a machines file that will be passed to the underlying
+          nix-store command during derivation realization as a builders option.
+          For example, if you support multiple orginizations each with their own
+          build machine(s) you can ensure that builds only take place on your
+          local machine and/or the machines specified in this file.
+
+          See https://nixos.org/manual/nix/stable/#chap-distributed-builds
+          for the machine specification format.
+        '';
+        default = null;
+        apply = value: if value == null then null else toString value;
+        type = types.nullOr types.path;
+      };
     };
   };
 
@@ -311,4 +330,5 @@ let
   };
 in {
   inherit nodes deploymentConfigJson toplevel buildAll buildSelected introspect;
+  meta = hive.meta;
 }
