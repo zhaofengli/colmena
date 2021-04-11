@@ -92,6 +92,9 @@ impl Host for Local {
 
         result
     }
+    async fn active_derivation_known(&mut self) -> NixResult<bool> {
+        Ok(true)
+    }
     fn set_progress_bar(&mut self, bar: TaskProgress) {
         self.progress_bar = bar;
     }

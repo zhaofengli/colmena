@@ -61,6 +61,16 @@ Here is a sample `hive.nix` with two nodes, with some common configurations appl
     environment.systemPackages = with pkgs; [
       vim wget curl
     ];
+
+    # By default, Colmena will replace unknown remote profile
+    # (unknown means the profile isn't in the nix store on the
+    # host running Colmena) during apply (with the default goal,
+    # boot, and switch).
+    # If you share a hive with others, or use multiple machines,
+    # and are not careful to always commit/push/pull changes
+    # you can accidentaly overwrite a remote profile so in those
+    # scenarios you might want to change this default to false. 
+    # deployment.replaceUnknownProfiles = true;
   };
 
   host-a = { name, nodes, ... }: {
@@ -86,6 +96,9 @@ Here is a sample `hive.nix` with two nodes, with some common configurations appl
     # For further customization, use the SSH_CONFIG_FILE
     # environment variable to specify a ssh_config file.
     deployment.targetPort = 1234;
+
+    # Override the default for this target host
+    deployment.replaceUnknownProfiles = false;
 
     time.timeZone = "America/Los_Angeles";
 
