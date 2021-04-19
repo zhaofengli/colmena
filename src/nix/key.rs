@@ -131,7 +131,7 @@ impl Key {
 
     pub fn dest_dir(&self) -> &Path { &self.dest_dir }
     pub fn user(&self) -> &str { &self.user }
-    pub fn group(&self) -> &str { &self.user }
+    pub fn group(&self) -> &str { &self.group }
     pub fn permissions(&self) -> &str { &self.permissions }
 }
 
