@@ -203,7 +203,7 @@ For example, to deploy DNS-01 credentials for use with `security.acme`:
       destDir = "/run/keys"; # Default: /run/keys
       user = "acme";         # Default: root
       group = "nginx";       # Default: root
-      mode = "0640";         # Default: 0600
+      permissions = "0640";  # Default: 0600
     };
     # Rest of configuration...
   };
