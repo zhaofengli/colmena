@@ -131,7 +131,7 @@ impl ProfileMap {
 
             let status = command.status().await?;
             if !status.success() {
-                return Err(NixError::NixFailure { exit_code: status.code().unwrap() });
+                return Err(status.into());
             }
         }
 

@@ -12,7 +12,7 @@ use shell_escape::unix::escape;
 use tokio::io::{AsyncWriteExt, BufReader};
 use tokio::process::Child;
 
-use crate::nix::{Key, NixError, NixResult};
+use crate::nix::{Key, NixResult};
 use crate::progress::TaskProgress;
 use crate::util::capture_stream;
 
@@ -54,6 +54,6 @@ pub async fn feed_uploader(mut uploader: Child, key: &Key, progress: TaskProgres
     if exit.success() {
         Ok(())
     } else {
-        Err(NixError::NixFailure { exit_code: exit.code().unwrap() })
+        Err(exit.into())
     }
 }

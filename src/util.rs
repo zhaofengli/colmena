@@ -9,7 +9,7 @@ use glob::Pattern as GlobPattern;
 use tokio::io::{AsyncRead, AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
-use super::nix::{NodeConfig, Hive, NixResult, NixError};
+use super::nix::{NodeConfig, Hive, NixResult};
 use super::progress::TaskProgress;
 
 enum NodeFilter {
@@ -74,7 +74,7 @@ impl CommandExecution {
         if exit.success() {
             Ok(())
         } else {
-            Err(NixError::NixFailure { exit_code: exit.code().unwrap() })
+            Err(exit.into())
         }
     }
 }
