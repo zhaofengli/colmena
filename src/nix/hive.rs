@@ -182,12 +182,17 @@ impl<'hive> NixInstantiate<'hive> {
         };
 
         if self.hive.path.is_flake() {
+            // if a flake URL with a # is passed, we need to use dot notation
+            let flake_root = hive_path.flake.unwrap();
+            let flake_path = if flake_root.find('#').is_none() {
+                format!("{}#colmena", flake_root)
+            } else {
+                format!("{}.colmena", flake_root)
+            };
+
             command
                 .arg("eval")
-                .arg(format!(
-                    "{}#colmena",
-                    hive_path.flake.unwrap()
-                ))
+                .arg(flake_path)
                 .arg("--impure") // HACK: required for IFD
                 .arg("--apply")
                 .arg(format!(
