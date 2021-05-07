@@ -121,6 +121,8 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     log::info!("Enumerating nodes...");
     let all_nodes = hive.deployment_info().await.unwrap();
 
+    let nix_options = hive.nix_options().await.unwrap();
+
     let selected_nodes = match local_args.value_of("on") {
         Some(filter) => {
             util::filter_nodes(&all_nodes, filter)
@@ -165,7 +167,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
                 if build_only {
                     targets.insert(
                         node.clone(),
-                        Target::new(localhost(), config.clone()),
+                        Target::new(localhost(nix_options.clone()), config.clone()),
                     );
                 }
             }

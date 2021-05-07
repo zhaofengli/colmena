@@ -42,6 +42,23 @@ impl Hive {
         self.show_trace = value;
     }
 
+    pub async fn nix_options(&self) -> NixResult<Vec<String>> {
+        let mut options:Vec<String> = Vec::new();
+        if let Some(machines_file) = self.machines_file().await.unwrap() {
+            options.append(&mut vec![
+                "--option".to_owned(),
+                "builders".to_owned(),
+                format!("@{}", machines_file).to_owned()
+            ]);
+        }
+
+        if self.show_trace {
+            options.push("--show-trace".to_owned())
+        }
+
+        Ok(options)
+    }
+
     pub fn as_path(&self) -> &Path {
         &self.hive
     }
@@ -60,6 +77,15 @@ impl Hive {
             }
         }
         Ok(configs)
+    }
+
+    /// Retrieve machinesFile setting for the hive.
+    pub async fn machines_file(&self) -> NixResult<Option<String>> {
+        let expr = "toJSON (hive.meta.machinesFile or null)";
+        let s: String = self.nix_instantiate(&expr).eval()
+            .capture_json().await?;
+
+        Ok(serde_json::from_str(&s).unwrap())
     }
 
     /// Retrieve deployment info for a single node.

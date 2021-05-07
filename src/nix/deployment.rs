@@ -460,8 +460,9 @@ impl Deployment {
     }
 
     async fn build_profiles(self: Arc<Self>, chunk: &Vec<String>, derivation: StoreDerivation<ProfileMap>, progress: TaskProgress) -> Option<ProfileMap> {
+        let nix_options = self.hive.nix_options().await.unwrap();
         // FIXME: Remote build?
-        let mut builder = host::local();
+        let mut builder = host::local(nix_options);
 
         builder.set_progress_bar(progress.clone());
 
