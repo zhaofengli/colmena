@@ -233,9 +233,13 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
 
     let deployment = Arc::new(deployment);
 
-    if goal_arg == "keys" {
-        deployment.upload_keys().await;
+    let success = if goal_arg == "keys" {
+        deployment.upload_keys().await
     } else {
-        deployment.execute().await;
+        deployment.execute().await
+    };
+
+    if !success {
+        quit::with_code(10);
     }
 }

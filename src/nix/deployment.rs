@@ -255,7 +255,7 @@ impl Deployment {
     }
 
     /// Uploads keys only (user-facing)
-    pub async fn upload_keys(self: Arc<Self>) {
+    pub async fn upload_keys(self: Arc<Self>) -> bool {
         let progress = {
             let mut progress = Progress::default();
             progress.set_label_width(self.label_width);
@@ -306,12 +306,14 @@ impl Deployment {
         }
 
         arc_self.print_logs().await;
+
+        arc_self.all_successful().await
     }
 
     /// Executes the deployment (user-facing)
     ///
     /// Self must be wrapped inside an Arc.
-    pub async fn execute(self: Arc<Self>) {
+    pub async fn execute(self: Arc<Self>) -> bool {
         let progress = {
             let mut progress = if !self.options.progress_bar {
                 Progress::with_style(OutputStyle::Plain)
@@ -429,6 +431,13 @@ impl Deployment {
         }
 
         arc_self.print_logs().await;
+
+        arc_self.all_successful().await
+    }
+
+    async fn all_successful(&self) -> bool {
+        let results = self.results.lock().await;
+        results.iter().filter(|r| !r.is_successful()).count() == 0
     }
 
     async fn print_logs(&self) {

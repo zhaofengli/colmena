@@ -126,7 +126,11 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     deployment.set_options(options);
 
     let deployment = Arc::new(deployment);
-    deployment.execute().await;
+    let success = deployment.execute().await;
+
+    if !success {
+        quit::with_code(10);
+    }
 }
 
 async fn escalate(sudo: &str) -> ! {
