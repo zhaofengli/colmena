@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::convert::TryInto;
 use std::path::PathBuf;
 use std::process::Stdio;
@@ -27,7 +27,6 @@ pub struct Ssh {
     ssh_config: Option<PathBuf>,
 
     friendly_name: String,
-    path_cache: HashSet<StorePath>,
     progress_bar: TaskProgress,
     logs: String,
 }
@@ -108,7 +107,6 @@ impl Ssh {
             port: None,
             ssh_config: None,
             friendly_name,
-            path_cache: HashSet::new(),
             progress_bar: TaskProgress::default(),
             logs: String::new(),
         }
