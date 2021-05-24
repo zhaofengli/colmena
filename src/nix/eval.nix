@@ -155,6 +155,16 @@ let
           type = types.bool;
           default = true;
         };
+        privilegeEscalationCommand = lib.mkOption {
+          description = ''
+            Command to use to elevate privileges when activating the new profiles on SSH hosts.
+
+            This is used on SSH hosts when `deployment.targetUser` is not `root`.
+            The user must be allowed to use the command non-interactively.
+          '';
+          type = types.listOf types.str;
+          default = [ "sudo" "-H" "--" ];
+        };
       };
     };
   };

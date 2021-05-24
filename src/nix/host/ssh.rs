@@ -26,6 +26,9 @@ pub struct Ssh {
     /// Local path to a ssh_config file.
     ssh_config: Option<PathBuf>,
 
+    /// Command to elevate privileges with.
+    privilege_escalation_command: Vec<String>,
+
     friendly_name: String,
     progress_bar: TaskProgress,
     logs: String,
@@ -107,6 +110,7 @@ impl Ssh {
             port: None,
             ssh_config: None,
             friendly_name,
+            privilege_escalation_command: Vec::new(),
             progress_bar: TaskProgress::default(),
             logs: String::new(),
         }
@@ -120,6 +124,10 @@ impl Ssh {
         self.ssh_config = Some(ssh_config);
     }
 
+    pub fn set_privilege_escalation_command(&mut self, command: Vec<String>) {
+        self.privilege_escalation_command = command;
+    }
+
     pub fn upcast(self) -> Box<dyn Host> {
         Box::new(self)
     }
@@ -128,6 +136,11 @@ impl Ssh {
     pub fn ssh(&self, command: &[&str]) -> Command {
         let options = self.ssh_options();
         let options_str = options.join(" ");
+        let privilege_escalation_command = if self.user != "root" {
+            self.privilege_escalation_command.as_slice()
+        } else {
+            &[]
+        };
 
         let mut cmd = Command::new("ssh");
 
@@ -135,6 +148,7 @@ impl Ssh {
             .arg(self.ssh_target())
             .args(&options)
             .arg("--")
+            .args(privilege_escalation_command)
             .args(command)
             .env("NIX_SSHOPTS", options_str);
 
