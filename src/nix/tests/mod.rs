@@ -33,7 +33,8 @@ impl TempHive {
         let mut temp_file = NamedTempFile::new().unwrap();
         temp_file.write_all(text.as_bytes()).unwrap();
 
-        let hive = Hive::new(temp_file.path()).unwrap();
+        let hive_path = HivePath::from_path(temp_file.path());
+        let hive = Hive::new(hive_path).unwrap();
 
         Self {
             hive,
@@ -46,7 +47,7 @@ impl TempHive {
     /// Note that this _does not_ attempt to evaluate `config.toplevel`.
     pub fn valid(text: &str) {
         let mut hive = Self::new(text);
-        hive.hive.show_trace(true);
+        hive.hive.set_show_trace(true);
         assert!(block_on(hive.deployment_info()).is_ok());
     }
 
@@ -143,6 +144,20 @@ fn test_parse_simple() {
     assert_eq!(Some("somehost.tld"), nodes["host-b"].target_host.as_deref());
     assert_eq!(Some(1234), nodes["host-b"].target_port);
     assert_eq!("luser", &nodes["host-b"].target_user);
+}
+
+#[test]
+fn test_parse_flake() {
+    let hive_path = HivePath::Flake("path:./src/nix/tests/simple-flake".to_string());
+    let mut hive = Hive::new(hive_path).unwrap();
+
+    hive.set_show_trace(true);
+
+    let nodes = block_on(hive.deployment_info()).unwrap();
+    assert!(set_eq(
+        &["host-a", "host-b"],
+        &nodes.keys().map(String::as_str).collect::<Vec<&str>>(),
+    ));
 }
 
 #[test]

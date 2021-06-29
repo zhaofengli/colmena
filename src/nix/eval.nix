@@ -1,4 +1,7 @@
-{ rawHive }:
+{ rawHive ? null               # Colmena Hive attrset
+, flakeUri ? null              # Nix Flake URI with `outputs.colmena`
+, hermetic ? flakeUri != null  # Whether we are allowed to use <nixpkgs>
+}:
 with builtins;
 let
   defaultHive = {
@@ -37,6 +40,8 @@ let
           - A path to a Nixpkgs checkout
           - The Nixpkgs lambda (e.g., import <nixpkgs>)
           - An initialized Nixpkgs attribute set
+
+          This option must be specified when using Flakes.
         '';
         type = types.unspecified;
         default = <nixpkgs>;
@@ -229,20 +234,30 @@ let
     };
   };
 
-  uncheckedUserMeta =
-    if rawHive ? meta && rawHive ? network then
-      throw "Only one of `network` and `meta` may be specified. `meta` should be used as `network` is for NixOps compatibility."
-    else if rawHive ? meta then rawHive.meta
-    else if rawHive ? network then rawHive.network
-    else {};
+  flakeToHive = flakeUri: let
+    flake = builtins.getFlake flakeUri;
+    hive = if flake.outputs ? colmena then flake.outputs.colmena else throw "Flake must define outputs.colmena.";
+  in hive;
 
-  userMeta = (lib.modules.evalModules {
-    modules = [ metaOptions uncheckedUserMeta ];
-  }).config;
+  uncheckedHive =
+    if rawHive != null then rawHive
+    else if flakeUri != null then flakeToHive flakeUri
+    else throw "Either an attribute set or a flake URI must be specified.";
+
+  uncheckedUserMeta =
+    if uncheckedHive ? meta && uncheckedHive ? network then
+      throw "Only one of `network` and `meta` may be specified. `meta` should be used as `network` is for NixOps compatibility."
+    else if uncheckedHive ? meta then uncheckedHive.meta
+    else if uncheckedHive ? network then uncheckedHive.network
+    else {};
 
   # The final hive will always have the meta key instead of network.
   hive = let 
-    mergedHive = removeAttrs (defaultHive // rawHive) [ "meta" "network" ];
+    userMeta = (lib.modules.evalModules {
+      modules = [ metaOptions uncheckedUserMeta ];
+    }).config;
+
+    mergedHive = removeAttrs (defaultHive // uncheckedHive) [ "meta" "network" ];
     meta = {
       meta = userMeta;
     };
@@ -255,7 +270,9 @@ let
     else if typeOf pkgConf == "lambda" then
       pkgConf {}
     else if typeOf pkgConf == "set" then
-      pkgConf
+      # FIXME: Allow configuring `system`
+      if pkgConf ? outputs then mkNixpkgs configName pkgConf.outputs.legacyPackages.${currentSystem}.path
+      else pkgConf
     else throw ''
       ${configName} must be one of:
 
@@ -266,7 +283,10 @@ let
 
   pkgs = let
     # Can't rely on the module system yet
-    nixpkgsConf = if uncheckedUserMeta ? nixpkgs then uncheckedUserMeta.nixpkgs else <nixpkgs>;
+    nixpkgsConf =
+      if uncheckedUserMeta ? nixpkgs then uncheckedUserMeta.nixpkgs
+      else if hermetic then throw "meta.nixpkgs must be specified in hermetic mode."
+      else <nixpkgs>;
   in mkNixpkgs "meta.nixpkgs" nixpkgsConf;
 
   lib = pkgs.lib;

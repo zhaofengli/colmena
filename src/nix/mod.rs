@@ -18,7 +18,7 @@ pub use host::{Host, CopyDirection, CopyOptions};
 use host::Ssh;
 
 pub mod hive;
-pub use hive::Hive;
+pub use hive::{Hive, HivePath};
 
 pub mod store;
 pub use store::{StorePath, StoreDerivation};

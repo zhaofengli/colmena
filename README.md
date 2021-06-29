@@ -5,6 +5,8 @@
 Colmena is a simple, stateless [NixOS](https://nixos.org) deployment tool modeled after [NixOps](https://github.com/NixOS/nixops) and [Morph](https://github.com/DBCDK/morph), written in Rust.
 It's a thin wrapper over Nix commands like `nix-instantiate` and `nix-copy-closure`, and supports parallel deployment.
 
+Now with 100% more flakes! See *Tutorial with Flakes* below.
+
 <pre>
 $ <b>colmena apply --on @tag-a</b>
 [INFO ] Enumerating nodes...
@@ -31,6 +33,8 @@ nix-env -if default.nix
 ```
 
 ## Tutorial
+
+*See Tutorial with Flakes for usage with Nix Flakes.*
 
 Colmena should work with your existing NixOps and Morph configurations with minimal modification.
 Here is a sample `hive.nix` with two nodes, with some common configurations applied to both nodes:
@@ -110,6 +114,45 @@ Here is a sample `hive.nix` with two nodes, with some common configurations appl
     fileSystems."/" = {
       device = "/dev/sda1";
       fsType = "ext4";
+    };
+  };
+}
+```
+
+The full set of options can be found at `src/nix/eval.nix`.
+Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to deploy it to all nodes.
+
+## Tutorial with Flakes
+
+To use with Nix Flakes, create `outputs.colmena` in your `flake.nix`.
+
+Here is a short example:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  };
+  outputs = { nixpkgs, ... }: {
+    colmena = {
+      meta = {
+        inherit nixpkgs;
+      };
+
+      # Also see the non-Flakes hive.nix example above.
+      host-a = { name, nodes, pkgs, ... }: {
+        boot.isContainer = true;
+        time.timeZone = nodes.host-b.config.time.timeZone;
+      };
+      host-b = {
+        deployment = {
+          targetHost = "somehost.tld";
+          targetPort = 1234;
+          targetUser = "luser";
+        };
+        boot.isContainer = true;
+        time.timeZone = "America/Los_Angeles";
+      };
     };
   };
 }

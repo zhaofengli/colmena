@@ -116,7 +116,6 @@ pub fn subcommand() -> App<'static, 'static> {
 
 pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     let hive = util::hive_from_args(local_args).unwrap();
-    let hive_base = hive.as_path().parent().unwrap().to_owned();
 
     log::info!("Enumerating nodes...");
     let all_nodes = hive.deployment_info().await.unwrap();
@@ -197,7 +196,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     options.set_force_replace_unknown_profiles(local_args.is_present("force-replace-unknown-profiles"));
 
     if local_args.is_present("keep-result") {
-        options.set_gc_roots(hive_base.join(".gcroots"));
+        options.set_create_gc_roots(true);
     }
 
     deployment.set_options(options);

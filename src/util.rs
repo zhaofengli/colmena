@@ -9,7 +9,7 @@ use glob::Pattern as GlobPattern;
 use tokio::io::{AsyncRead, AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
-use super::nix::{NodeConfig, Hive, NixResult};
+use super::nix::{NodeConfig, Hive, HivePath, NixResult};
 use super::progress::TaskProgress;
 
 enum NodeFilter {
@@ -79,13 +79,12 @@ impl CommandExecution {
     }
 }
 
-
 pub fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
     let path = match args.occurrences_of("config") {
         0 => {
             // traverse upwards until we find hive.nix
             let mut cur = std::env::current_dir()?;
-            let mut hive_path = None;
+            let mut file_path = None;
 
             loop {
                 let mut listing = match fs::read_dir(&cur) {
@@ -106,7 +105,7 @@ pub fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
                     match rdirent {
                         Err(e) => Some(Err(e)),
                         Ok(f) => {
-                            if f.file_name() == "hive.nix" {
+                            if f.file_name() == "flake.nix" || f.file_name() == "hive.nix" {
                                 Some(Ok(f))
                             } else {
                                 None
@@ -117,7 +116,7 @@ pub fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
 
                 if let Some(rdirent) = found {
                     let dirent = rdirent?;
-                    hive_path = Some(dirent.path());
+                    file_path = Some(dirent.path());
                     break;
                 }
 
@@ -131,22 +130,37 @@ pub fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
                 }
             }
 
-            if hive_path.is_none() {
-                log::error!("Could not find `hive.nix` in {:?} or any parent directory", std::env::current_dir()?);
+            if file_path.is_none() {
+                log::error!("Could not find `hive.nix` or `flake.nix` in {:?} or any parent directory", std::env::current_dir()?);
             }
 
-            hive_path.unwrap()
+            file_path.unwrap()
         }
         _ => {
             let path = args.value_of("config").expect("The config arg should exist").to_owned();
-            canonicalize_cli_path(path)
+            let fpath = canonicalize_cli_path(&path);
+
+            if !fpath.exists() && path.contains(":") {
+                // Treat as flake URI
+                let hive_path = HivePath::Flake(path);
+                let mut hive = Hive::new(hive_path)?;
+
+                if args.is_present("show-trace") {
+                    hive.set_show_trace(true);
+                }
+
+                return Ok(hive);
+            }
+
+            fpath
         }
     };
 
-    let mut hive = Hive::new(path)?;
+    let hive_path = HivePath::from_path(path);
+    let mut hive = Hive::new(hive_path)?;
 
     if args.is_present("show-trace") {
-        hive.show_trace(true);
+        hive.set_show_trace(true);
     }
 
     Ok(hive)
@@ -207,7 +221,7 @@ The list is comma-separated and globs are supported. To match tags, prepend the 
             .takes_value(true))
 }
 
-fn canonicalize_cli_path(path: String) -> PathBuf {
+fn canonicalize_cli_path(path: &str) -> PathBuf {
     if !path.starts_with("/") {
         format!("./{}", path).into()
     } else {

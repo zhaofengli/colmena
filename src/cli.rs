@@ -41,11 +41,11 @@ pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
             // The default value is a lie (sort of)!
             //
             // The default behavior is to search upwards from the
-            // current working directory for a file named "hive.nix".
-            // This behavior is disabled if --config/-f is explicitly
-            // supplied by the user (occurrences_of > 0).
+            // current working directory for a file named "flake.nix"
+            // or "hive.nix". This behavior is disabled if --config/-f
+            // is explicitly supplied by the user (occurrences_of > 0).
             .default_value("hive.nix")
-            .long_help(r#"If this argument is not specified, Colmena will search upwards from the current working directory for a file named "hive.nix". This behavior is disabled if --config/-f is given explicitly.
+            .long_help(r#"If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
 
 For a sample configuration, see <https://github.com/zhaofengli/colmena>.
 "#)

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::convert::AsRef;
 
 use tempfile::{NamedTempFile, TempPath};
 use tokio::process::Command;
@@ -20,25 +21,83 @@ use crate::progress::TaskProgress;
 const HIVE_EVAL: &'static [u8] = include_bytes!("eval.nix");
 
 #[derive(Debug)]
+pub enum HivePath {
+    /// A Nix Flake URI.
+    ///
+    /// The flake must contain the `colmena` output.
+    Flake(String),
+
+    /// A regular .nix file
+    Legacy(PathBuf),
+}
+
+impl HivePath {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> Self {
+        let path = path.as_ref();
+
+        if let Some(osstr) = path.file_name() {
+            if osstr == "flake.nix" {
+                let parent = path.parent().unwrap().to_str().unwrap();
+                let uri = format!("path:{}", parent);
+
+                return Self::Flake(uri);
+            }
+        }
+
+        Self::Legacy(path.to_owned())
+    }
+
+    fn context_dir(&self) -> Option<PathBuf> {
+        match self {
+            Self::Legacy(p) => {
+                if let Some(parent) = p.parent() {
+                    return Some(parent.to_owned());
+                }
+                None
+            }
+            _ => None,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct Hive {
-    hive: PathBuf,
+    /// Path to the hive.
+    path: HivePath,
+
+    /// Path to the context directory.
+    ///
+    /// Normally this is directory containing the "hive.nix"
+    /// or "flake.nix".
+    context_dir: Option<PathBuf>,
+
+    /// Path to temporary file containing eval.nix.
     eval_nix: TempPath,
+
+    /// Whether to pass --show-trace in Nix commands.
     show_trace: bool,
 }
 
 impl Hive {
-    pub fn new<P: AsRef<Path>>(hive: P) -> NixResult<Self> {
+    pub fn new(path: HivePath) -> NixResult<Self> {
         let mut eval_nix = NamedTempFile::new()?;
         eval_nix.write_all(HIVE_EVAL).unwrap();
 
+        let context_dir = path.context_dir();
+
         Ok(Self {
-            hive: hive.as_ref().to_owned(),
+            path,
+            context_dir,
             eval_nix: eval_nix.into_temp_path(),
             show_trace: false,
         })
     }
 
-    pub fn show_trace(&mut self, value: bool) {
+    pub fn context_dir(&self) -> Option<&Path> {
+        self.context_dir.as_ref().map(|p| p.as_ref())
+    }
+
+    pub fn set_show_trace(&mut self, value: bool) {
         self.show_trace = value;
     }
 
@@ -57,10 +116,6 @@ impl Hive {
         }
 
         Ok(options)
-    }
-
-    pub fn as_path(&self) -> &Path {
-        &self.hive
     }
 
     /// Retrieve deployment info for all nodes.
@@ -145,6 +200,10 @@ impl Hive {
     fn nix_instantiate(&self, expression: &str) -> NixInstantiate {
         NixInstantiate::new(&self, expression.to_owned())
     }
+
+    fn path(&self) -> &HivePath {
+        &self.path
+    }
 }
 
 struct NixInstantiate<'hive> {
@@ -166,15 +225,32 @@ impl<'hive> NixInstantiate<'hive> {
         // but Nix may not like it...
 
         let mut command = Command::new("nix-instantiate");
-        command
-            .arg("--no-gc-warning")
-            .arg("-E")
-            .arg(format!(
-                "with builtins; let eval = import {}; hive = eval {{ rawHive = import {}; }}; in {}",
-                self.hive.eval_nix.to_str().unwrap(),
-                self.hive.as_path().to_str().unwrap(),
-                self.expression,
-            ));
+
+        match self.hive.path() {
+            HivePath::Legacy(path) => {
+                command
+                    .arg("--no-gc-warning")
+                    .arg("-E")
+                    .arg(format!(
+                        "with builtins; let eval = import {}; hive = eval {{ rawHive = import {}; }}; in {}",
+                        self.hive.eval_nix.to_str().unwrap(),
+                        path.to_str().unwrap(),
+                        self.expression,
+                    ));
+            }
+            HivePath::Flake(uri) => {
+                command
+                    .args(&["--experimental-features", "flakes"])
+                    .arg("--no-gc-warning")
+                    .arg("-E")
+                    .arg(format!(
+                        "with builtins; let eval = import {}; hive = eval {{ flakeUri = \"{}\"; }}; in {}",
+                        self.hive.eval_nix.to_str().unwrap(),
+                        &uri,
+                        self.expression,
+                    ));
+            }
+        }
 
         if self.hive.show_trace {
             command.arg("--show-trace");

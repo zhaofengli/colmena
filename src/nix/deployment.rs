@@ -1,7 +1,5 @@
 use std::cmp::max;
 use std::collections::HashMap;
-use std::convert::AsRef;
-use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use futures::future::join_all;
@@ -388,11 +386,15 @@ impl Deployment {
                                 }
                             }
 
-                            if let Some(base) = &arc_self.options.gc_roots {
+                            if arc_self.options.create_gc_roots {
                                 // Create GC roots
-                                if let Err(e) = profiles.create_gc_roots(base).await {
-                                    let bar = progress.create_task_progress(BATCH_OPERATION_LABEL.to_string());
-                                    bar.failure(&format!("Failed to create GC roots: {:?}", e));
+                                if let Some(dir) = arc_self.hive.context_dir() {
+                                    let base = dir.join(".gcroots");
+
+                                    if let Err(e) = profiles.create_gc_roots(&base).await {
+                                        let bar = progress.create_task_progress(BATCH_OPERATION_LABEL.to_string());
+                                        bar.failure(&format!("Failed to create GC roots: {:?}", e));
+                                    }
                                 }
                             }
 
@@ -635,8 +637,11 @@ pub struct DeploymentOptions {
     /// Whether to upload keys when deploying.
     upload_keys: bool,
 
-    /// Directory to create GC roots for node profiles in.
-    gc_roots: Option<PathBuf>,
+    /// Whether to create GC roots for node profiles.
+    ///
+    /// If true, .gc_roots will be created under the hive's context
+    /// directory if it exists.
+    create_gc_roots: bool,
 
     /// Ignore the node-level `deployment.replaceUnknownProfiles` option.
     force_replace_unknown_profiles: bool,
@@ -649,7 +654,7 @@ impl Default for DeploymentOptions {
             substituters_push: true,
             gzip: true,
             upload_keys: true,
-            gc_roots: None,
+            create_gc_roots: false,
             force_replace_unknown_profiles: false,
         }
     }
@@ -672,8 +677,8 @@ impl DeploymentOptions {
         self.upload_keys = enable;
     }
 
-    pub fn set_gc_roots<P: AsRef<Path>>(&mut self, path: P) {
-        self.gc_roots = Some(path.as_ref().to_owned());
+    pub fn set_create_gc_roots(&mut self, enable: bool) {
+        self.create_gc_roots = enable;
     }
 
     pub fn set_force_replace_unknown_profiles(&mut self, enable: bool) {
