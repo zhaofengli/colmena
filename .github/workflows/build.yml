@@ -10,7 +10,6 @@ jobs:
       - uses: cachix/install-nix-action@v13
         with:
           install_url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.4pre20210604_8e6ee1b/install
-          install_options: '--tarball-url-prefix https://nixos-nix-install-tests.cachix.org/serve'
           extra_nix_config: |
             experimental-features = nix-command flakes
 
