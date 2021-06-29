@@ -11,10 +11,11 @@ use validator::Validate;
 use super::{
     StoreDerivation,
     NixResult,
+    NixError,
     NodeConfig,
     ProfileMap,
 };
-use super::NixCommand;
+use super::{NixCommand, NixCheck};
 use crate::util::CommandExecution;
 use crate::progress::TaskProgress;
 
@@ -56,6 +57,14 @@ impl HivePath {
                 None
             }
             _ => None,
+        }
+    }
+
+    fn is_flake(&self) -> bool {
+        if let Self::Flake(_) = self {
+            true
+        } else {
+            false
         }
     }
 }
@@ -120,6 +129,13 @@ impl Hive {
 
     /// Retrieve deployment info for all nodes.
     pub async fn deployment_info(&self) -> NixResult<HashMap<String, NodeConfig>> {
+        let nix_check = NixCheck::detect().await;
+
+        if self.path.is_flake() && !nix_check.flakes_supported() {
+            nix_check.print_flakes_info(true);
+            return Err(NixError::NoFlakesSupport);
+        }
+
         // FIXME: Really ugly :(
         let s: String = self.nix_instantiate("hive.deploymentConfigJson").eval()
             .capture_json().await?;

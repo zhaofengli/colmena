@@ -32,6 +32,9 @@ pub use profile::{Profile, ProfileMap};
 pub mod deployment;
 pub use deployment::{Goal, Target, Deployment};
 
+pub mod info;
+pub use info::NixCheck;
+
 #[cfg(test)]
 mod tests;
 
@@ -71,6 +74,9 @@ pub enum NixError {
 
     #[snafu(display("Unknown active profile: {}", store_path))]
     ActiveProfileUnknown { store_path: String },
+
+    #[snafu(display("Current Nix version does not support Flakes"))]
+    NoFlakesSupport,
 
     #[snafu(display("Nix Error: {}", message))]
     Unknown { message: String },

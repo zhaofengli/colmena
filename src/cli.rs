@@ -73,6 +73,7 @@ For a sample configuration, see <https://github.com/zhaofengli/colmena>.
     register_command!(introspect, app);
     register_command!(upload_keys, app);
     register_command!(exec, app);
+    register_command!(nix_info, app);
 
     app
 }
@@ -87,6 +88,7 @@ pub async fn run() {
     handle_command!(introspect, matches);
     handle_command!("upload-keys", upload_keys, matches);
     handle_command!(exec, matches);
+    handle_command!("nix-info", nix_info, matches);
 
     if let Some(args) = matches.subcommand_matches("gen-completions") {
         return gen_completions(args);
