@@ -127,7 +127,7 @@ Here is a sample `hive.nix` with two nodes, with some common configurations appl
 ```
 
 The full set of options can be found at `src/nix/eval.nix`.
-Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to deploy it to all nodes.
+Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to build and deploy it to all nodes.
 
 ## Tutorial with Flakes
 
@@ -166,7 +166,7 @@ Here is a short example:
 ```
 
 The full set of options can be found at `src/nix/eval.nix`.
-Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to deploy it to all nodes.
+Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to build and deploy it to all nodes.
 
 ## `colmena introspect`
 
