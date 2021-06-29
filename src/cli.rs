@@ -36,7 +36,7 @@ pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
             .short("f")
             .long("config")
             .value_name("CONFIG")
-            .help("Path to a Hive expression")
+            .help("Path to a Hive expression, a flake.nix, or a Nix Flake URI")
 
             // The default value is a lie (sort of)!
             //
