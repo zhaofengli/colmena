@@ -32,11 +32,6 @@ nix-env -if default.nix
 
 ## Tutorial
 
-Enter a shell with `colmena` with:
-```
-nix-shell
-```
-
 Colmena should work with your existing NixOps and Morph configurations with minimal modification.
 Here is a sample `hive.nix` with two nodes, with some common configurations applied to both nodes:
 
