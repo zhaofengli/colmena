@@ -309,22 +309,8 @@ let
         }) config.deployment.keys;
     };
 
-    # Here we need to merge the configurations in meta.nixpkgs
-    # and in machine config.
     nixpkgsModule = { config, lib, ... }: {
-      nixpkgs.overlays = lib.mkBefore npkgs.overlays;
-      nixpkgs.config = lib.mkOptionDefault npkgs.config;
-
-      # The merging of nixpkgs.config seems to be broken.
-      # Let's warn the user if not all config attributes set in
-      # meta.nixpkgs are overridden.
-      warnings = let
-        metaKeys = attrNames npkgs.config;
-        nodeKeys = [ "doCheckByDefault" "warnings" ] ++ (attrNames config.nixpkgs.config);
-        remainingKeys = filter (k: ! elem k nodeKeys) metaKeys;
-      in
-        lib.optional (length remainingKeys != 0)
-        "The following Nixpkgs configuration keys set in meta.nixpkgs will be ignored: ${toString remainingKeys}";
+      nixpkgs.pkgs = lib.mkDefault npkgs;
     };
   in evalConfig {
     modules = [
