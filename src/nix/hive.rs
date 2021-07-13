@@ -5,6 +5,7 @@ use std::convert::AsRef;
 
 use tempfile::{NamedTempFile, TempPath};
 use tokio::process::Command;
+use tokio::sync::RwLock;
 use serde::Serialize;
 use validator::Validate;
 
@@ -85,6 +86,9 @@ pub struct Hive {
 
     /// Whether to pass --show-trace in Nix commands.
     show_trace: bool,
+
+    /// The cached --builders expression.
+    builders: RwLock<Option<Option<String>>>,
 }
 
 impl Hive {
@@ -99,6 +103,7 @@ impl Hive {
             context_dir,
             eval_nix: eval_nix.into_temp_path(),
             show_trace: false,
+            builders: RwLock::new(None),
         })
     }
 
@@ -111,17 +116,10 @@ impl Hive {
     }
 
     pub async fn nix_options(&self) -> NixResult<Vec<String>> {
-        let mut options:Vec<String> = Vec::new();
-        if let Some(machines_file) = self.machines_file().await.unwrap() {
-            options.append(&mut vec![
-                "--option".to_owned(),
-                "builders".to_owned(),
-                format!("@{}", machines_file).to_owned()
-            ]);
-        }
+        let mut options = self.builder_args().await?;
 
         if self.show_trace {
-            options.push("--show-trace".to_owned())
+            options.push("--show-trace".to_owned());
         }
 
         Ok(options)
@@ -137,7 +135,7 @@ impl Hive {
         }
 
         // FIXME: Really ugly :(
-        let s: String = self.nix_instantiate("hive.deploymentConfigJson").eval()
+        let s: String = self.nix_instantiate("hive.deploymentConfigJson").eval_with_builders().await?
             .capture_json().await?;
 
         let configs: HashMap<String, NodeConfig> = serde_json::from_str(&s).unwrap();
@@ -150,19 +148,10 @@ impl Hive {
         Ok(configs)
     }
 
-    /// Retrieve machinesFile setting for the hive.
-    pub async fn machines_file(&self) -> NixResult<Option<String>> {
-        let expr = "toJSON (hive.meta.machinesFile or null)";
-        let s: String = self.nix_instantiate(&expr).eval()
-            .capture_json().await?;
-
-        Ok(serde_json::from_str(&s).unwrap())
-    }
-
     /// Retrieve deployment info for a single node.
     pub async fn deployment_info_for(&self, node: &str) -> NixResult<Option<NodeConfig>> {
         let expr = format!("toJSON (hive.nodes.\"{}\".config.deployment or null)", node);
-        let s: String = self.nix_instantiate(&expr).eval()
+        let s: String = self.nix_instantiate(&expr).eval_with_builders().await?
             .capture_json().await?;
 
         Ok(serde_json::from_str(&s).unwrap())
@@ -184,7 +173,13 @@ impl Hive {
 
         let expr = format!("hive.buildSelected {{ names = {}; }}", nodes_expr.expression());
 
-        let command = self.nix_instantiate(&expr).instantiate();
+        let command = match self.nix_instantiate(&expr).instantiate_with_builders().await {
+            Ok(command) => command,
+            Err(e) => {
+                return (Err(e), None);
+            }
+        };
+
         let mut execution = CommandExecution::new(command);
         execution.set_progress_bar(progress_bar);
 
@@ -209,8 +204,39 @@ impl Hive {
     /// Evaluates an expression using values from the configuration
     pub async fn introspect(&self, expression: String) -> NixResult<String> {
         let expression = format!("toJSON (hive.introspect ({}))", expression);
-        self.nix_instantiate(&expression).eval()
+        self.nix_instantiate(&expression).eval_with_builders().await?
             .capture_json().await
+    }
+
+    /// Retrieve machinesFile setting for the hive.
+    async fn machines_file(&self) -> NixResult<Option<String>> {
+        if let Some(builders_opt) = &*self.builders.read().await {
+            return Ok(builders_opt.clone());
+        }
+
+        let expr = "toJSON (hive.meta.machinesFile or null)";
+        let s: String = self.nix_instantiate(&expr).eval()
+            .capture_json().await?;
+
+        let parsed: Option<String> = serde_json::from_str(&s).unwrap();
+        self.builders.write().await.replace(parsed.clone());
+
+        Ok(parsed)
+    }
+
+    /// Returns Nix arguments to set builders.
+    async fn builder_args(&self) -> NixResult<Vec<String>> {
+        let mut options = Vec::new();
+
+        if let Some(machines_file) = self.machines_file().await.unwrap() {
+            options.append(&mut vec![
+                "--option".to_owned(),
+                "builders".to_owned(),
+                format!("@{}", machines_file).to_owned()
+            ]);
+        }
+
+        Ok(options)
     }
 
     fn nix_instantiate(&self, expression: &str) -> NixInstantiate {
@@ -279,6 +305,26 @@ impl<'hive> NixInstantiate<'hive> {
         let mut command = self.instantiate();
         command.arg("--eval").arg("--json");
         command
+    }
+
+    async fn instantiate_with_builders(self) -> NixResult<Command> {
+        let hive = self.hive;
+        let mut command = self.instantiate();
+
+        let builder_args = hive.builder_args().await?;
+        command.args(&builder_args);
+
+        Ok(command)
+    }
+
+    async fn eval_with_builders(self) -> NixResult<Command> {
+        let hive = self.hive;
+        let mut command = self.eval();
+
+        let builder_args = hive.builder_args().await?;
+        command.args(&builder_args);
+
+        Ok(command)
     }
 }
 
