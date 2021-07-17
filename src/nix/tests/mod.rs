@@ -388,3 +388,20 @@ fn test_nixpkgs_config_override() {
         vec![ "test".to_string() ]
     );
 }
+
+#[test]
+fn test_meta_special_args() {
+    TempHive::valid(r#"
+      {
+        meta.specialArgs = {
+          undine = "assimilated";
+        };
+
+        borg = { undine, ... }:
+          assert undine == "assimilated";
+        {
+          boot.isContainer = true;
+        };
+      }
+    "#);
+}

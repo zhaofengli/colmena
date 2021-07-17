@@ -72,6 +72,16 @@ let
         apply = value: if value == null then null else toString value;
         type = types.nullOr types.path;
       };
+      specialArgs = lib.mkOption {
+        description = ''
+          A set of special arguments to be passed to NixOS modules.
+
+          This will be merged into the `specialArgs` used to evaluate
+          the NixOS configurations.
+        '';
+        default = {};
+        type = types.attrsOf types.unspecified;
+      };
     };
   };
 
@@ -334,7 +344,7 @@ let
       hive.defaults
       config
     ] ++ (import (npkgs.path + "/nixos/modules/module-list.nix"));
-    specialArgs = {
+    specialArgs = hive.meta.specialArgs // {
       inherit name nodes;
       modulesPath = npkgs.path + "/nixos/modules";
     };
