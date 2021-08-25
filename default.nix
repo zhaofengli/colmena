@@ -21,7 +21,7 @@ in rustPlatform.buildRustPackage {
       src = ./.;
     };
   };
-  cargoSha256 = "10h8bsy8hh36mvdgpnbw4vxnzkxyfw2vb4r1pn7fxfn0nklgakq7";
+  cargoSha256 = "sha256-/108zjC937AX5HVTGfHD6DRh3abRdCWDXpOP1kIple0=";
 
   postInstall = lib.optionalString (stdenv.hostPlatform == stdenv.buildPlatform) ''
     mkdir completions
