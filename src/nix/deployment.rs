@@ -6,6 +6,7 @@ use futures::future::join_all;
 use tokio::sync::{Mutex, Semaphore};
 
 use super::{Hive, Host, CopyOptions, NodeConfig, Profile, StoreDerivation, ProfileMap, host};
+use super::key::{Key, UploadAt};
 use crate::progress::{Progress, TaskProgress, OutputStyle};
 
 /// Amount of RAM reserved for the system, in MB.
@@ -523,10 +524,20 @@ impl Deployment {
             }
         }
 
-        if self.options.upload_keys && !target.config.keys.is_empty() {
+        let pre_activation_keys = target.config.keys.iter()
+            .filter(|(_, v)| v.upload_at() == UploadAt::PreActivation)
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect::<HashMap<String, Key>>();
+
+        let post_activation_keys = target.config.keys.iter()
+            .filter(|(_, v)| v.upload_at() == UploadAt::PostActivation)
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect::<HashMap<String, Key>>();
+
+        if self.options.upload_keys && !pre_activation_keys.is_empty() {
             bar.log("Uploading keys...");
 
-            if let Err(e) = target.host.upload_keys(&target.config.keys).await {
+            if let Err(e) = target.host.upload_keys(&pre_activation_keys).await {
                 bar.failure_err(&e);
 
                 let mut results = self.results.lock().await;
@@ -546,6 +557,21 @@ impl Deployment {
 
         match target.host.deploy(&profile, self.goal, copy_options).await {
             Ok(_) => {
+                // FIXME: This is ugly
+                if self.options.upload_keys && !post_activation_keys.is_empty() {
+                    bar.log("Uploading keys (post-activation)...");
+
+                    if let Err(e) = target.host.upload_keys(&post_activation_keys).await {
+                        bar.failure_err(&e);
+
+                        let mut results = self.results.lock().await;
+                        let stage = Stage::Apply(name.to_string());
+                        let logs = target.host.dump_logs().await.map(|s| s.to_string());
+                        results.push(DeploymentResult::failure(stage, logs));
+                        return;
+                    }
+                }
+
                 bar.success(self.goal.success_str().unwrap());
 
                 let mut results = self.results.lock().await;

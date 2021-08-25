@@ -254,10 +254,12 @@ For example, to deploy DNS-01 credentials for use with `security.acme`:
       # may be specified.
       keyCommand = [ "vault" "read" "-field=env" "secret/dns01" ];
 
-      destDir = "/run/keys"; # Default: /run/keys
-      user = "acme";         # Default: root
-      group = "nginx";       # Default: root
-      permissions = "0640";  # Default: 0600
+      destDir = "/run/keys";       # Default: /run/keys
+      user = "acme";               # Default: root
+      group = "nginx";             # Default: root
+      permissions = "0640";        # Default: 0600
+
+      uploadAt = "pre-activation"; # Default: pre-activation, Alternative: post-activation
     };
     # Rest of configuration...
   };

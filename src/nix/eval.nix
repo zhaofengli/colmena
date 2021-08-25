@@ -241,6 +241,18 @@ let
         default = "0600";
         type = types.str;
       };
+      uploadAt = lib.mkOption {
+        description = ''
+          When to upload the keys.
+
+          - pre-activation (default): Upload the keys before activating the new system profile.
+          - post-activation: Upload the keys after successfully activating the new system profile.
+
+          For `colmena upload-keys`, all keys are uploaded at the same time regardless of the configuration here.
+        '';
+        default = "pre-activation";
+        type = types.enum [ "pre-activation" "post-activation" ];
+      };
     };
   };
 

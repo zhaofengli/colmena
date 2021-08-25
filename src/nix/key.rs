@@ -75,6 +75,18 @@ struct KeySources {
     file: Option<PathBuf>,
 }
 
+/// When to upload a given key.
+#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+pub enum UploadAt {
+    /// Before activating the system profile.
+    #[serde(rename = "pre-activation")]
+    PreActivation,
+
+    /// After successfully activating the system profile.
+    #[serde(rename = "post-activation")]
+    PostActivation,
+}
+
 #[derive(Debug, Clone, Validate, Serialize, Deserialize)]
 pub struct Key {
     #[serde(flatten)]
@@ -91,6 +103,9 @@ pub struct Key {
     group: String,
 
     permissions: String,
+
+    #[serde(rename = "uploadAt")]
+    upload_at: UploadAt,
 }
 
 impl Key {
@@ -133,6 +148,7 @@ impl Key {
     pub fn user(&self) -> &str { &self.user }
     pub fn group(&self) -> &str { &self.group }
     pub fn permissions(&self) -> &str { &self.permissions }
+    pub fn upload_at(&self) -> UploadAt { self.upload_at }
 }
 
 fn validate_unix_name(name: &str) -> Result<(), ValidationError> {
