@@ -21,7 +21,10 @@ in rustPlatform.buildRustPackage {
       src = ./.;
     };
   };
-  cargoSha256 = "sha256-/108zjC937AX5HVTGfHD6DRh3abRdCWDXpOP1kIple0=";
+
+  cargoLock = {
+    lockFile = ./Cargo.lock;
+  };
 
   postInstall = lib.optionalString (stdenv.hostPlatform == stdenv.buildPlatform) ''
     mkdir completions
