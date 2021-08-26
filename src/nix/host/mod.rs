@@ -96,9 +96,13 @@ pub trait Host: Send + Sync + std::fmt::Debug {
         Ok(())
     }
 
-    #[allow(unused_variables)] 
     /// Uploads a set of keys to the host.
-    async fn upload_keys(&mut self, keys: &HashMap<String, Key>) -> NixResult<()> {
+    ///
+    /// If `require_ownership` is false, then the ownership of a key
+    /// will not be applied if the specified user/group does not
+    /// exist.
+    #[allow(unused_variables)] 
+    async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> NixResult<()> {
         Err(NixError::Unsupported)
     }
 

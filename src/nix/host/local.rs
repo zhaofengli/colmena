@@ -61,9 +61,9 @@ impl Host for Local {
             Err(e) => Err(e),
         }
     }
-    async fn upload_keys(&mut self, keys: &HashMap<String, Key>) -> NixResult<()> {
+    async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> NixResult<()> {
         for (name, key) in keys {
-            self.upload_key(&name, &key).await?;
+            self.upload_key(&name, &key, require_ownership).await?;
         }
 
         Ok(())
@@ -109,11 +109,11 @@ impl Host for Local {
 
 impl Local {
     /// "Uploads" a single key.
-    async fn upload_key(&mut self, name: &str, key: &Key) -> NixResult<()> {
+    async fn upload_key(&mut self, name: &str, key: &Key, require_ownership: bool) -> NixResult<()> {
         self.progress_bar.log(&format!("Deploying key {}", name));
 
         let dest_path = key.dest_dir().join(name);
-        let key_script = format!("'{}'", key_uploader::generate_script(key, &dest_path));
+        let key_script = format!("'{}'", key_uploader::generate_script(key, &dest_path, require_ownership));
 
         let mut command = Command::new("sh");
 

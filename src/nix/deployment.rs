@@ -284,7 +284,7 @@ impl Deployment {
 
                         task.log("Uploading keys...");
 
-                        if let Err(e) = target.host.upload_keys(&target.config.keys).await {
+                        if let Err(e) = target.host.upload_keys(&target.config.keys, true).await {
                             task.failure_err(&e);
 
                             let mut results = arc_self.results.lock().await;
@@ -537,7 +537,7 @@ impl Deployment {
         if self.options.upload_keys && !pre_activation_keys.is_empty() {
             bar.log("Uploading keys...");
 
-            if let Err(e) = target.host.upload_keys(&pre_activation_keys).await {
+            if let Err(e) = target.host.upload_keys(&pre_activation_keys, false).await {
                 bar.failure_err(&e);
 
                 let mut results = self.results.lock().await;
@@ -561,7 +561,7 @@ impl Deployment {
                 if self.options.upload_keys && !post_activation_keys.is_empty() {
                     bar.log("Uploading keys (post-activation)...");
 
-                    if let Err(e) = target.host.upload_keys(&post_activation_keys).await {
+                    if let Err(e) = target.host.upload_keys(&post_activation_keys, true).await {
                         bar.failure_err(&e);
 
                         let mut results = self.results.lock().await;

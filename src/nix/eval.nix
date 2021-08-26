@@ -348,10 +348,56 @@ let
         lib.optional (length remainingKeys != 0)
         "The following Nixpkgs configuration keys set in meta.nixpkgs will be ignored: ${toString remainingKeys}";
     };
+
+    # Change the ownership of all keys uploaded pre-activation
+    #
+    # This is built as part of the system profile.
+    # We must be careful not to access `text` / `keyCommand` / `keyFile` here
+    keyChownModule = { lib, config, ... }: let
+      preActivationKeys = lib.filterAttrs (name: key: key.uploadAt == "pre-activation") config.deployment.keys;
+      scriptDeps = if config.system.activationScripts ? groups then [ "groups" ] else [ "users" ];
+
+      commands = lib.mapAttrsToList (name: key: let
+        keyPath = "${key.destDir}/${name}";
+      in ''
+        if [ -f "${keyPath}" ]; then
+          if ! chown ${key.user}:${key.group} "${keyPath}"; then
+            # Error should be visible in stderr
+            failed=1
+          fi
+        else
+          >&2 echo "Key ${keyPath} does not exist. Skipping chown."
+        fi
+      '') preActivationKeys;
+
+      script = lib.stringAfter scriptDeps ''
+        # This script is injected by Colmena to change the ownerships
+        # of keys (`deployment.keys`) deployed before system activation.
+
+        >&2 echo "setting up key ownerships..."
+
+        # We set the ownership of as many keys as possible before failing
+        failed=
+
+        ${concatStringsSep "\n" commands}
+
+        if [ -n "$failed" ]; then
+          >&2 echo "Failed to set the ownership of some keys."
+
+          # The activation script has a trap to handle failed
+          # commands and print out various debug information.
+          # Let's trigger that instead of `exit 1`.
+          false
+        fi
+      '';
+    in {
+      system.activationScripts.colmena-chown-keys = lib.mkIf (length commands != 0) script;
+    };
   in evalConfig {
     modules = [
       assertionModule
       nixpkgsModule
+      keyChownModule
       deploymentOptions
       hive.defaults
       config

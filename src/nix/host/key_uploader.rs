@@ -18,12 +18,13 @@ use crate::util::capture_stream;
 
 const SCRIPT_TEMPLATE: &'static str = include_str!("./key_uploader.template.sh");
 
-pub fn generate_script<'a>(key: &'a Key, destination: &'a Path) -> Cow<'a, str> {
+pub fn generate_script<'a>(key: &'a Key, destination: &'a Path, require_ownership: bool) -> Cow<'a, str> {
     let key_script = SCRIPT_TEMPLATE.to_string()
         .replace("%DESTINATION%", destination.to_str().unwrap())
         .replace("%USER%", &escape(key.user().into()))
         .replace("%GROUP%", &escape(key.group().into()))
         .replace("%PERMISSIONS%", &escape(key.permissions().into()))
+        .replace("%REQUIRE_OWNERSHIP%", if require_ownership { "1" } else { "" })
         .trim_end_matches('\n').to_string();
 
     escape(key_script.into())
