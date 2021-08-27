@@ -228,7 +228,7 @@ impl Hive {
     async fn builder_args(&self) -> NixResult<Vec<String>> {
         let mut options = Vec::new();
 
-        if let Some(machines_file) = self.machines_file().await.unwrap() {
+        if let Some(machines_file) = self.machines_file().await? {
             options.append(&mut vec![
                 "--option".to_owned(),
                 "builders".to_owned(),
