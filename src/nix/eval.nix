@@ -256,13 +256,18 @@ let
     };
   };
 
-  flakeToHive = flakeUri: let
-    flake = builtins.getFlake flakeUri;
-    hive = if flake.outputs ? colmena then flake.outputs.colmena else throw "Flake must define outputs.colmena.";
-  in hive;
+  uncheckedHive = let
+    flakeToHive = flakeUri: let
+      flake = builtins.getFlake flakeUri;
+      hive = if flake.outputs ? colmena then flake.outputs.colmena else throw "Flake must define outputs.colmena.";
+    in hive;
 
-  uncheckedHive =
-    if rawHive != null then rawHive
+    rawToHive = rawHive:
+      if typeOf rawHive == "lambda" then rawHive {}
+      else if typeOf rawHive == "set" then rawHive
+      else throw "The config must evaluate to an attribute set.";
+  in
+    if rawHive != null then rawToHive rawHive
     else if flakeUri != null then flakeToHive flakeUri
     else throw "Either an attribute set or a flake URI must be specified.";
 

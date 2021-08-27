@@ -405,3 +405,26 @@ fn test_meta_special_args() {
       }
     "#);
 }
+
+#[test]
+fn test_hive_autocall() {
+    TempHive::valid(r#"
+      {
+        argument ? "with default value"
+      }: {
+        borg = { ... }: {
+          boot.isContainer = true;
+        };
+      }
+    "#);
+
+    TempHive::invalid(r#"
+      {
+        thisWontWork
+      }: {
+        borg = { ... }: {
+          boot.isContainer = true;
+        };
+      }
+    "#);
+}
