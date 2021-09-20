@@ -12,13 +12,13 @@
   };
 
   outputs = { self, nixpkgs, utils, ... }: let
-    supportedSystems = utils.lib.defaultSystems ++ [ "riscv64-linux" ];
+    supportedSystems = utils.lib.defaultSystems;
   in utils.lib.eachSystem supportedSystems (system: let
     pkgs = import nixpkgs { inherit system; };
   in rec {
     # We still maintain the expression in a Nixpkgs-acceptable form
-    legacyPackages.colmena = import ./default.nix { inherit pkgs; };
-    defaultPackage = self.legacyPackages.${system}.colmena;
+    packages.colmena = import ./default.nix { inherit pkgs; };
+    defaultPackage = self.packages.${system}.colmena;
 
     defaultApp = self.apps.${system}.colmena;
     apps.colmena = {
@@ -33,5 +33,11 @@
         export NIX_PATH=nixpkgs=${pkgs.path}
       '';
     };
-  });
+  }) // {
+    overlay = final: prev: {
+      colmena = import ./default.nix {
+        pkgs = final;
+      };
+    };
+  };
 }
