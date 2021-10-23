@@ -9,6 +9,7 @@ use serde::de::DeserializeOwned;
 use serde::Deserialize;
 use snafu::Snafu;
 use tokio::process::Command;
+use users::get_current_username;
 use validator::{Validate, ValidationErrors, ValidationError as ValidationErrorType};
 
 use crate::util::CommandExecution;
@@ -115,7 +116,7 @@ pub struct NodeConfig {
     target_host: Option<String>,
 
     #[serde(rename = "targetUser")]
-    target_user: String,
+    target_user: Option<String>,
 
     #[serde(rename = "targetPort")]
     target_port: Option<u16>,
@@ -140,7 +141,12 @@ impl NodeConfig {
 
     pub fn to_ssh_host(&self) -> Option<Ssh> {
         self.target_host.as_ref().map(|target_host| {
-            let mut host = Ssh::new(self.target_user.clone(), target_host.clone());
+            let username =
+                match &self.target_user {
+                    Some(uname) => uname.clone(),
+                    None => get_current_username().unwrap().into_string().ok().unwrap(),
+                };
+            let mut host = Ssh::new(username.clone(), target_host.clone());
             host.set_privilege_escalation_command(self.privilege_escalation_command.clone());
 
             if let Some(target_port) = self.target_port {
