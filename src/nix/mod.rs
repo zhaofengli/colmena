@@ -144,7 +144,7 @@ impl NodeConfig {
             let username =
                 match &self.target_user {
                     Some(uname) => uname.clone(),
-                    None => get_current_username().unwrap().into_string().ok().unwrap(),
+                    None => get_current_username().unwrap().into_string().unwrap(),
                 };
             let mut host = Ssh::new(username.clone(), target_host.clone());
             host.set_privilege_escalation_command(self.privilege_escalation_command.clone());
