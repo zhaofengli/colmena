@@ -113,9 +113,10 @@ let
         };
         targetUser = lib.mkOption {
           description = ''
-            The user to use to log into the remote node.
+            The user to use to log into the remote node. If null, login as the
+            current user.
           '';
-          type = types.str;
+          type = types.nullOr types.str;
           default = "root";
         };
         allowLocalDeployment = lib.mkOption {

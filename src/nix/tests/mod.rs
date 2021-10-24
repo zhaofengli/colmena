@@ -134,7 +134,7 @@ fn test_parse_simple() {
     ));
     assert_eq!(Some("host-a"), nodes["host-a"].target_host.as_deref());
     assert_eq!(None, nodes["host-a"].target_port);
-    assert_eq!("root", &nodes["host-a"].target_user);
+    assert_eq!(Some("root"), nodes["host-a"].target_user.as_deref());
 
     // host-b
     assert!(set_eq(
@@ -143,7 +143,7 @@ fn test_parse_simple() {
     ));
     assert_eq!(Some("somehost.tld"), nodes["host-b"].target_host.as_deref());
     assert_eq!(Some(1234), nodes["host-b"].target_port);
-    assert_eq!("luser", &nodes["host-b"].target_user);
+    assert_eq!(Some("luser"), nodes["host-b"].target_user.as_deref());
 }
 
 #[test]
