@@ -39,7 +39,8 @@ impl HivePath {
 
         if let Some(osstr) = path.file_name() {
             if osstr == "flake.nix" {
-                let parent = path.parent().unwrap().to_str().unwrap();
+                let parent = path.parent().unwrap().canonicalize().unwrap();
+                let parent = parent.to_str().unwrap();
                 let uri = format!("path:{}", parent);
 
                 return Self::Flake(uri);

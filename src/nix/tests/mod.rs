@@ -8,6 +8,7 @@ use std::hash::Hash;
 use std::io::Write;
 use std::iter::{FromIterator, Iterator};
 use std::ops::Deref;
+use std::path::PathBuf;
 
 use tempfile::NamedTempFile;
 use tokio_test::block_on;
@@ -148,7 +149,11 @@ fn test_parse_simple() {
 
 #[test]
 fn test_parse_flake() {
-    let hive_path = HivePath::Flake("path:./src/nix/tests/simple-flake".to_string());
+    let flake_path = {
+        let p = PathBuf::from("./src/nix/tests/simple-flake");
+        p.canonicalize().unwrap()
+    };
+    let hive_path = HivePath::Flake(format!("path:{}", flake_path.to_str().unwrap()));
     let mut hive = Hive::new(hive_path).unwrap();
 
     hive.set_show_trace(true);
