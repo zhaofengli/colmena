@@ -9,7 +9,7 @@ use glob::Pattern as GlobPattern;
 use tokio::io::{AsyncRead, AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
-use super::nix::{NodeConfig, Hive, HivePath, NixResult};
+use super::nix::{Flake, NodeConfig, Hive, HivePath, NixResult};
 use super::progress::TaskProgress;
 
 enum NodeFilter {
@@ -79,7 +79,7 @@ impl CommandExecution {
     }
 }
 
-pub fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
+pub async fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
     let path = match args.occurrences_of("config") {
         0 => {
             // traverse upwards until we find hive.nix
@@ -142,7 +142,8 @@ pub fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
 
             if !fpath.exists() && path.contains(":") {
                 // Treat as flake URI
-                let hive_path = HivePath::Flake(path);
+                let flake = Flake::from_uri(path).await?;
+                let hive_path = HivePath::Flake(flake);
                 let mut hive = Hive::new(hive_path)?;
 
                 if args.is_present("show-trace") {
@@ -156,7 +157,7 @@ pub fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
         }
     };
 
-    let hive_path = HivePath::from_path(path);
+    let hive_path = HivePath::from_path(path).await?;
     let mut hive = Hive::new(hive_path)?;
 
     if args.is_present("show-trace") {

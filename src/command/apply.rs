@@ -115,7 +115,7 @@ pub fn subcommand() -> App<'static, 'static> {
 }
 
 pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
-    let hive = util::hive_from_args(local_args).unwrap();
+    let hive = util::hive_from_args(local_args).await.unwrap();
 
     log::info!("Enumerating nodes...");
     let all_nodes = hive.deployment_info().await.unwrap();

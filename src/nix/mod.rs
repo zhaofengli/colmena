@@ -36,6 +36,9 @@ pub use deployment::{Goal, Target, Deployment};
 pub mod info;
 pub use info::NixCheck;
 
+pub mod flake;
+pub use flake::Flake;
+
 #[cfg(test)]
 mod tests;
 

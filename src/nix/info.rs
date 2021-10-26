@@ -3,8 +3,9 @@ use std::process::Stdio;
 
 use log::Level;
 use regex::Regex;
-
 use tokio::process::Command;
+
+use super::{NixError, NixResult};
 
 struct NixVersion {
     major: usize,
@@ -85,6 +86,17 @@ impl NixCheck {
             version: Some(version),
             flakes_supported,
             flakes_enabled,
+        }
+    }
+
+    pub async fn require_flake_support() -> NixResult<()> {
+        let check = Self::detect().await;
+
+        if !check.flakes_supported() {
+            check.print_flakes_info(true);
+            Err(NixError::NoFlakesSupport)
+        } else {
+            Ok(())
         }
     }
 

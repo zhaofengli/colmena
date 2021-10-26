@@ -34,7 +34,7 @@ impl TempHive {
         let mut temp_file = NamedTempFile::new().unwrap();
         temp_file.write_all(text.as_bytes()).unwrap();
 
-        let hive_path = HivePath::from_path(temp_file.path());
+        let hive_path = block_on(HivePath::from_path(temp_file.path())).unwrap();
         let hive = Hive::new(hive_path).unwrap();
 
         Self {
@@ -149,11 +149,10 @@ fn test_parse_simple() {
 
 #[test]
 fn test_parse_flake() {
-    let flake_path = {
-        let p = PathBuf::from("./src/nix/tests/simple-flake");
-        p.canonicalize().unwrap()
-    };
-    let hive_path = HivePath::Flake(format!("path:{}", flake_path.to_str().unwrap()));
+    let flake_dir = PathBuf::from("./src/nix/tests/simple-flake");
+    let flake = block_on(Flake::from_dir(flake_dir)).unwrap();
+
+    let hive_path = HivePath::Flake(flake);
     let mut hive = Hive::new(hive_path).unwrap();
 
     hive.set_show_trace(true);

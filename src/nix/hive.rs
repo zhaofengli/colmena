@@ -10,13 +10,13 @@ use serde::Serialize;
 use validator::Validate;
 
 use super::{
+    Flake,
     StoreDerivation,
     NixResult,
-    NixError,
     NodeConfig,
     ProfileMap,
 };
-use super::{NixCommand, NixCheck};
+use super::NixCommand;
 use crate::util::CommandExecution;
 use crate::progress::TaskProgress;
 
@@ -24,49 +24,38 @@ const HIVE_EVAL: &'static [u8] = include_bytes!("eval.nix");
 
 #[derive(Debug)]
 pub enum HivePath {
-    /// A Nix Flake URI.
+    /// A Nix Flake.
     ///
     /// The flake must contain the `colmena` output.
-    Flake(String),
+    Flake(Flake),
 
     /// A regular .nix file
     Legacy(PathBuf),
 }
 
 impl HivePath {
-    pub fn from_path<P: AsRef<Path>>(path: P) -> Self {
+    pub async fn from_path<P: AsRef<Path>>(path: P) -> NixResult<Self> {
         let path = path.as_ref();
 
         if let Some(osstr) = path.file_name() {
             if osstr == "flake.nix" {
-                let parent = path.parent().unwrap().canonicalize().unwrap();
-                let parent = parent.to_str().unwrap();
-                let uri = format!("path:{}", parent);
-
-                return Self::Flake(uri);
+                let parent = path.parent().unwrap();
+                let flake = Flake::from_dir(parent).await?;
+                return Ok(Self::Flake(flake));
             }
         }
 
-        Self::Legacy(path.to_owned())
+        Ok(Self::Legacy(path.to_owned()))
     }
 
     fn context_dir(&self) -> Option<PathBuf> {
         match self {
             Self::Legacy(p) => {
-                if let Some(parent) = p.parent() {
-                    return Some(parent.to_owned());
-                }
-                None
+                p.parent().map(|d| d.to_owned())
             }
-            _ => None,
-        }
-    }
-
-    fn is_flake(&self) -> bool {
-        if let Self::Flake(_) = self {
-            true
-        } else {
-            false
+            Self::Flake(flake) => {
+                flake.local_dir().map(|d| d.to_owned())
+            }
         }
     }
 }
@@ -128,13 +117,6 @@ impl Hive {
 
     /// Retrieve deployment info for all nodes.
     pub async fn deployment_info(&self) -> NixResult<HashMap<String, NodeConfig>> {
-        let nix_check = NixCheck::detect().await;
-
-        if self.path.is_flake() && !nix_check.flakes_supported() {
-            nix_check.print_flakes_info(true);
-            return Err(NixError::NoFlakesSupport);
-        }
-
         // FIXME: Really ugly :(
         let s: String = self.nix_instantiate("hive.deploymentConfigJson").eval_with_builders().await?
             .capture_json().await?;
@@ -281,7 +263,7 @@ impl<'hive> NixInstantiate<'hive> {
                         self.expression,
                     ));
             }
-            HivePath::Flake(uri) => {
+            HivePath::Flake(flake) => {
                 command
                     .args(&["--experimental-features", "flakes"])
                     .arg("--no-gc-warning")
@@ -289,7 +271,7 @@ impl<'hive> NixInstantiate<'hive> {
                     .arg(format!(
                         "with builtins; let eval = import {}; hive = eval {{ flakeUri = \"{}\"; }}; in {}",
                         self.hive.eval_nix.to_str().unwrap(),
-                        &uri,
+                        flake.uri(),
                         self.expression,
                     ));
             }

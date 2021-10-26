@@ -89,7 +89,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
         }
     }
 
-    let hive = util::hive_from_args(local_args).unwrap();
+    let hive = util::hive_from_args(local_args).await.unwrap();
     let hostname = if local_args.is_present("node") {
         local_args.value_of("node").unwrap().to_owned()
     } else {
