@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::fs;
 use std::path::PathBuf;
 use std::process::Stdio;
 
@@ -87,36 +86,15 @@ pub async fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
             let mut file_path = None;
 
             loop {
-                let mut listing = match fs::read_dir(&cur) {
-                    Ok(listing) => listing,
-                    Err(e) => {
-                        // This can very likely fail in shared environments
-                        // where users aren't able to list /home. It's not
-                        // unexpected.
-                        //
-                        // It may not be immediately obvious to the user that
-                        // we are traversing upwards to find hive.nix.
-                        log::warn!("Could not traverse up ({:?}) to find hive.nix: {}", cur, e);
-                        break;
-                    },
-                };
+                let flake = cur.join("flake.nix");
+                if flake.is_file() {
+                    file_path = Some(flake);
+                    break;
+                }
 
-                let found = listing.find_map(|rdirent| {
-                    match rdirent {
-                        Err(e) => Some(Err(e)),
-                        Ok(f) => {
-                            if f.file_name() == "flake.nix" || f.file_name() == "hive.nix" {
-                                Some(Ok(f))
-                            } else {
-                                None
-                            }
-                        }
-                    }
-                });
-
-                if let Some(rdirent) = found {
-                    let dirent = rdirent?;
-                    file_path = Some(dirent.path());
+                let legacy = cur.join("hive.nix");
+                if legacy.is_file() {
+                    file_path = Some(legacy);
                     break;
                 }
 
