@@ -185,10 +185,16 @@ impl Hive {
     }
 
     /// Evaluates an expression using values from the configuration
-    pub async fn introspect(&self, expression: String) -> NixResult<String> {
-        let expression = format!("toJSON (hive.introspect ({}))", expression);
-        self.nix_instantiate(&expression).eval_with_builders().await?
-            .capture_json().await
+    pub async fn introspect(&self, expression: String, instantiate: bool) -> NixResult<String> {
+        if instantiate {
+            let expression = format!("hive.introspect ({})", expression);
+            self.nix_instantiate(&expression).instantiate_with_builders().await?
+                .capture_output().await
+        } else {
+            let expression = format!("toJSON (hive.introspect ({}))", expression);
+            self.nix_instantiate(&expression).eval_with_builders().await?
+                .capture_json().await
+        }
     }
 
     /// Retrieve machinesFile setting for the hive.

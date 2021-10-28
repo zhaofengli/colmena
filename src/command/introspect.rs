@@ -25,6 +25,10 @@ For example, to retrieve the configuration of one node, you may write something 
             .value_name("EXPRESSION")
             .help("The Nix expression")
             .takes_value(true))
+        .arg(Arg::with_name("instantiate")
+            .long("instantiate")
+            .help("Actually instantiate the expression")
+            .takes_value(false))
 }
 
 pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
@@ -42,6 +46,12 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
         format!("import {}", path.canonicalize().expect("Could not generate absolute path to expression file.").to_str().unwrap())
     };
 
-    let result = hive.introspect(expression).await.unwrap();
-    println!("{}", result);
+    let instantiate = local_args.is_present("instantiate");
+    let result = hive.introspect(expression, instantiate).await.unwrap();
+
+    if instantiate {
+        print!("{}", result);
+    } else {
+        println!("{}", result);
+    }
 }
