@@ -170,7 +170,7 @@ Here is a short example:
 The full set of options can be found at `src/nix/eval.nix`.
 Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to build and deploy it to all nodes.
 
-## `colmena introspect`
+## `colmena eval`
 
 Sometimes you may want to extract values from your Hive configuration for consumption in another program (e.g., [OctoDNS](https://github.com/octodns/octodns)).
 To do that, create a `.nix` file with a lambda:
@@ -184,7 +184,7 @@ lib.attrsets.mapAttrs (k: v: v.config.deployment.targetHost) nodes
 Then you can evaluate with:
 
 ```
-colmena introspect your-lambda.nix
+colmena eval your-lambda.nix
 ```
 
 ## `colmena apply-local`

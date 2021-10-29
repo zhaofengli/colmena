@@ -1,11 +1,11 @@
 use std::path::PathBuf;
 
-use clap::{Arg, App, SubCommand, ArgMatches};
+use clap::{Arg, App, AppSettings, SubCommand, ArgMatches};
 
 use crate::util;
 
 pub fn subcommand() -> App<'static, 'static> {
-    SubCommand::with_name("introspect")
+    SubCommand::with_name("eval")
         .about("Evaluate expressions using the complete configuration")
         .long_about(r#"Evaluate expressions using the complete configuration
 
@@ -31,7 +31,17 @@ For example, to retrieve the configuration of one node, you may write something 
             .takes_value(false))
 }
 
-pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
+pub fn deprecated_alias() -> App<'static, 'static> {
+    subcommand()
+        .name("introspect")
+        .setting(AppSettings::Hidden)
+}
+
+pub async fn run(global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
+    if let Some("introspect") = global_args.subcommand_name() {
+        log::warn!("`colmena introspect` has been renamed to `colmena eval`. Please update your scripts.");
+    }
+
     let hive = util::hive_from_args(local_args).await.unwrap();
 
     if !(local_args.is_present("expression") ^ local_args.is_present("expression_file")) {

@@ -65,12 +65,15 @@ For a sample configuration, see <https://github.com/zhaofengli/colmena>.
                 .index(1)
                 .required(true)
                 .takes_value(true)));
+
+        // deprecated alias
+        app = app.subcommand(command::eval::deprecated_alias());
     }
 
     register_command!(apply, app);
     register_command!(apply_local, app);
     register_command!(build, app);
-    register_command!(introspect, app);
+    register_command!(eval, app);
     register_command!(upload_keys, app);
     register_command!(exec, app);
     register_command!(nix_info, app);
@@ -85,10 +88,13 @@ pub async fn run() {
     handle_command!(apply, matches);
     handle_command!("apply-local", apply_local, matches);
     handle_command!(build, matches);
-    handle_command!(introspect, matches);
+    handle_command!(eval, matches);
     handle_command!("upload-keys", upload_keys, matches);
     handle_command!(exec, matches);
     handle_command!("nix-info", nix_info, matches);
+
+    // deprecated alias
+    handle_command!("introspect", eval, matches);
 
     if let Some(args) = matches.subcommand_matches("gen-completions") {
         return gen_completions(args);
