@@ -143,7 +143,9 @@ Here is a short example:
   outputs = { nixpkgs, ... }: {
     colmena = {
       meta = {
-        inherit nixpkgs;
+        nixpkgs = import nixpkgs {
+          system = "x86_64-linux";
+        };
       };
 
       # Also see the non-Flakes hive.nix example above.

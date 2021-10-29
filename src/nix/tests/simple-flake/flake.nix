@@ -5,7 +5,9 @@
   outputs = { nixpkgs, ... }: {
     colmena = {
       meta = {
-        inherit nixpkgs;
+        nixpkgs = import nixpkgs {
+          system = "x86_64-linux";
+        };
       };
 
       host-a = { name, nodes, pkgs, ... }: {

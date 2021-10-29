@@ -291,15 +291,32 @@ let
     };
   in mergedHive // meta;
 
-  mkNixpkgs = configName: pkgConf:
+  mkNixpkgs = configName: pkgConf: let
+    uninitializedError = typ: ''
+      Passing ${typ} is no longer accepted with Flakes. Please initialize Nixpkgs like the following:
+
+      {
+        # ...
+        outputs = { nixpkgs, ... }: {
+          colmena = {
+            meta = {
+              nixpkgs = import nixpkgs {
+                system = "${currentSystem}";
+              };
+            };
+          };
+        };
+      }
+    '';
+  in
     if typeOf pkgConf == "path" then
+      if hermetic then throw (uninitializedError "a path to Nixpkgs")
       # The referenced file might return an initialized Nixpkgs attribute set directly
-      mkNixpkgs configName (import pkgConf)
+      else mkNixpkgs configName (import pkgConf)
     else if typeOf pkgConf == "lambda" then
       pkgConf {}
     else if typeOf pkgConf == "set" then
-      # FIXME: Allow configuring `system`
-      if pkgConf ? outputs then mkNixpkgs configName pkgConf.outputs.legacyPackages.${currentSystem}.path
+      if pkgConf ? outputs then throw (uninitializedError "an uninitialized Nixpkgs input")
       else pkgConf
     else throw ''
       ${configName} must be one of:
