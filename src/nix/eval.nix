@@ -293,16 +293,15 @@ let
 
   mkNixpkgs = configName: pkgConf: let
     uninitializedError = typ: ''
-      Passing ${typ} is no longer accepted with Flakes. Please initialize Nixpkgs like the following:
+      Passing ${typ} as ${configName} is no longer accepted with Flakes.
+      Please initialize Nixpkgs like the following:
 
       {
         # ...
         outputs = { nixpkgs, ... }: {
           colmena = {
-            meta = {
-              nixpkgs = import nixpkgs {
-                system = "${currentSystem}";
-              };
+            ${configName} = import nixpkgs {
+              system = "${currentSystem}";
             };
           };
         };
