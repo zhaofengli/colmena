@@ -379,10 +379,15 @@ impl Deployment {
                                 }
                             };
 
+                            let build_elapsed = bar.get_elapsed();
                             bar.success_quiet();
+
                             if goal == Goal::Build {
                                 for (node, profile) in profiles.iter() {
-                                    let bar = progress.create_task_progress(node.to_string());
+                                    let mut bar = progress.create_task_progress(node.to_string());
+                                    if let Some(elapsed) = build_elapsed {
+                                        bar.set_elapsed(elapsed);
+                                    }
                                     bar.success(&format!("Built {:?}", profile.as_path()));
                                 }
                             }

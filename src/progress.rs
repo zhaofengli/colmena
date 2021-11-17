@@ -2,6 +2,7 @@
 
 use std::future::Future;
 use std::sync::Arc;
+use std::time::Duration;
 
 use atty::Stream;
 use console::Style;
@@ -189,6 +190,18 @@ impl TaskProgress {
         } else {
             let style = Style::new().bold().red();
             self.plain_print(style, message);
+        }
+    }
+
+    /// Returns the time spent on this task so far.
+    pub fn get_elapsed(&self) -> Option<Duration> {
+        self.bar.as_ref().map(|bar| bar.elapsed())
+    }
+
+    /// Sets the time spent on this task so far.
+    pub fn set_elapsed(&mut self, elapsed: Duration) {
+        if let Some(bar) = self.bar.take() {
+            self.bar.replace(bar.with_elapsed(elapsed));
         }
     }
 
