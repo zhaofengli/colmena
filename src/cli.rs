@@ -68,6 +68,8 @@ For a sample configuration, see <https://github.com/zhaofengli/colmena>.
 
         // deprecated alias
         app = app.subcommand(command::eval::deprecated_alias());
+
+        register_command!(test_progress, app);
     }
 
     register_command!(apply, app);
@@ -95,6 +97,8 @@ pub async fn run() {
 
     // deprecated alias
     handle_command!("introspect", eval, matches);
+
+    handle_command!("test-progress", test_progress, matches);
 
     if let Some(args) = matches.subcommand_matches("gen-completions") {
         return gen_completions(args);
