@@ -28,7 +28,6 @@
 
     devShell = pkgs.mkShell {
       inputsFrom = [ defaultPackage ];
-      buildInputs = [ pkgs.nixUnstable ];
       shellHook = ''
         export NIX_PATH=nixpkgs=${pkgs.path}
       '';
