@@ -2,13 +2,9 @@
 
 use std::future::Future;
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::thread;
-use std::time::Duration;
 
 use atty::Stream;
 use console::Style;
-use futures::join;
 
 use indicatif::{
     MultiProgress,
@@ -79,7 +75,7 @@ impl Progress {
         if let Some(multi) = self.multi.as_ref() {
             let bar = multi.add(IndicatifBar::new(100));
             let (style, _) = get_spinner_styles(self.label_width);
-            bar.set_prefix(&label);
+            bar.set_prefix(label);
             bar.set_style(style);
             bar.enable_steady_tick(100);
 
@@ -93,36 +89,8 @@ impl Progress {
     pub async fn run<F: Future, U>(self: Arc<Self>, func: U) -> F::Output
         where U: FnOnce(Arc<Progress>) -> F
     {
-        if let Some(multi) = self.multi.as_ref() {
-            let multi = multi.clone();
-            let finished = Arc::new(AtomicBool::new(false));
-
-            let redraw_future = {
-                let finished = finished.clone();
-                tokio::task::spawn_blocking(move || {
-                    while !finished.load(Ordering::SeqCst) {
-                        multi.join().unwrap();
-                        thread::sleep(Duration::from_millis(100));
-                    }
-                    multi.join().unwrap();
-                })
-            };
-            let func_future = {
-                let finished = finished.clone();
-                async move {
-                    let result = func(self).await;
-                    finished.store(true, Ordering::SeqCst);
-                    // root_bar.finish_and_clear();
-                    result
-                }
-            };
-
-            let (func_result, _) = join!(func_future, redraw_future);
-            func_result
-        } else {
-            // Plain output. Simple.
-            func(self.clone()).await
-        }
+        // TODO: Remove this - Previous trick no longer required in indicatif 0.7
+        func(self.clone()).await
     }
 
     fn init_multi() -> MultiProgress {
@@ -176,7 +144,7 @@ impl TaskProgress {
         }
 
         if let Some(bar) = self.bar.as_ref() {
-            bar.set_message(message);
+            bar.set_message(message.to_owned());
         } else {
             let style = Style::new().bold();
             self.plain_print(style, message);
@@ -190,7 +158,7 @@ impl TaskProgress {
         }
 
         if let Some(bar) = self.bar.as_ref() {
-            bar.finish_with_message(message);
+            bar.finish_with_message(message.to_owned());
         } else {
             let style = Style::new().bold().green();
             self.plain_print(style, message);
@@ -217,7 +185,7 @@ impl TaskProgress {
         if let Some(bar) = self.bar.as_ref() {
             let (_, fail_style) = get_spinner_styles(self.label_width);
             bar.set_style(fail_style);
-            bar.abandon_with_message(message);
+            bar.abandon_with_message(message.to_owned());
         } else {
             let style = Style::new().bold().red();
             self.plain_print(style, message);
