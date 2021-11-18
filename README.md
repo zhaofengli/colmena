@@ -33,6 +33,10 @@ To install the latest development version to the user profile, use `default.nix`
 nix-env -if default.nix
 ```
 
+### Binary Cache
+
+A public binary cache is available at https://colmena.cachix.org, courtesy of Cachix.
+
 ## Tutorial
 
 *See Tutorial with Flakes for usage with Nix Flakes.*
