@@ -149,14 +149,30 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="command-line-arguments"><a class="header" href="#command-line-arguments">Command Line Arguments</a></h1>
-<p>You are currently reading <strong>the unstable version</strong> of the Colmena Manual, built against the tip of <a href="https://github.com/zhaofengli/colmena">the development branch</a>. <!-- REMOVE_FOR_RELEASE --></p>
-<p>The following are the auto-generated help messages that are printed when you invoke any sub-command with <code>--help</code>:</p>
-<!-- The following is injected by the build system -->
+                        <!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<h1 id="command-line-arguments"><a class="header" href="#command-line-arguments">Command Line Arguments</a></h1>
+<!-- UNSTABLE_BEGIN -->
+<p>You are currently reading <strong>the unstable version</strong> of the Colmena Manual, built against the tip of <a href="https://github.com/zhaofengli/colmena">the development branch</a>.</p>
+<!-- UNSTABLE_END -->
+<p>The following are the help messages that will be printed when you invoke any sub-command with <code>--help</code>:</p>
+<!--
+    The following is injected by the build system
+
+    Looking to improve the help messages? They are located in:
+
+    - src/cli.rs
+    - src/command/<subcommand>.rs
+-->
 <h2 id="colmena"><a class="header" href="#colmena"><code>colmena</code></a></h2>
-<pre><div class="hljs"><span style='color:#0a0'>Colmena</span> 0.1.0
+<pre><div class="hljs"><span style='color:#0a0'>Colmena</span> 0.2.0-pre
 Zhaofeng Li &lt;hello@zhaofeng.li&gt;
 NixOS deployment tool
+
+Colmena helps you deploy to multiple hosts running NixOS.
+For more details, read the manual at &lt;https://zhaofengli.github.io/colmena/0.2&gt;.
+
+Note: You are using a pre-release version of Colmena, so the supported options may be different from what&#39;s in the
+manual.
 <span style='color:#a50'>
 USAGE:</span>
     colmena [FLAGS] [OPTIONS] [SUBCOMMAND]
@@ -177,7 +193,7 @@ USAGE:</span>
             If this argument is not specified, Colmena will search upwards from the current working directory for a file
             named &quot;flake.nix&quot; or &quot;hive.nix&quot;. This behavior is disabled if --config/-f is given explicitly.
             
-            For a sample configuration, see &lt;https://zhaofengli.github.io/colmena/0.1.0&gt;.
+            For a sample configuration, check the manual at &lt;https://zhaofengli.github.io/colmena/0.2&gt;.
              [default: <span style='color:#0a0'>hive.nix</span>]
 
 <span style='color:#a50'>SUBCOMMANDS:

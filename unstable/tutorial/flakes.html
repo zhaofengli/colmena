@@ -149,16 +149,22 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="usage-with-flakes"><a class="header" href="#usage-with-flakes">Usage with Flakes</a></h1>
+                        <!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<h1 id="usage-with-flakes"><a class="header" href="#usage-with-flakes">Usage with Flakes</a></h1>
 <h2 id="installation"><a class="header" href="#installation">Installation</a></h2>
-<p>Colmena doesn't have a stable release yet.
-To quickly try Colmena out, use the following command to enter an ephemeral environment with <code>colmena</code>:</p>
-<pre><code class="language-console">$ nix shell github:zhaofengli/colmena
+<!-- UNSTABLE_BEGIN -->
+<!-- To install the latest stable version, read [the corresponding Manual](https://zhaofengli.github.io/colmena/stable) for instructions. -->
+<p>To quickly try Colmena out, use the following command to enter an ephemeral environment with the latest development version of <code>colmena</code>:</p>
+<pre><code class="language-bash">nix shell github:zhaofengli/colmena
 </code></pre>
-<p>To install the latest development version to the user profile, use the following command:</p>
-<pre><code class="language-console">$ nix-env -if https://github.com/zhaofengli/colmena/tarball/main
+<p>To install Colmena to the user profile, use the following command:</p>
+<pre><code class="language-bash">nix-env -if https://github.com/zhaofengli/colmena/tarball/main
 </code></pre>
 <p>You can also add <code>github:zhaofengli/colmena</code> as an input in your Flake and add the <code>colmena</code> package to your <code>devShell</code>.</p>
+<h3 id="unstable-binary-cache"><a class="header" href="#unstable-binary-cache">Unstable Binary Cache</a></h3>
+<p>A public binary cache is available at <a href="https://colmena.cachix.org">https://colmena.cachix.org</a>, courtesy of Cachix.
+This binary cache contains unstable versions of Colmena built by <a href="https://github.com/zhaofengli/colmena/actions">GitHub Actions</a>.</p>
+<!-- UNSTABLE_END -->
 <h2 id="basic-configuration"><a class="header" href="#basic-configuration">Basic Configuration</a></h2>
 <p>Colmena reads the <code>colmena</code> output in your Flake.</p>
 <p>Here is a short example:</p>
@@ -192,12 +198,12 @@ To quickly try Colmena out, use the following command to enter an ephemeral envi
 }
 </code></pre>
 <p>The full set of <code>deployment</code> options can be found <a href="../reference/deployment.html">here</a>.
-For some inspiration, you can check out the short example in <a href="index.html">the main tutorial</a>.</p>
+You can also check out the example in <a href="index.html">the main tutorial</a> for some inspiration.</p>
 <p>Now you are ready to use Colmena! To build the configuration:</p>
-<pre><code class="language-console">$ colmena build
+<pre><code class="language-bash">colmena build
 </code></pre>
 <p>To build and deploy to all nodes:</p>
-<pre><code class="language-console">$ colmena apply
+<pre><code class="language-bash">colmena apply
 </code></pre>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
