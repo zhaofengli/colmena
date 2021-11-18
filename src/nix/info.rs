@@ -127,7 +127,7 @@ impl NixCheck {
                 Level::Warn
             };
             log::log!(level, "The Nix version you are using does not support Flakes.");
-            log::log!(level, "Please install nixUnstable for a version that includes Flakes support.");
+            log::log!(level, "If you are using a Nixpkgs version before 21.11, please install nixUnstable for a version that includes Flakes support.");
 
             if required {
                 log::log!(level, "Cannot continue since Flakes support is required for this operation.");
