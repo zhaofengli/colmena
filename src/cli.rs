@@ -66,6 +66,10 @@ For a sample configuration, see <https://github.com/zhaofengli/colmena>.
                 .required(true)
                 .takes_value(true)));
 
+        app = app.subcommand(SubCommand::with_name("gen-help-markdown")
+            .about("Generate CLI usage guide as Markdown (Internal)")
+            .setting(AppSettings::Hidden));
+
         // deprecated alias
         app = app.subcommand(command::eval::deprecated_alias());
 
@@ -104,6 +108,10 @@ pub async fn run() {
         return gen_completions(args);
     }
 
+    if let Some(_) = matches.subcommand_matches("gen-help-markdown") {
+        return gen_help_markdown();
+    };
+
     app.print_long_help().unwrap();
     println!();
 }
@@ -114,4 +122,53 @@ fn gen_completions(args: &ArgMatches<'_>) {
         .parse().unwrap();
 
     app.gen_completions_to("colmena", shell, &mut std::io::stdout());
+}
+
+fn gen_help_markdown() {
+    // This is tailered only for the manual, with output injected to `reference/cli.md`.
+    // <pre><div class="hljs">
+    let mut commands = vec![
+        build_cli(false),
+        command::apply::subcommand(),
+        command::apply_local::subcommand(),
+        command::build::subcommand(),
+        command::upload_keys::subcommand(),
+        command::eval::subcommand(),
+        command::exec::subcommand(),
+        command::nix_info::subcommand(),
+    ];
+
+    for command in commands.drain(..) {
+        let full_command = match command.get_name() {
+            "Colmena" => "colmena".to_string(),
+            sub => format!("colmena {}", sub),
+        };
+
+        let mut command = {
+            let c = command
+                .setting(AppSettings::ColoredHelp)
+                .setting(AppSettings::ColorAlways);
+
+            if full_command != "colmena" {
+                c.bin_name(&full_command)
+            } else {
+                c
+            }
+        };
+
+        println!("## `{}`", full_command);
+        print!("<pre><div class=\"hljs\">");
+
+        let help_message = {
+            let mut bytes = Vec::new();
+            command.write_long_help(&mut bytes).unwrap();
+            String::from_utf8(bytes).unwrap()
+        };
+
+        let help_html = ansi_to_html::convert(&help_message, true, true)
+            .expect("Could not convert terminal output to HTML");
+
+        print!("{}", help_html);
+        println!("</div></pre>");
+    }
 }
