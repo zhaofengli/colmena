@@ -59,9 +59,9 @@ in stdenv.mkDerivation {
   '';
 
   buildPhase = ''
-    if [ -n "${colmena}" ]; then
+    if [ -n "${toString colmena}" ]; then
         echo "Generating CLI help text"
-        ${colmena}/bin/colmena gen-help-markdown >> src/reference/cli.md
+        ${toString colmena}/bin/colmena gen-help-markdown >> src/reference/cli.md
     else
         echo "Error: No colmena executable passed to the builder" >> src/reference/cli.md
     fi
