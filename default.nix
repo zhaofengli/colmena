@@ -7,12 +7,10 @@ let
 in {
   pkgs ? lockedPkgs,
 }: let
-  lib = pkgs.lib;
-  stdenv = pkgs.stdenv;
-  rustPlatform = pkgs.rustPlatform;
+  inherit (pkgs) lib stdenv rustPlatform;
 in rustPlatform.buildRustPackage rec {
   pname = "colmena";
-  version = "0.2.0-pre";
+  version = "0.2.0";
 
   # We guarantee CLI and Nix API stability for the same minor version
   apiVersion = builtins.concatStringsSep "." (lib.take 2 (lib.splitString "." version));
@@ -22,7 +20,7 @@ in rustPlatform.buildRustPackage rec {
     src = lib.cleanSource ./.;
   };
 
-  cargoSha256 = "sha256-IiAJ+sQasimcn4nSv4ACBwP1NLGNArtcIbwzkx0v/7w=";
+  cargoSha256 = "sha256-ZNSg3hXWKHNQ9yHJS1qW3tFYwzU4ZDa1N0yvoGLmWns=";
 
   postInstall = lib.optionalString (stdenv.hostPlatform == stdenv.buildPlatform) ''
     mkdir completions
@@ -38,4 +36,11 @@ in rustPlatform.buildRustPackage rec {
 
   # Recursive Nix is not stable yet
   doCheck = false;
+
+  meta = with lib; {
+    description = "A simple, stateless NixOS deployment tool";
+    homepage = "https://zhaofengli.github.io/colmena/${apiVersion}";
+    license = licenses.mit;
+    maintainers = with maintainers; [ zhaofengli ];
+  };
 }
