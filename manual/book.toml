@@ -9,3 +9,7 @@ title = "Colmena (Unstable)"
 site-url = "/colmena/unstable/"
 git-repository-url = "https://github.com/zhaofengli/colmena"
 edit-url-template = "https://github.com/zhaofengli/colmena/edit/main/manual/{path}"
+
+[preprocessor.colmena]
+command = "python3 preprocess.py"
+renderer = [ "html", "epub" ]

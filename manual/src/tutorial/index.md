@@ -2,12 +2,26 @@
 
 ## Installation
 
+<!-- STABLE_BEGIN -->
 Colmena doesn't have a stable release yet.
+
+If you are interested in trying out the bleeding-edge version of Colmena, Read [the unstable version](https://zhaofengli.github.io/colmena/unstable) of the Manual for instructions.
+<!-- STABLE_END -->
+
+<!-- UNSTABLE_BEGIN -->
+<!-- To install the latest stable version, read [the corresponding Manual](https://zhaofengli.github.io/colmena/stable) for instructions. -->
+
 To install the latest development version to the user profile, use the following command:
 
-```console
-$ nix-env -if https://github.com/zhaofengli/colmena/tarball/main
+```bash
+nix-env -if https://github.com/zhaofengli/colmena/tarball/main
 ```
+
+### Unstable Binary Cache
+
+A public binary cache is available at [https://colmena.cachix.org](https://colmena.cachix.org), courtesy of Cachix.
+This binary cache contains unstable versions of Colmena built by [GitHub Actions](https://github.com/zhaofengli/colmena/actions).
+<!-- UNSTABLE_END -->
 
 ## Basic Configuration
 
@@ -108,14 +122,14 @@ The full set of `deployment` options can be found [here](../reference/deployment
 
 Now you are ready to use Colmena! To build the configuration:
 
-```console
-$ colmena build
+```bash
+colmena build
 ```
 
 To build and deploy to all nodes:
 
-```console
-$ colmena apply
+```bash
+colmena apply
 ```
 
 ## Next Steps

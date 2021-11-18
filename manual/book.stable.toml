@@ -3,9 +3,13 @@ authors = ["Zhaofeng Li"]
 language = "en"
 multilingual = false
 src = "src"
-title = "Colmena RELEASE"
+title = "Colmena @apiVersion@"
 
 [output.html]
-site-url = "/colmena/RELEASE/"
+site-url = "/colmena/@apiVersion@/"
 git-repository-url = "https://github.com/zhaofengli/colmena"
 edit-url-template = "https://github.com/zhaofengli/colmena/edit/main/manual/{path}"
+
+[preprocessor.colmena]
+command = "python3 preprocess.py"
+renderer = [ "html", "epub" ]

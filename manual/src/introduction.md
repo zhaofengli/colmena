@@ -18,7 +18,14 @@ Interested? Get started [here](tutorial)!
   <b>kappa</b> ✅ 2s Activation successful
 </div></pre>
 
-You are currently reading **the unstable version** of the Colmena Manual, built against the tip of [the development branch](https://github.com/zhaofengli/colmena).<!-- REMOVE_FOR_RELEASE -->
+<!-- UNSTABLE_BEGIN -->
+You are currently reading **the unstable version** of the Colmena Manual, built against the tip of [the development branch](https://github.com/zhaofengli/colmena).
+Features described here will eventually become a part of **version @apiVersion@**.
+<!-- UNSTABLE_END -->
+
+<!-- STABLE_BEGIN -->
+You are currently reading **version @apiVersion@** of the Colmena Manual, built against version @version@.
+<!-- STABLE_END -->
 
 ## Links
 

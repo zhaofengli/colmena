@@ -5,7 +5,7 @@ on:
     branches:
       - main
 jobs:
-  deploy:
+  deploy-unstable:
     runs-on: ubuntu-latest
 
     steps:
@@ -20,16 +20,36 @@ jobs:
           name: colmena
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
+      # == Manual
       - name: Build manual
         run: nix build -o out .#manual -L
 
       # Ugly hack so it has permission to delete the worktree afterwards
-      - name: Copy website
+      - name: Copy manual
         run: cp --no-preserve=mode -r out/ public/
 
-      - name: Deploy website
+      - name: Deploy manual
         uses: JamesIves/github-pages-deploy-action@4.1.5
         with:
           branch: gh-pages
           folder: public
           target-folder: unstable
+
+      # == Redirect Farm
+      # /future_api_version -> /unstable
+      - name: Check future API version
+        run: echo "api_version=${nix eval .#colmena.apiVersion}" >> $GITHUB_ENV
+
+      - name: Build redirect farm
+        run: nix build -o out .#manual.redirectFarm -L
+
+      # Ugly hack so it has permission to delete the worktree afterwards
+      - name: Copy redirect farm
+        run: cp --no-preserve=mode -r out/ redirect-farm/
+
+      - name: Deploy redirect farm
+        uses: JamesIves/github-pages-deploy-action@4.1.5
+        with:
+          branch: gh-pages
+          folder: redirect-farm
+          target-folder: '${{ env.api_version }}'

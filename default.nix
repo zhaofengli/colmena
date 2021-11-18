@@ -10,16 +10,19 @@ in {
   lib = pkgs.lib;
   stdenv = pkgs.stdenv;
   rustPlatform = pkgs.rustPlatform;
-in rustPlatform.buildRustPackage {
-  name = "colmena";
+in rustPlatform.buildRustPackage rec {
+  pname = "colmena";
   version = "0.2.0-pre";
+
+  # We guarantee CLI and Nix API stability for the same minor version
+  apiVersion = builtins.concatStringsSep "." (lib.take 2 (lib.splitString "." version));
 
   src = lib.cleanSourceWith {
     filter = name: type: !(type == "directory" && builtins.elem (baseNameOf name) [ "target" "manual" ]);
     src = lib.cleanSource ./.;
   };
 
-  cargoSha256 = "sha256-cpxvhP9TVEaIaiIZ+X22bDREqALpgWtW6koucVfMLwY=";
+  cargoSha256 = "sha256-IiAJ+sQasimcn4nSv4ACBwP1NLGNArtcIbwzkx0v/7w=";
 
   postInstall = lib.optionalString (stdenv.hostPlatform == stdenv.buildPlatform) ''
     mkdir completions

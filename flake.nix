@@ -21,6 +21,7 @@
     packages = rec {
       colmena = import ./default.nix { inherit pkgs; };
 
+      # Full user manual
       manual = let
         colmena = self.packages.${system}.colmena;
         evalNix = import ./src/nix/eval.nix {
@@ -36,7 +37,11 @@
         inherit colmena deploymentOptionsMd metaOptionsMd;
       };
 
+      # User manual without the CLI reference
       manualFast = manual.override { colmena = null; };
+
+      # User manual with the version treated as stable
+      manualForceStable = manual.override { unstable = false; };
     };
 
     defaultApp = self.apps.${system}.colmena;
@@ -47,7 +52,7 @@
 
     devShell = pkgs.mkShell {
       inputsFrom = [ defaultPackage ];
-      nativeBuildInputs = with pkgs; [ mdbook ];
+      nativeBuildInputs = with pkgs; [ mdbook python3 ];
       shellHook = ''
         export NIX_PATH=nixpkgs=${pkgs.path}
       '';
