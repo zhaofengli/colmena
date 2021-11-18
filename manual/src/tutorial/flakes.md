@@ -1,0 +1,75 @@
+# Usage with Flakes
+
+## Installation
+
+Colmena doesn't have a stable release yet.
+To quickly try Colmena out, use the following command to enter an ephemeral environment with `colmena`:
+
+```console
+$ nix shell github:zhaofengli/colmena
+```
+
+To install the latest development version to the user profile, use the following command:
+
+```console
+$ nix-env -if https://github.com/zhaofengli/colmena/tarball/main
+```
+
+You can also add `github:zhaofengli/colmena` as an input in your Flake and add the `colmena` package to your `devShell`.
+
+## Basic Configuration
+
+Colmena reads the `colmena` output in your Flake.
+
+Here is a short example:
+
+```nix
+{
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+  };
+  outputs = { nixpkgs, ... }: {
+    colmena = {
+      meta = {
+        nixpkgs = import nixpkgs {
+          system = "x86_64-linux";
+        };
+      };
+
+      host-a = { name, nodes, pkgs, ... }: {
+        boot.isContainer = true;
+        time.timeZone = nodes.host-b.config.time.timeZone;
+      };
+      host-b = {
+        deployment = {
+          targetHost = "somehost.tld";
+          targetPort = 1234;
+          targetUser = "luser";
+        };
+        boot.isContainer = true;
+        time.timeZone = "America/Los_Angeles";
+      };
+    };
+  };
+}
+```
+
+The full set of `deployment` options can be found [here](../reference/deployment.md).
+For some inspiration, you can check out the short example in [the main tutorial](index.md).
+
+Now you are ready to use Colmena! To build the configuration:
+
+```console
+$ colmena build
+```
+
+To build and deploy to all nodes:
+
+```console
+$ colmena apply
+```
+
+## Next Steps
+
+- Head to the [Features](../features/index.md) section to see what else Colmena can do.
+- Read more about options available in Colmena in the [Reference](../reference/index.md) section.

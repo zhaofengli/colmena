@@ -1,8 +1,9 @@
 # Colmena
 
-![Build](https://github.com/zhaofengli/colmena/workflows/Build/badge.svg)
+[![Manual](https://img.shields.io/badge/Manual-Pages-informational)](https://zhaofengli.github.io/colmena)
+[![Build](https://github.com/zhaofengli/colmena/workflows/Build/badge.svg)](https://github.com/zhaofengli/colmena/actions/workflows/build.yml)
 
-Colmena is a simple, stateless [NixOS](https://nixos.org) deployment tool modeled after [NixOps](https://github.com/NixOS/nixops) and [Morph](https://github.com/DBCDK/morph), written in Rust.
+Colmena is a simple, stateless [NixOS](https://nixos.org) deployment tool modeled after [NixOps](https://github.com/NixOS/nixops) and [morph](https://github.com/DBCDK/morph), written in Rust.
 It's a thin wrapper over Nix commands like `nix-instantiate` and `nix-copy-closure`, and supports parallel deployment.
 
 Now with 100% more flakes! See *Tutorial with Flakes* below.
@@ -36,7 +37,7 @@ nix-env -if default.nix
 
 *See Tutorial with Flakes for usage with Nix Flakes.*
 
-Colmena should work with your existing NixOps and Morph configurations with minimal modification.
+Colmena should work with your existing NixOps and morph configurations with minimal modification.
 Here is a sample `hive.nix` with two nodes, with some common configurations applied to both nodes:
 
 ```nix
@@ -95,7 +96,7 @@ Here is a sample `hive.nix` with two nodes, with some common configurations appl
   };
 
   host-b = {
-    # Like NixOps and Morph, Colmena will attempt to connect to
+    # Like NixOps and morph, Colmena will attempt to connect to
     # the remote host using the attribute name by default. You
     # can override it like:
     deployment.targetHost = "host-b.mydomain.tld";
@@ -126,7 +127,7 @@ Here is a sample `hive.nix` with two nodes, with some common configurations appl
 }
 ```
 
-The full set of options can be found at `src/nix/eval.nix`.
+The full set of options can be found in [the manual](https://zhaofengli.github.io/colmena/stable/reference).
 Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to build and deploy it to all nodes.
 
 ## Tutorial with Flakes
@@ -167,118 +168,12 @@ Here is a short example:
 }
 ```
 
-The full set of options can be found at `src/nix/eval.nix`.
+The full set of options can be found in [the manual](https://zhaofengli.github.io/colmena/stable/reference).
 Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to build and deploy it to all nodes.
 
-## `colmena eval`
+## Manual
 
-Sometimes you may want to extract values from your Hive configuration for consumption in another program (e.g., [OctoDNS](https://github.com/octodns/octodns)).
-To do that, create a `.nix` file with a lambda:
-
-```nix
-{ nodes, pkgs, lib, ... }:
-# Feels like a NixOS module - But you can return any JSON-serializable value
-lib.attrsets.mapAttrs (k: v: v.config.deployment.targetHost) nodes
-```
-
-Then you can evaluate with:
-
-```
-colmena eval your-lambda.nix
-```
-
-## `colmena apply-local`
-
-For some machines, you may still want to stick with the manual `nixos-rebuild`-type of workflow.
-Colmena allows you to build and activate configurations on the host running Colmena itself, provided that:
-
-1. The node must be running NixOS.
-1. The node must have `deployment.allowLocalDeployment` set to `true`.
-1. The node's _attribute name_ must match the hostname of the machine.
-
-If you invoke `apply-local` with `--sudo`, Colmena will attempt to elevate privileges with `sudo` if it's not run as root.
-You may also find it helpful to set `deployment.targetHost` to `null` if you don't intend to deploy to the host via SSH.
-
-As an example, the following `hive.nix` includes a node (`laptop`) that is meant to be only deployed with `apply-local`:
-
-```nix
-{
-  meta = {
-    nixpkgs = ./deps/nixpkgs-stable;
-
-    # I'd like to use the unstable version of Nixpkgs on
-    # my desktop machines.
-    nodeNixpkgs = {
-      laptop = ./deps/nixpkgs-unstable;
-    };
-  };
-
-  # This attribute name must match the output of `hostname` on your machine
-  laptop = { name, nodes, ... }: {
-    networking.hostName = "laptop";
-
-    deployment = {
-      # Allow local deployment with `colmena apply-local`
-      allowLocalDeployment = true;
-
-      # Disable SSH deployment. This node will be skipped in a
-      # normal`colmena apply`.
-      targetHost = null;
-    };
-
-    # Rest of configuration...
-  };
-
-  server-a = { pkgs, ... }: {
-    # This node will use the default Nixpkgs checkout specified
-    # in `meta.nixpkgs`.
-
-    # Rest of configuration...
-  };
-}
-```
-
-On `laptop`, run `colmena apply-local --sudo` to activate the configuration.
-
-## Secrets
-
-Colmena allows you to upload secret files to nodes that will not be stored in the Nix store.
-It implements a subset of the `deployment.keys` options supported by NixOps.
-
-For example, to deploy DNS-01 credentials for use with `security.acme`:
-
-```nix
-{
-  shared-box = {
-    security.acme.certs."my-site.tld".credentialsFile = "/run/keys/acme-credentials.secret";
-    deployment.keys."acme-credentials.secret" = {
-      # Alternatively, `text` (string) or `keyFile` (path to file)
-      # may be specified.
-      keyCommand = [ "vault" "read" "-field=env" "secret/dns01" ];
-
-      destDir = "/run/keys";       # Default: /run/keys
-      user = "acme";               # Default: root
-      group = "nginx";             # Default: root
-      permissions = "0640";        # Default: 0600
-
-      uploadAt = "pre-activation"; # Default: pre-activation, Alternative: post-activation
-    };
-    # Rest of configuration...
-  };
-}
-```
-
-Take note that if you use the default path (`/run/keys`), the secret files are only stored in-memory and will not survive reboots.
-To upload your secrets without performing a full deployment, use `colmena upload-keys`.
-
-## Parallelism
-
-Colmena is built from the ground up to support parallel deployments.
-Evaluation, build, and deployment of node configurations can happen at the same time.
-This parallelism can be controlled primarily through two flags:
-
-- `--limit <number>`: Number of hosts to deploy at once in the final step (pushing closures and activating new profiles).
-- `--eval-node-limit <number>`: By default, Colmena will automatically determine the maximum number of nodes to evaluate at the same time according to available RAM. This flag allows you to set the limit to a predetermined value.
+Read [the Colmena Manual](https://zhaofengli.github.io/colmena).
 
 ## Environment variables
 

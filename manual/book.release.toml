@@ -1,0 +1,11 @@
+[book]
+authors = ["Zhaofeng Li"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Colmena RELEASE"
+
+[output.html]
+site-url = "/colmena/RELEASE/"
+git-repository-url = "https://github.com/zhaofengli/colmena"
+edit-url-template = "https://github.com/zhaofengli/colmena/edit/main/manual/{path}"

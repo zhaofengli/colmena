@@ -14,10 +14,10 @@ let
     defaults = {};
   };
 
-  types = lib.types;
-
   # Hive-wide options
-  metaOptions = { lib, ... }: {
+  metaOptions = { lib, ... }: let
+    types = lib.types;
+  in {
     options = {
       name = lib.mkOption {
         description = ''
@@ -44,7 +44,7 @@ let
           This option must be specified when using Flakes.
         '';
         type = types.unspecified;
-        default = <nixpkgs>;
+        default = if !hermetic then <nixpkgs> else null;
       };
       nodeNixpkgs = lib.mkOption {
         description = ''
@@ -88,7 +88,9 @@ let
   # Colmena-specific options
   #
   # Largely compatible with NixOps/Morph.
-  deploymentOptions = { name, lib, ... }: {
+  deploymentOptions = { name, lib, ... }: let
+    types = lib.types;
+  in {
     options = {
       deployment = {
         targetHost = lib.mkOption {
@@ -152,7 +154,7 @@ let
             Secrets are transferred to the node out-of-band and
             never ends up in the Nix store.
           '';
-          type = types.attrsOf keyType;
+          type = types.attrsOf (types.submodule keyType);
           default = {};
         };
         replaceUnknownProfiles = lib.mkOption {
@@ -185,7 +187,9 @@ let
     };
   };
 
-  keyType = types.submodule {
+  keyType = { lib, ... }: let
+    types = lib.types;
+  in {
     options = {
       text = lib.mkOption {
         description = ''
@@ -468,4 +472,22 @@ let
 in {
   inherit nodes deploymentConfigJson toplevel buildAll buildSelected introspect;
   meta = hive.meta;
+
+  docs = {
+    deploymentOptions = pkgs: let
+      eval = pkgs.lib.evalModules {
+        modules = [ deploymentOptions ];
+        specialArgs = {
+          name = "nixos";
+          nodes = {};
+        };
+      };
+    in eval.options;
+
+    metaOptions = pkgs: let
+      eval = pkgs.lib.evalModules {
+        modules = [ metaOptions ];
+      };
+    in eval.options;
+  };
 }
