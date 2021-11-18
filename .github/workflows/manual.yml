@@ -45,7 +45,7 @@ jobs:
 
       # Ugly hack so it has permission to delete the worktree afterwards
       - name: Copy redirect farm
-        run: cp --no-preserve=mode -r out/ redirect-farm/
+        run: cp --no-preserve=mode -r out-redirectFarm/ redirect-farm/
 
       - name: Deploy redirect farm
         uses: JamesIves/github-pages-deploy-action@4.1.5
