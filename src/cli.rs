@@ -1,16 +1,49 @@
 //! Global CLI Setup.
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+use const_format::concatcp;
 use lazy_static::lazy_static;
 
 use crate::command;
 
+/// Base URL of the manual, without the trailing slash.
+const MANUAL_URL_BASE: &'static str = "https://zhaofengli.github.io/colmena";
+
+/// URL to the manual.
+///
+/// We maintain CLI and Nix API stability for each minor version.
+/// This ensures that the user always sees accurate documentations, and we can
+/// easily perform updates to the manual after a release.
+const MANUAL_URL: &'static str = concatcp!(MANUAL_URL_BASE, "/", env!("CARGO_PKG_VERSION_MAJOR"), ".", env!("CARGO_PKG_VERSION_MINOR"));
+
+/// The note shown when the user is using a pre-release version.
+///
+/// API stability cannot be guaranteed for pre-release versions.
+/// Links to the version currently in development automatically
+/// leads the user to the unstable manual.
+const MANUAL_DISCREPANCY_NOTE: &'static str = "Note: You are using a pre-release version of Colmena, so the supported options may be different from what's in the manual.";
+
 lazy_static! {
+    static ref LONG_ABOUT: String = {
+        let mut message = format!(r#"NixOS deployment tool
+
+Colmena helps you deploy to multiple hosts running NixOS.
+For more details, read the manual at <{}>.
+
+"#, MANUAL_URL);
+
+        if env!("CARGO_PKG_VERSION_PRE").len() != 0 {
+            message += &MANUAL_DISCREPANCY_NOTE;
+        }
+
+        message
+    };
+
     static ref CONFIG_HELP: String = {
         format!(r#"If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
 
-For a sample configuration, see <https://zhaofengli.github.io/colmena/{}>.
-"#, env!("CARGO_PKG_VERSION"))
+For a sample configuration, check the manual at <{}>.
+"#, MANUAL_URL)
     };
 }
 
@@ -42,6 +75,7 @@ pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
         .version(version)
         .author("Zhaofeng Li <hello@zhaofeng.li>")
         .about("NixOS deployment tool")
+        .long_about(LONG_ABOUT.as_str())
         .global_setting(AppSettings::ColoredHelp)
         .setting(AppSettings::ArgRequiredElseHelp)
         .arg(Arg::with_name("config")

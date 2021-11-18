@@ -11,15 +11,15 @@ in {
   stdenv = pkgs.stdenv;
   rustPlatform = pkgs.rustPlatform;
 in rustPlatform.buildRustPackage {
-  name = "colmena-dev";
-  version = "0.1.0";
+  name = "colmena";
+  version = "0.2.0-pre";
 
   src = lib.cleanSourceWith {
     filter = name: type: !(type == "directory" && builtins.elem (baseNameOf name) [ "target" "manual" ]);
     src = lib.cleanSource ./.;
   };
 
-  cargoSha256 = "sha256-JDJQnKO0j1DegOyuZi3WU4wVnotucSVPbwbn25R8Jb8=";
+  cargoSha256 = "sha256-cpxvhP9TVEaIaiIZ+X22bDREqALpgWtW6koucVfMLwY=";
 
   postInstall = lib.optionalString (stdenv.hostPlatform == stdenv.buildPlatform) ''
     mkdir completions

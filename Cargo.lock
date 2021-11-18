@@ -120,13 +120,14 @@ dependencies = [
 
 [[package]]
 name = "colmena"
-version = "0.1.0"
+version = "0.2.0-pre"
 dependencies = [
  "ansi-to-html",
  "async-trait",
  "atty",
  "clap",
  "console 0.13.0",
+ "const_format",
  "env_logger",
  "futures",
  "glob",
@@ -177,6 +178,26 @@ dependencies = [
  "regex",
  "terminal_size",
  "winapi",
+]
+
+[[package]]
+name = "const_format"
+version = "0.2.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22bc6cd49b0ec407b680c3e380182b6ac63b73991cb7602de350352fc309b614"
+dependencies = [
+ "const_format_proc_macros",
+]
+
+[[package]]
+name = "const_format_proc_macros"
+version = "0.2.22"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ef196d5d972878a48da7decb7686eded338b4858fbabeed513d63a7c98b2b82d"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "unicode-xid",
 ]
 
 [[package]]
