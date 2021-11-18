@@ -24,11 +24,17 @@ jobs:
 
       - run: nix flake check
         if: ${{ !contains(matrix.nix.name, '2.3') }}
+
       - name: Build Colmena
         run: nix build -L
         if: ${{ !contains(matrix.nix.name, '2.3') }}
+
       - name: Build Colmena with flake-compat
         run: nix-build
+
+      - name: Build manual
+        run: nix build .#manual -L
+        if: ${{ !contains(matrix.nix.name, '2.3') }}
 
   tests:
     runs-on: ubuntu-latest

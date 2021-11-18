@@ -1,0 +1,30 @@
+name: Manual
+
+on:
+  push:
+    branches:
+      - main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2.3.5
+      - uses: cachix/install-nix-action@v15
+        with:
+          install_url: https://releases.nixos.org/nix/nix-2.4/install
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+      - name: Build manual
+        run: nix build -o out .#manual -L
+
+      # Ugly hack so it has permission to delete the worktree afterwards
+      - name: Copy website
+        run: cp --no-preserve=mode -r out/ public/
+
+      - name: Deploy website
+        uses: JamesIves/github-pages-deploy-action@4.1.5
+        with:
+          branch: gh-pages
+          folder: public
+          target-folder: unstable
