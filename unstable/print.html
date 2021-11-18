@@ -147,7 +147,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+                        <!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
 <p><strong>Colmena</strong> is a simple, stateless <a href="https://nixos.org">NixOS</a> deployment tool modeled after <a href="https://github.com/NixOS/nixops">NixOps</a> and <a href="https://github.com/DBCDK/morph">morph</a>, written in Rust.
 It's a thin wrapper over Nix commands like <code>nix-instantiate</code> and <code>nix-copy-closure</code>, and supports parallel deployment.</p>
@@ -166,14 +166,14 @@ It's a thin wrapper over Nix commands like <code>nix-instantiate</code> and <cod
 </div></pre>
 <!-- UNSTABLE_BEGIN -->
 <p>You are currently reading <strong>the unstable version</strong> of the Colmena Manual, built against the tip of <a href="https://github.com/zhaofengli/colmena">the development branch</a>.
-Features described here will eventually become a part of <strong>version 0.2</strong>.</p>
+Features described here will eventually become a part of <strong>version 0.3</strong>.</p>
 <!-- UNSTABLE_END -->
 <h2 id="links"><a class="header" href="#links">Links</a></h2>
 <ul>
 <li><a href="https://github.com/zhaofengli/colmena">GitHub</a></li>
 <li><a href="reference/deployment.html">Deployment Options Reference</a></li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="tutorial"><a class="header" href="#tutorial">Tutorial</a></h1>
 <h2 id="installation"><a class="header" href="#installation">Installation</a></h2>
 <!-- UNSTABLE_BEGIN -->
@@ -286,7 +286,7 @@ This binary cache contains unstable versions of Colmena built by <a href="https:
 <li>Head to the <a href="tutorial/../features/index.html">Features</a> section to see what else Colmena can do.</li>
 <li>Read more about options available in Colmena in the <a href="tutorial/../reference/index.html">Reference</a> section.</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="usage-with-flakes"><a class="header" href="#usage-with-flakes">Usage with Flakes</a></h1>
 <h2 id="installation-1"><a class="header" href="#installation-1">Installation</a></h2>
 <!-- UNSTABLE_BEGIN -->
@@ -347,7 +347,7 @@ You can also check out the example in <a href="tutorial/index.html">the main tut
 <li>Head to the <a href="tutorial/../features/index.html">Features</a> section to see what else Colmena can do.</li>
 <li>Read more about options available in Colmena in the <a href="tutorial/../reference/index.html">Reference</a> section.</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="migrating-from-nixopsmorph"><a class="header" href="#migrating-from-nixopsmorph">Migrating from NixOps/morph</a></h1>
 <p>Colmena should work with existing NixOps and morph configurations with minimal modification.
 That said, there are a few things to look out for:</p>
@@ -377,7 +377,7 @@ The options accepts one of the following:</p>
 </ul>
 </li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="features"><a class="header" href="#features">Features</a></h1>
 <p>This section introduces the main features in Colmena:</p>
 <ul>
@@ -387,7 +387,7 @@ The options accepts one of the following:</p>
 <li><strong><a href="features/eval.html">Ad Hoc Evaluation</a></strong> - Evaluating a Nix expression with access to your configuration</li>
 <li><strong><a href="features/parallelism.html">Parallelism</a></strong> - Controlling how Colmena parallelizes the deployment process</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="node-tagging"><a class="header" href="#node-tagging">Node Tagging</a></h1>
 <p>With node tags, you can quickly select a subset of nodes for deployment.
 You can specify tags using the <code>deployment.tags</code> option:</p>
@@ -413,7 +413,7 @@ To select all nodes with a tag beginning with <code>infra-</code>:</p>
 <pre><code class="language-console">$ colmena apply --on '@infra-*'
 </code></pre>
 <p><em>(Note the quotes around the argument)</em></p>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="local-deployment"><a class="header" href="#local-deployment">Local Deployment</a></h1>
 <p>For some machines, you may still want to stick with the manual <code>nixos-rebuild</code>-type of workflow.
 Colmena allows you to build and activate configurations on the host running Colmena itself, provided that:</p>
@@ -461,7 +461,7 @@ You may also find it helpful to set <code>deployment.targetHost</code> to <code>
 }
 </code></pre>
 <p>On <code>laptop</code>, run <code>colmena apply-local --sudo</code> to activate the configuration.</p>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="secrets"><a class="header" href="#secrets">Secrets</a></h1>
 <p>Colmena allows you to upload secret files that will not be stored in the Nix store to nodes.
 It implements a subset of the <code>deployment.keys</code> options supported by NixOps.</p>
@@ -487,7 +487,7 @@ It implements a subset of the <code>deployment.keys</code> options supported by 
 </code></pre>
 <p>Take note that if you use the default path (<code>/run/keys</code>), the secret files are only stored in-memory and will not survive reboots.
 To upload your secrets without performing a full deployment, use <code>colmena upload-keys</code>.</p>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="ad-hoc-evaluation"><a class="header" href="#ad-hoc-evaluation">Ad Hoc Evaluation</a></h1>
 <p>Sometimes you may want to extract values from your Hive configuration for consumption in another program (e.g., <a href="https://github.com/octodns/octodns">OctoDNS</a>).
 To do that, create a <code>.nix</code> file with a lambda:</p>
@@ -507,7 +507,7 @@ lib.attrsets.mapAttrs (k: v: v.config.deployment.targetHost) nodes
 <pre><code class="language-console">$ colmena eval --instantiate -E '{ nodes, ... }: nodes.alpha.config.boot.kernelPackages.kernel'
 /nix/store/7ggmhnwvywrqcd1z2sdpan8afz55sw7z-linux-5.14.14.drv
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="parallelism"><a class="header" href="#parallelism">Parallelism</a></h1>
 <p>Colmena is built from the ground up to support parallel deployments.
 Evaluation, build, and deployment of node configurations can happen at the same time.
@@ -517,13 +517,13 @@ This parallelism can be controlled primarily through two flags:</p>
 <p><strong><code>--eval-node-limit &lt;number&gt;</code></strong></p>
 <p>By default, Colmena will automatically determine the maximum number of nodes to evaluate at the same time according to available RAM.
 This flag allows you to set the limit to a predetermined value.</p>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
 <p>This section contains examples of setups people commonly use:</p>
 <ul>
 <li><strong><a href="examples/multi-arch.html">Multi-Architecture Deployments</a></strong> - Deploying to hosts running a foreign architecture</li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="multi-architecture-deployments"><a class="header" href="#multi-architecture-deployments">Multi-Architecture Deployments</a></h1>
 <p>You can deploy to hosts running different architectures with a single configuration.
 This requires you to either <a href="https://nixos.org/manual/nix/stable/advanced-topics/distributed-builds.html">set up remote builders</a> running the foreign architecture(s), or <a href="https://nixos.wiki/wiki/NixOS_on_ARM#Compiling_through_QEMU">set up binfmt emulation</a> on the host running Colmena.</p>
@@ -552,7 +552,7 @@ This requires you to either <a href="https://nixos.org/manual/nix/stable/advance
 For more information on what is required on the local system, see <a href="examples/../features/apply-local.html">Local Deployment</a>.</p>
 <p>After the new configuration is activated, binfmt emulation will be set up on the local machine.
 You can then deploy to the <code>rpi</code> node with <code>colmena apply --on rpi</code>.</p>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="reference"><a class="header" href="#reference">Reference</a></h1>
 <!-- UNSTABLE_BEGIN -->
 <p>You are currently reading <strong>the unstable version</strong> of the Colmena Manual, built against the tip of <a href="https://github.com/zhaofengli/colmena">the development branch</a>.</p>
@@ -563,7 +563,7 @@ You can then deploy to the <code>rpi</code> node with <code>colmena apply --on r
 <li><strong><a href="reference/meta.html">Meta Options</a></strong></li>
 <li><strong><a href="reference/cli.html">Command Line Arguments</a></strong></li>
 </ul>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="deployment-options"><a class="header" href="#deployment-options">Deployment Options</a></h1>
 <!-- UNSTABLE_BEGIN -->
 <p>You are currently reading <strong>the unstable version</strong> of the Colmena Manual, built against the tip of <a href="https://github.com/zhaofengli/colmena">the development branch</a>.</p>
@@ -723,7 +723,7 @@ null or string</p>
 <p><em><em>Default</em></em></p>
 <pre><code>&quot;root&quot;
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="meta-options"><a class="header" href="#meta-options">Meta Options</a></h1>
 <!-- UNSTABLE_BEGIN -->
 <p>You are currently reading <strong>the unstable version</strong> of the Colmena Manual, built against the tip of <a href="https://github.com/zhaofengli/colmena">the development branch</a>.</p>
@@ -795,7 +795,7 @@ attribute set of unspecifieds</p>
 <p><em><em>Default</em></em></p>
 <pre><code>{}
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="command-line-arguments"><a class="header" href="#command-line-arguments">Command Line Arguments</a></h1>
 <!-- UNSTABLE_BEGIN -->
 <p>You are currently reading <strong>the unstable version</strong> of the Colmena Manual, built against the tip of <a href="https://github.com/zhaofengli/colmena">the development branch</a>.</p>
@@ -810,12 +810,12 @@ attribute set of unspecifieds</p>
     - src/command/<subcommand>.rs
 -->
 <h2 id="colmena"><a class="header" href="#colmena"><code>colmena</code></a></h2>
-<pre><div class="hljs"><span style='color:#0a0'>Colmena</span> 0.2.0-pre
+<pre><div class="hljs"><span style='color:#0a0'>Colmena</span> 0.3.0-pre
 Zhaofeng Li &lt;hello@zhaofeng.li&gt;
 NixOS deployment tool
 
 Colmena helps you deploy to multiple hosts running NixOS.
-For more details, read the manual at &lt;https://zhaofengli.github.io/colmena/0.2&gt;.
+For more details, read the manual at &lt;https://zhaofengli.github.io/colmena/0.3&gt;.
 
 Note: You are using a pre-release version of Colmena, so the supported options may be different from what&#39;s in the
 manual.
@@ -839,7 +839,7 @@ USAGE:</span>
             If this argument is not specified, Colmena will search upwards from the current working directory for a file
             named &quot;flake.nix&quot; or &quot;hive.nix&quot;. This behavior is disabled if --config/-f is given explicitly.
             
-            For a sample configuration, check the manual at &lt;https://zhaofengli.github.io/colmena/0.2&gt;.
+            For a sample configuration, check the manual at &lt;https://zhaofengli.github.io/colmena/0.3&gt;.
              [default: <span style='color:#0a0'>hive.nix</span>]
 
 <span style='color:#a50'>SUBCOMMANDS:
@@ -1174,7 +1174,7 @@ USAGE:</span>
     <span style='color:#0a0'>-V</span>, <span style='color:#0a0'>--version</span>    
             Prints version information
 </div></pre>
-<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="contributing"><a class="header" href="#contributing">Contributing</a></h1>
 <p>Contributions are welcome!</p>
 <h2 id="code"><a class="header" href="#code">Code</a></h2>
