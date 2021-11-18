@@ -38,7 +38,7 @@ jobs:
       # == Redirect Farm
       # /future_api_version -> /unstable
       - name: Check future API version
-        run: echo "api_version=${nix eval .#colmena.apiVersion}" >> $GITHUB_ENV
+        run: echo "api_version=$(nix eval .#colmena.apiVersion)" >> $GITHUB_ENV
 
       - name: Build redirect farm
         run: nix build -o out .#manual.redirectFarm -L
