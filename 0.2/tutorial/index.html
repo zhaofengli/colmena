@@ -1,0 +1,315 @@
+<!DOCTYPE HTML>
+<html lang="en" class="sidebar-visible no-js light">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Tutorial - Colmena (Unstable)</title>
+                
+
+        <!-- Custom HTML head -->
+        
+
+        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff" />
+
+                <link rel="icon" href="../favicon.svg">
+                        <link rel="shortcut icon" href="../favicon.png">
+                <link rel="stylesheet" href="../css/variables.css">
+        <link rel="stylesheet" href="../css/general.css">
+        <link rel="stylesheet" href="../css/chrome.css">
+                <link rel="stylesheet" href="../css/print.css" media="print">
+        
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
+                <link rel="stylesheet" href="../fonts/fonts.css">
+        
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../highlight.css">
+        <link rel="stylesheet" href="../tomorrow-night.css">
+        <link rel="stylesheet" href="../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        
+            </head>
+    <body>
+        <!-- Provide site root to javascript -->
+        <script type="text/javascript">
+            var path_to_root = "../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script type="text/javascript">
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script type="text/javascript">
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('no-js')
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add('js');
+        </script>
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script type="text/javascript">
+            var html = document.querySelector('html');
+            var sidebar = 'hidden';
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            }
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded "><a href="../introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../tutorial/index.html" class="active"><strong aria-hidden="true">2.</strong> Tutorial</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../tutorial/flakes.html"><strong aria-hidden="true">2.1.</strong> Usage with Flakes</a></li><li class="chapter-item expanded "><a href="../tutorial/migration.html"><strong aria-hidden="true">2.2.</strong> Migrating from NixOps/morph</a></li></ol></li><li class="chapter-item expanded "><a href="../features/index.html"><strong aria-hidden="true">3.</strong> Features</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../features/tags.html"><strong aria-hidden="true">3.1.</strong> Node Tagging</a></li><li class="chapter-item expanded "><a href="../features/apply-local.html"><strong aria-hidden="true">3.2.</strong> Local Deployment</a></li><li class="chapter-item expanded "><a href="../features/keys.html"><strong aria-hidden="true">3.3.</strong> Secrets</a></li><li class="chapter-item expanded "><a href="../features/eval.html"><strong aria-hidden="true">3.4.</strong> Ad Hoc Evaluation</a></li><li class="chapter-item expanded "><a href="../features/parallelism.html"><strong aria-hidden="true">3.5.</strong> Parallelism</a></li></ol></li><li class="chapter-item expanded "><a href="../examples/index.html"><strong aria-hidden="true">4.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../examples/multi-arch.html"><strong aria-hidden="true">4.1.</strong> Multi-Architecture Deployments</a></li></ol></li><li class="chapter-item expanded "><a href="../reference/index.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference/deployment.html"><strong aria-hidden="true">5.1.</strong> Deployment Options</a></li><li class="chapter-item expanded "><a href="../reference/meta.html"><strong aria-hidden="true">5.2.</strong> Meta Options</a></li><li class="chapter-item expanded "><a href="../reference/cli.html"><strong aria-hidden="true">5.3.</strong> Command Line Arguments</a></li></ol></li><li class="chapter-item expanded "><a href="../contributing.html"><strong aria-hidden="true">6.</strong> Contributing</a></li></ol>            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky bordered">
+                    <div class="left-buttons">
+                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </button>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                                                <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                                            </div>
+
+                    <h1 class="menu-title">Colmena (Unstable)</h1>
+
+                    <div class="right-buttons">
+                                                <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                                                                        <a href="https://github.com/zhaofengli/colmena" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+                                                                        <a href="https://github.com/zhaofengli/colmena/edit/main/manual/src/tutorial/index.md" title="Suggest an edit" aria-label="Suggest an edit">
+                            <i id="git-edit-button" class="fa fa-edit"></i>
+                        </a>
+                        
+                    </div>
+                </div>
+
+                                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+                
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script type="text/javascript">
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <!-- Generated from version 0.2.0-pre (apiVersion=0.2, unstable=True) -->
+<h1 id="tutorial"><a class="header" href="#tutorial">Tutorial</a></h1>
+<h2 id="installation"><a class="header" href="#installation">Installation</a></h2>
+<!-- UNSTABLE_BEGIN -->
+<!-- To install the latest stable version, read [the corresponding Manual](https://zhaofengli.github.io/colmena/stable) for instructions. -->
+<p>To install the latest development version to the user profile, use the following command:</p>
+<pre><code class="language-bash">nix-env -if https://github.com/zhaofengli/colmena/tarball/main
+</code></pre>
+<h3 id="unstable-binary-cache"><a class="header" href="#unstable-binary-cache">Unstable Binary Cache</a></h3>
+<p>A public binary cache is available at <a href="https://colmena.cachix.org">https://colmena.cachix.org</a>, courtesy of Cachix.
+This binary cache contains unstable versions of Colmena built by <a href="https://github.com/zhaofengli/colmena/actions">GitHub Actions</a>.</p>
+<!-- UNSTABLE_END -->
+<h2 id="basic-configuration"><a class="header" href="#basic-configuration">Basic Configuration</a></h2>
+<p><em>If you use Nix Flakes, follow the Flake version <a href="flakes.html">here</a>.</em></p>
+<p>Colmena should work with your existing NixOps and morph configurations with minimal modification (see <a href="migration.html">Migrating from NixOps/morph</a>).</p>
+<p>Here is a sample <code>hive.nix</code> with two nodes, with some common configurations applied to both nodes:</p>
+<pre><code class="language-nix">{
+  meta = {
+    # Override to pin the Nixpkgs version (recommended). This option
+    # accepts one of the following:
+    # - A path to a Nixpkgs checkout
+    # - The Nixpkgs lambda (e.g., import &lt;nixpkgs&gt;)
+    # - An initialized Nixpkgs attribute set
+    nixpkgs = &lt;nixpkgs&gt;;
+
+    # You can also override Nixpkgs by node!
+    nodeNixpkgs = {
+      node-b = ./another-nixos-checkout;
+    };
+
+    # If your Colmena host has nix configured to allow for remote builds
+    # (for nix-daemon, your user being included in trusted-users)
+    # you can set a machines file that will be passed to the underlying
+    # nix-store command during derivation realization as a builders option.
+    # For example, if you support multiple orginizations each with their own
+    # build machine(s) you can ensure that builds only take place on your
+    # local machine and/or the machines specified in this file.
+    # machinesFile = ./machines.client-a;
+  };
+
+  defaults = { pkgs, ... }: {
+    # This module will be imported by all hosts
+    environment.systemPackages = with pkgs; [
+      vim wget curl
+    ];
+
+    # By default, Colmena will replace unknown remote profile
+    # (unknown means the profile isn't in the nix store on the
+    # host running Colmena) during apply (with the default goal,
+    # boot, and switch).
+    # If you share a hive with others, or use multiple machines,
+    # and are not careful to always commit/push/pull changes
+    # you can accidentaly overwrite a remote profile so in those
+    # scenarios you might want to change this default to false. 
+    # deployment.replaceUnknownProfiles = true;
+  };
+
+  host-a = { name, nodes, ... }: {
+    # The name and nodes parameters are supported in Colmena,
+    # allowing you to reference configurations in other nodes.
+    networking.hostName = name;
+    time.timeZone = nodes.host-b.config.time.timeZone;
+
+    boot.loader.grub.device = &quot;/dev/sda&quot;;
+    fileSystems.&quot;/&quot; = {
+      device = &quot;/dev/sda1&quot;;
+      fsType = &quot;ext4&quot;;
+    };
+  };
+
+  host-b = {
+    # Like NixOps and Morph, Colmena will attempt to connect to
+    # the remote host using the attribute name by default. You
+    # can override it like:
+    deployment.targetHost = &quot;host-b.mydomain.tld&quot;;
+
+    # It's also possible to override the target SSH port.
+    # For further customization, use the SSH_CONFIG_FILE
+    # environment variable to specify a ssh_config file.
+    deployment.targetPort = 1234;
+
+    # Override the default for this target host
+    deployment.replaceUnknownProfiles = false;
+
+    # You can filter hosts by tags with --on @tag-a,@tag-b.
+    # In this example, you can deploy to hosts with the &quot;web&quot; tag using:
+    #    colmena apply --on @web
+    # You can use globs in tag matching as well:
+    #    colmena apply --on '@infra-*'
+    deployment.tags = [ &quot;web&quot; &quot;infra-lax&quot; ];
+
+    time.timeZone = &quot;America/Los_Angeles&quot;;
+
+    boot.loader.grub.device = &quot;/dev/sda&quot;;
+    fileSystems.&quot;/&quot; = {
+      device = &quot;/dev/sda1&quot;;
+      fsType = &quot;ext4&quot;;
+    };
+  };
+}
+</code></pre>
+<p>The full set of <code>deployment</code> options can be found <a href="../reference/deployment.html">here</a>.</p>
+<p>Now you are ready to use Colmena! To build the configuration:</p>
+<pre><code class="language-bash">colmena build
+</code></pre>
+<p>To build and deploy to all nodes:</p>
+<pre><code class="language-bash">colmena apply
+</code></pre>
+<h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
+<ul>
+<li>Head to the <a href="../features/index.html">Features</a> section to see what else Colmena can do.</li>
+<li>Read more about options available in Colmena in the <a href="../reference/index.html">Reference</a> section.</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                                                    <a rel="prev" href="../introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+                        
+                                                    <a rel="next" href="../tutorial/flakes.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+                        
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                                    <a rel="prev" href="../introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+                
+                                    <a rel="next" href="../tutorial/flakes.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+                            </nav>
+
+        </div>
+
+        
+        
+        
+                <script type="text/javascript">
+            window.playground_copyable = true;
+        </script>
+        
+        
+                <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
+        
+        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
+        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+
+        <!-- Custom JS scripts -->
+        
+        
+    </body>
+</html>
