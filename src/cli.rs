@@ -56,13 +56,19 @@ macro_rules! register_command {
 macro_rules! handle_command {
     ($module:ident, $matches:ident) => {
         if let Some(sub_matches) = $matches.subcommand_matches(stringify!($module)) {
-            command::$module::run(&$matches, &sub_matches).await;
+            crate::troubleshooter::run_wrapped(
+                &$matches, &sub_matches,
+                command::$module::run,
+            ).await;
             return;
         }
     };
     ($name:expr, $module:ident, $matches:ident) => {
         if let Some(sub_matches) = $matches.subcommand_matches($name) {
-            command::$module::run(&$matches, &sub_matches).await;
+            crate::troubleshooter::run_wrapped(
+                &$matches, &sub_matches,
+                command::$module::run,
+            ).await;
             return;
         }
     };

@@ -3,6 +3,7 @@ use std::path::PathBuf;
 use clap::{Arg, App, AppSettings, SubCommand, ArgMatches};
 
 use crate::util;
+use crate::nix::NixError;
 
 pub fn subcommand() -> App<'static, 'static> {
     SubCommand::with_name("eval")
@@ -37,12 +38,12 @@ pub fn deprecated_alias() -> App<'static, 'static> {
         .setting(AppSettings::Hidden)
 }
 
-pub async fn run(global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
+pub async fn run(global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> Result<(), NixError> {
     if let Some("introspect") = global_args.subcommand_name() {
         log::warn!("`colmena introspect` has been renamed to `colmena eval`. Please update your scripts.");
     }
 
-    let hive = util::hive_from_args(local_args).await.unwrap();
+    let hive = util::hive_from_args(local_args).await?;
 
     if !(local_args.is_present("expression") ^ local_args.is_present("expression_file")) {
         log::error!("Either an expression (-E) or a .nix file containing an expression should be specified, not both.");
@@ -57,11 +58,13 @@ pub async fn run(global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     };
 
     let instantiate = local_args.is_present("instantiate");
-    let result = hive.introspect(expression, instantiate).await.unwrap();
+    let result = hive.introspect(expression, instantiate).await?;
 
     if instantiate {
         print!("{}", result);
     } else {
         println!("{}", result);
     }
+
+    Ok(())
 }

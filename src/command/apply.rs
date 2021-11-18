@@ -13,6 +13,7 @@ use crate::nix::deployment::{
     EvaluationNodeLimit,
     ParallelismLimit,
 };
+use crate::nix::NixError;
 use crate::nix::host::local as localhost;
 use crate::util;
 
@@ -114,13 +115,13 @@ pub fn subcommand() -> App<'static, 'static> {
     util::register_selector_args(command)
 }
 
-pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
-    let hive = util::hive_from_args(local_args).await.unwrap();
+pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> Result<(), NixError> {
+    let hive = util::hive_from_args(local_args).await?;
 
     log::info!("Enumerating nodes...");
-    let all_nodes = hive.deployment_info().await.unwrap();
+    let all_nodes = hive.deployment_info().await?;
 
-    let nix_options = hive.nix_options().await.unwrap();
+    let nix_options = hive.nix_options().await?;
 
     let selected_nodes = match local_args.value_of("on") {
         Some(filter) => {
@@ -241,4 +242,6 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     if !success {
         quit::with_code(10);
     }
+
+    Ok(())
 }

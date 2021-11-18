@@ -4,6 +4,7 @@ mod nix;
 mod cli;
 mod command;
 mod progress;
+mod troubleshooter;
 mod util;
 
 #[tokio::main]

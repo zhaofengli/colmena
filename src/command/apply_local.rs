@@ -12,7 +12,7 @@ use crate::nix::deployment::{
     Target,
     DeploymentOptions,
 };
-use crate::nix::host;
+use crate::nix::{NixError, host};
 use crate::util;
 
 pub fn subcommand() -> App<'static, 'static> {
@@ -57,7 +57,7 @@ By default, Colmena will deploy keys set in `deployment.keys` before activating 
             .takes_value(false))
 }
 
-pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
+pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> Result<(), NixError> {
     // Sanity check: Are we running NixOS?
     if let Ok(os_release) = fs::read_to_string("/etc/os-release").await {
         if !os_release.contains("ID=nixos\n") {
@@ -131,6 +131,8 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
     if !success {
         quit::with_code(10);
     }
+
+    Ok(())
 }
 
 async fn escalate(sudo: &str) -> ! {

@@ -3,6 +3,7 @@ use std::time::Duration;
 use clap::{App, AppSettings, SubCommand, ArgMatches};
 use tokio::time;
 
+use crate::nix::NixError;
 use crate::progress::{Progress, OutputStyle};
 
 pub fn subcommand() -> App<'static, 'static> {
@@ -11,7 +12,7 @@ pub fn subcommand() -> App<'static, 'static> {
         .setting(AppSettings::Hidden)
 }
 
-pub async fn run(_global_args: &ArgMatches<'_>, _local_args: &ArgMatches<'_>) {
+pub async fn run(_global_args: &ArgMatches<'_>, _local_args: &ArgMatches<'_>) -> Result<(), NixError> {
     let progress = Progress::with_style(OutputStyle::Condensed);
     let mut task = progress.create_task_progress(String::from("test"));
 
@@ -21,4 +22,6 @@ pub async fn run(_global_args: &ArgMatches<'_>, _local_args: &ArgMatches<'_>) {
     }
 
     task.success("Completed");
+
+    Ok(())
 }

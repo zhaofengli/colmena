@@ -54,11 +54,11 @@ It's recommended to use -- to separate Colmena options from the command to run. 
     util::register_selector_args(command)
 }
 
-pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
-    let hive = util::hive_from_args(local_args).await.unwrap();
+pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> Result<(), NixError> {
+    let hive = util::hive_from_args(local_args).await?;
 
     log::info!("Enumerating nodes...");
-    let all_nodes = hive.deployment_info().await.unwrap();
+    let all_nodes = hive.deployment_info().await?;
 
     let selected_nodes = match local_args.value_of("on") {
         Some(filter) => {
@@ -167,4 +167,6 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) {
 
         join_all(futures).await;
     }).await;
+
+    Ok(())
 }
