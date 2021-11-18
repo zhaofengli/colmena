@@ -15,11 +15,8 @@ in rustPlatform.buildRustPackage {
   version = "0.1.0";
 
   src = lib.cleanSourceWith {
-    filter = name: type: !(type == "directory" && baseNameOf name == "target");
-    src = lib.cleanSourceWith {
-      filter = lib.cleanSourceFilter;
-      src = ./.;
-    };
+    filter = name: type: !(type == "directory" && builtins.elem (baseNameOf name) [ "manual" ]);
+    src = pkgs.nix-gitignore.gitignoreSource [] ./.;
   };
 
   cargoLock = {
