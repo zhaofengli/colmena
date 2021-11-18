@@ -1,7 +1,18 @@
 //! Global CLI Setup.
 
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+use lazy_static::lazy_static;
+
 use crate::command;
+
+lazy_static! {
+    static ref CONFIG_HELP: String = {
+        format!(r#"If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
+
+For a sample configuration, see <https://zhaofengli.github.io/colmena/{}>.
+"#, env!("CARGO_PKG_VERSION"))
+    };
+}
 
 macro_rules! register_command {
     ($module:ident, $app:ident) => {
@@ -25,9 +36,10 @@ macro_rules! handle_command {
 }
 
 pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
+    let version = env!("CARGO_PKG_VERSION");
     let mut app = App::new("Colmena")
         .bin_name("colmena")
-        .version("0.1.0")
+        .version(version)
         .author("Zhaofeng Li <hello@zhaofeng.li>")
         .about("NixOS deployment tool")
         .global_setting(AppSettings::ColoredHelp)
@@ -45,10 +57,7 @@ pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
             // or "hive.nix". This behavior is disabled if --config/-f
             // is explicitly supplied by the user (occurrences_of > 0).
             .default_value("hive.nix")
-            .long_help(r#"If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
-
-For a sample configuration, see <https://github.com/zhaofengli/colmena>.
-"#)
+            .long_help(&CONFIG_HELP)
             .global(true))
         .arg(Arg::with_name("show-trace")
             .long("show-trace")

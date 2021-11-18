@@ -132,6 +132,7 @@ dependencies = [
  "glob",
  "hostname",
  "indicatif",
+ "lazy_static",
  "libc",
  "log",
  "quit",
