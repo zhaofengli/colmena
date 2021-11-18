@@ -313,7 +313,8 @@ let
       # The referenced file might return an initialized Nixpkgs attribute set directly
       else mkNixpkgs configName (import pkgConf)
     else if typeOf pkgConf == "lambda" then
-      pkgConf {}
+      if hermetic then throw (uninitializedError "a Nixpkgs lambda")
+      else pkgConf {}
     else if typeOf pkgConf == "set" then
       if pkgConf ? outputs then throw (uninitializedError "an uninitialized Nixpkgs input")
       else pkgConf
