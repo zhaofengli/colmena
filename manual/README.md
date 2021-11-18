@@ -1,8 +1,8 @@
-# Documentation
+# Manual
 
 You can read the rendered version [here](https://zhaofengli.github.io/colmena).
 
-## Building the Documentation
+## Building the Manual
 
 The manual is rendered using [mdBook](https://github.com/rust-lang/mdBook).
 To build the manual, do `nix build .#manual`.
