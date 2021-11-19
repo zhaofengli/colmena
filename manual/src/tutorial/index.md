@@ -3,7 +3,12 @@
 ## Installation
 
 <!-- STABLE_BEGIN -->
-Colmena doesn't have a stable release yet.
+
+To install the latest stable version to the user profile, use the following command:
+
+```bash
+nix-env -if https://github.com/zhaofengli/colmena/tarball/stable
+```
 
 If you are interested in trying out the bleeding-edge version of Colmena, Read [the unstable version](https://zhaofengli.github.io/colmena/unstable) of the Manual for instructions.
 <!-- STABLE_END -->
