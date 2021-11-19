@@ -24,7 +24,7 @@ jobs:
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Check API version
-        run: echo "api_version=$(nix eval .#colmena.apiVersion)" >> $GITHUB_ENV
+        run: echo "api_version=$(nix eval .#colmena.apiVersion | sed 's|\"||g')" >> $GITHUB_ENV
 
       # == Manual
       - name: Build manual
