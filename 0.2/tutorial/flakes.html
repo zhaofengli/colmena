@@ -153,7 +153,13 @@
 <h1 id="usage-with-flakes"><a class="header" href="#usage-with-flakes">Usage with Flakes</a></h1>
 <h2 id="installation"><a class="header" href="#installation">Installation</a></h2>
 <!-- STABLE_BEGIN -->
-<p>Colmena doesn't have a stable release yet.</p>
+<p>To quickly try Colmena out, use the following command to enter an ephemeral environment with the latest stable version of <code>colmena</code>:</p>
+<pre><code class="language-bash">nix shell github:zhaofengli/colmena/stable
+</code></pre>
+<p>To install Colmena to the user profile, use the following command:</p>
+<pre><code class="language-bash">nix-env -if https://github.com/zhaofengli/colmena/tarball/stable
+</code></pre>
+<p>You can also add <code>github:zhaofengli/colmena/stable</code> as an input in your Flake and add the <code>colmena</code> package to your <code>devShell</code>.</p>
 <p>If you are interested in trying out the bleeding-edge version of Colmena, Read <a href="https://zhaofengli.github.io/colmena/unstable">the unstable version</a> of the Manual for instructions.</p>
 <!-- STABLE_END -->
 <h2 id="basic-configuration"><a class="header" href="#basic-configuration">Basic Configuration</a></h2>
