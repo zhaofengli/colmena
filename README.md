@@ -1,6 +1,7 @@
 # Colmena
 
-[![Manual](https://img.shields.io/badge/Manual-Unstable-informational)](https://zhaofengli.github.io/colmena/unstable)
+[![Stable Manual](https://img.shields.io/badge/Manual-Stable-informational)](https://zhaofengli.github.io/colmena/stable)
+[![Unstable Manual](https://img.shields.io/badge/Manual-Unstable-orange)](https://zhaofengli.github.io/colmena/unstable)
 [![Build](https://github.com/zhaofengli/colmena/workflows/Build/badge.svg)](https://github.com/zhaofengli/colmena/actions/workflows/build.yml)
 
 Colmena is a simple, stateless [NixOS](https://nixos.org) deployment tool modeled after [NixOps](https://github.com/NixOS/nixops) and [morph](https://github.com/DBCDK/morph), written in Rust.
@@ -24,8 +25,15 @@ $ <b>colmena apply --on @tag-a</b>
 
 ## Installation
 
-Colmena doesn't have a stable release yet.
-To install the latest development version to the user profile, use the following command:
+To install the latest stable version to the user profile, use the following command:
+
+```bash
+nix-env -if https://github.com/zhaofengli/colmena/tarball/stable
+```
+
+### Unstable Version
+
+To install the latest development version:
 
 ```bash
 nix-env -if https://github.com/zhaofengli/colmena/tarball/main
@@ -36,8 +44,6 @@ Alternatively, if you have a local clone of the repo:
 ```bash
 nix-env -if default.nix
 ```
-
-### Unstable Binary Cache
 
 A public binary cache is available at https://colmena.cachix.org, courtesy of Cachix.
 This binary cache contains unstable versions of Colmena built by [GitHub Actions](https://github.com/zhaofengli/colmena/actions).

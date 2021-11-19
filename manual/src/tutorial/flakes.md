@@ -3,7 +3,19 @@
 ## Installation
 
 <!-- STABLE_BEGIN -->
-Colmena doesn't have a stable release yet.
+To quickly try Colmena out, use the following command to enter an ephemeral environment with the latest stable version of `colmena`:
+
+```bash
+nix shell github:zhaofengli/colmena/stable
+```
+
+To install Colmena to the user profile, use the following command:
+
+```bash
+nix-env -if https://github.com/zhaofengli/colmena/tarball/stable
+```
+
+You can also add `github:zhaofengli/colmena/stable` as an input in your Flake and add the `colmena` package to your `devShell`.
 
 If you are interested in trying out the bleeding-edge version of Colmena, Read [the unstable version](https://zhaofengli.github.io/colmena/unstable) of the Manual for instructions.
 <!-- STABLE_END -->
