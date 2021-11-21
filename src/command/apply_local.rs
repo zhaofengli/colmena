@@ -137,7 +137,12 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> 
 
     deployment.set_options(options);
 
-    deployment.execute().await?;
+    let (deployment, output) = tokio::join!(
+        deployment.execute(),
+        output.run_until_completion(),
+    );
+
+    deployment?; output?;
 
     Ok(())
 }
