@@ -1,7 +1,6 @@
 //! Integration-ish tests
 
 use super::*;
-use crate::progress::TaskProgress;
 
 use std::collections::HashSet;
 use std::hash::Hash;
@@ -69,16 +68,14 @@ impl TempHive {
     /// Asserts that the specified nodes can be fully evaluated.
     pub fn eval_success(text: &str, nodes: Vec<NodeName>) {
         let hive = Self::new(text);
-        let progress = TaskProgress::new("tests".to_string(), 5);
-        let (profiles, _) = block_on(hive.eval_selected(&nodes, progress));
+        let profiles = block_on(hive.eval_selected(&nodes, None));
         assert!(profiles.is_ok());
     }
 
     /// Asserts that the specified nodes will fail to evaluate.
     pub fn eval_failure(text: &str, nodes: Vec<NodeName>) {
         let hive = Self::new(text);
-        let progress = TaskProgress::new("tests".to_string(), 5);
-        let (profiles, _) = block_on(hive.eval_selected(&nodes, progress));
+        let profiles = block_on(hive.eval_selected(&nodes, None));
         assert!(profiles.is_err());
     }
 }

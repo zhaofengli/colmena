@@ -65,7 +65,7 @@ impl Profile {
 }
 
 /// A map of names to their associated NixOS system profiles.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ProfileMap(HashMap<NodeName, Profile>);
 
 impl Deref for ProfileMap {

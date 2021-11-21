@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -7,9 +6,10 @@ use clap::{Arg, App, AppSettings, SubCommand, ArgMatches};
 use futures::future::join_all;
 use tokio::sync::Semaphore;
 
-use crate::nix::NixError;
-use crate::progress::{Progress, OutputStyle};
-use crate::util::{self, CommandExecution};
+use crate::nix::{NixError, NodeFilter};
+use crate::job::{JobMonitor, JobState, JobType};
+use crate::progress::SimpleProgressOutput;
+use crate::util;
 
 pub fn subcommand() -> App<'static, 'static> {
     let command = SubCommand::with_name("exec")
@@ -56,59 +56,16 @@ It's recommended to use -- to separate Colmena options from the command to run. 
 
 pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> Result<(), NixError> {
     let hive = util::hive_from_args(local_args).await?;
-
-    log::info!("Enumerating nodes...");
-    let all_nodes = hive.deployment_info().await?;
-
-    let selected_nodes = match local_args.value_of("on") {
-        Some(filter) => {
-            util::filter_nodes(&all_nodes, filter)
-        }
-        None => all_nodes.keys().cloned().collect(),
-    };
-
-    if selected_nodes.len() == 0 {
-        log::warn!("No hosts matched. Exiting...");
-        quit::with_code(2);
-    }
-
     let ssh_config = env::var("SSH_CONFIG_FILE")
         .ok().map(PathBuf::from);
 
-    let mut hosts = HashMap::new();
-    for node in &selected_nodes {
-        let config = all_nodes.get(node).unwrap();
-        let host = config.to_ssh_host();
-        match host {
-            Some(mut host) => {
-                if let Some(ssh_config) = ssh_config.as_ref() {
-                    host.set_ssh_config(ssh_config.clone());
-                }
-
-                hosts.insert(node.clone(), host);
-            }
-            None => {},
-        }
-    }
-
-    if hosts.len() == all_nodes.len() {
-        log::info!("Selected all {} nodes.", hosts.len());
-    } else if hosts.len() == selected_nodes.len() {
-        log::info!("Selected {} out of {} hosts.", hosts.len(), all_nodes.len());
+    let filter = if let Some(f) = local_args.value_of("on") {
+        Some(NodeFilter::new(f)?)
     } else {
-        log::info!("Selected {} out of {} hosts ({} skipped)", hosts.len(), all_nodes.len(), selected_nodes.len() - hosts.len());
-    }
-
-    if hosts.len() == 0 {
-        log::warn!("No selected nodes are accessible over SSH. Exiting...");
-        quit::with_code(2);
-    }
-
-    let mut progress = if local_args.is_present("verbose") {
-        Progress::with_style(OutputStyle::Plain)
-    } else {
-        Progress::default()
+        None
     };
+
+    let mut targets = hive.select_nodes(filter, ssh_config, true).await?;
 
     let parallel_sp = Arc::new({
         let limit = local_args.value_of("parallel").unwrap()
@@ -121,52 +78,52 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> 
         }
     });
 
-    let label_width = hosts.keys().map(|n| n.len()).max().unwrap();
-    progress.set_label_width(label_width);
-
-    let progress = Arc::new(progress);
     let command: Arc<Vec<String>> = Arc::new(local_args.values_of("command").unwrap().map(|s| s.to_string()).collect());
 
-    progress.run(|progress| async move {
+    let mut output = SimpleProgressOutput::new(local_args.is_present("verbose"));
+
+    let (monitor, meta) = JobMonitor::new(output.get_sender());
+    let meta = meta.run(|meta| async move {
         let mut futures = Vec::new();
 
-        for (name, host) in hosts.drain() {
+        for (name, target) in targets.drain() {
             let parallel_sp = parallel_sp.clone();
             let command = command.clone();
-            let progress = progress.clone();
 
-            futures.push(async move {
+            let mut host = target.into_host().unwrap();
+
+            let job = meta.create_job(JobType::Execute, vec![ name.clone() ])?;
+
+            futures.push(job.run_waiting(|job| async move {
                 let permit = match parallel_sp.as_ref() {
                     Some(sp) => Some(sp.acquire().await.unwrap()),
                     None => None,
                 };
 
-                let progress = progress.create_task_progress(name.to_string());
+                job.state(JobState::Running)?;
 
                 let command_v: Vec<&str> = command.iter().map(|s| s.as_str()).collect();
-                let command = host.ssh(&command_v);
-                let mut execution = CommandExecution::new(command);
-                execution.set_progress_bar(progress.clone());
-
-                match execution.run().await {
-                    Ok(()) => {
-                        progress.success("Exited");
-                    }
-                    Err(e) => {
-                        if let NixError::NixFailure { exit_code } = e {
-                            progress.failure(&format!("Exited with code {}", exit_code));
-                        } else {
-                            progress.failure(&format!("Error during execution: {}", e));
-                        }
-                    }
-                }
+                host.set_job(Some(job));
+                host.run_command(&command_v).await?;
 
                 drop(permit);
-            });
+
+                Ok(())
+            }));
         }
 
         join_all(futures).await;
-    }).await;
+
+        Ok(())
+    });
+
+    let (meta, monitor, output) = tokio::join!(
+        meta,
+        monitor.run_until_completion(),
+        output.run_until_completion(),
+    );
+
+    meta?; monitor?; output?;
 
     Ok(())
 }

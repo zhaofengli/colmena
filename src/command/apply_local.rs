@@ -1,6 +1,5 @@
 use std::env;
 use std::collections::HashMap;
-use std::sync::Arc;
 
 use clap::{Arg, App, SubCommand, ArgMatches};
 use tokio::fs;
@@ -9,10 +8,11 @@ use tokio::process::Command;
 use crate::nix::deployment::{
     Deployment,
     Goal,
-    Target,
-    DeploymentOptions,
+    TargetNode,
+    Options,
 };
 use crate::nix::{NixError, NodeName, host};
+use crate::progress::SimpleProgressOutput;
 use crate::util;
 
 pub fn subcommand() -> App<'static, 'static> {
@@ -23,7 +23,7 @@ pub fn subcommand() -> App<'static, 'static> {
             .long_help("Same as the targets for switch-to-configuration.\n\"push\" is noop in apply-local.")
             .default_value("switch")
             .index(1)
-            .possible_values(&["push", "switch", "boot", "test", "dry-activate"]))
+            .possible_values(&["push", "switch", "boot", "test", "dry-activate", "keys"]))
         .arg(Arg::with_name("sudo")
             .long("sudo")
             .help("Attempt to escalate privileges if not run as root"))
@@ -102,20 +102,21 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> 
     };
     let goal = Goal::from_str(local_args.value_of("goal").unwrap()).unwrap();
 
-    let target: Target = {
-        if let Some(info) = hive.deployment_info_for(&hostname).await.unwrap() {
+    let target = {
+        if let Some(info) = hive.deployment_info_single(&hostname).await.unwrap() {
             let nix_options = hive.nix_options().await.unwrap();
             if !info.allows_local_deployment() {
                 log::error!("Local deployment is not enabled for host {}.", hostname.as_str());
                 log::error!("Hint: Set deployment.allowLocalDeployment to true.");
                 quit::with_code(2);
             }
-            Target::new(
-                host::local(nix_options),
+            TargetNode::new(
+                hostname.clone(),
+                Some(host::local(nix_options)),
                 info.clone(),
             )
         } else {
-            log::error!("Host {} is not present in the Hive configuration.", hostname.as_str());
+            log::error!("Host \"{}\" is not present in the Hive configuration.", hostname.as_str());
             quit::with_code(2);
         }
     };
@@ -123,18 +124,20 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> 
     let mut targets = HashMap::new();
     targets.insert(hostname.clone(), target);
 
-    let mut deployment = Deployment::new(hive, targets, goal);
-    let mut options = DeploymentOptions::default();
-    options.set_upload_keys(!local_args.is_present("no-upload-keys"));
-    options.set_progress_bar(!local_args.is_present("verbose"));
+    let mut output = SimpleProgressOutput::new(local_args.is_present("verbose"));
+    let progress = output.get_sender();
+
+    let mut deployment = Deployment::new(hive, targets, goal, progress);
+
+    let options = {
+        let mut options = Options::default();
+        options.set_upload_keys(!local_args.is_present("no-upload-keys"));
+        options
+    };
+
     deployment.set_options(options);
 
-    let deployment = Arc::new(deployment);
-    let success = deployment.execute().await;
-
-    if !success {
-        quit::with_code(10);
-    }
+    deployment.execute().await?;
 
     Ok(())
 }

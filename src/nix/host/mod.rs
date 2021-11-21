@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use async_trait::async_trait;
 
 use super::{StorePath, Profile, Goal, NixResult, NixError, Key};
-use crate::progress::TaskProgress;
+use crate::job::JobHandle;
 
 mod ssh;
 pub use ssh::Ssh;
@@ -109,21 +109,22 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     /// Check if the active profile is known to the host running Colmena
     async fn active_derivation_known(&mut self) -> NixResult<bool>;
 
-    #[allow(unused_variables)]
     /// Activates a system profile on the host, if it runs NixOS.
     ///
     /// The profile must already exist on the host. You should probably use deploy instead.
+    #[allow(unused_variables)]
     async fn activate(&mut self, profile: &Profile, goal: Goal) -> NixResult<()> {
         Err(NixError::Unsupported)
     }
 
+    /// Runs an arbitrary command on the host.
     #[allow(unused_variables)] 
-    /// Provides a TaskProgress to use during operations.
-    fn set_progress_bar(&mut self, bar: TaskProgress) {
+    async fn run_command(&mut self, command: &[&str]) -> NixResult<()> {
+        Err(NixError::Unsupported)
     }
 
-    /// Dumps human-readable unstructured log messages related to the host.
-    async fn dump_logs(&self) -> Option<&str> {
-        None
+    /// Provides a JobHandle to use during operations.
+    #[allow(unused_variables)] 
+    fn set_job(&mut self, bar: Option<JobHandle>) {
     }
 }

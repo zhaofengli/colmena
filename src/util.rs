@@ -1,25 +1,19 @@
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Stdio;
 
 use clap::{App, Arg, ArgMatches};
 use futures::future::join3;
-use glob::Pattern as GlobPattern;
 use tokio::io::{AsyncRead, AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
-use super::nix::{Flake, NodeName, NodeConfig, Hive, HivePath, NixResult};
-use super::progress::TaskProgress;
+use super::nix::{Flake, Hive, HivePath, NixResult};
+use super::nix::deployment::TargetNodeMap;
+use super::job::JobHandle;
 
-enum NodeFilter {
-    NameFilter(GlobPattern),
-    TagFilter(GlobPattern),
-}
-
-/// Non-interactive execution of an arbitrary Nix command.
+/// Non-interactive execution of an arbitrary command.
 pub struct CommandExecution {
     command: Command,
-    progress_bar: TaskProgress,
+    job: Option<JobHandle>,
     stdout: Option<String>,
     stderr: Option<String>,
 }
@@ -28,23 +22,23 @@ impl CommandExecution {
     pub fn new(command: Command) -> Self {
         Self {
             command,
-            progress_bar: TaskProgress::default(),
+            job: None,
             stdout: None,
             stderr: None,
         }
     }
 
-    /// Provides a TaskProgress to use to display output.
-    pub fn set_progress_bar(&mut self, bar: TaskProgress) {
-        self.progress_bar = bar;
+    /// Sets the job associated with this execution.
+    pub fn set_job(&mut self, job: Option<JobHandle>) {
+        self.job = job;
     }
 
-    /// Retrieve logs from the last invocation.
+    /// Returns logs from the last invocation.
     pub fn get_logs(&self) -> (Option<&String>, Option<&String>) {
         (self.stdout.as_ref(), self.stderr.as_ref())
     }
 
-    /// Run the command.
+    /// Runs the command.
     pub async fn run(&mut self) -> NixResult<()> {
         self.command.stdin(Stdio::null());
         self.command.stdout(Stdio::piped());
@@ -59,8 +53,8 @@ impl CommandExecution {
         let stderr = BufReader::new(child.stderr.take().unwrap());
 
         let futures = join3(
-            capture_stream(stdout, self.progress_bar.clone()),
-            capture_stream(stderr, self.progress_bar.clone()),
+            capture_stream(stdout, self.job.clone(), false),
+            capture_stream(stderr, self.job.clone(), true),
             child.wait(),
         );
 
@@ -145,44 +139,6 @@ pub async fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
     Ok(hive)
 }
 
-pub fn filter_nodes(nodes: &HashMap<NodeName, NodeConfig>, filter: &str) -> Vec<NodeName> {
-    let filters: Vec<NodeFilter> = filter.split(",").map(|pattern| {
-        use NodeFilter::*;
-        if let Some(tag_pattern) = pattern.strip_prefix("@") {
-            TagFilter(GlobPattern::new(tag_pattern).unwrap())
-        } else {
-            NameFilter(GlobPattern::new(pattern).unwrap())
-        }
-    }).collect();
-
-    if filters.len() > 0 {
-        nodes.iter().filter_map(|(name, node)| {
-            for filter in filters.iter() {
-                use NodeFilter::*;
-                match filter {
-                    TagFilter(pat) => {
-                        // Welp
-                        for tag in node.tags() {
-                            if pat.matches(tag) {
-                                return Some(name);
-                            }
-                        }
-                    }
-                    NameFilter(pat) => {
-                        if pat.matches(name) {
-                            return Some(name)
-                        }
-                    }
-                }
-            }
-
-            None
-        }).cloned().collect()
-    } else {
-        nodes.keys().cloned().collect()
-    }
-}
-
 pub fn register_selector_args<'a, 'b>(command: App<'a, 'b>) -> App<'a, 'b> {
     command
         .arg(Arg::with_name("on")
@@ -208,7 +164,7 @@ fn canonicalize_cli_path(path: &str) -> PathBuf {
     }
 }
 
-pub async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, mut progress_bar: TaskProgress) -> String {
+pub async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, job: Option<JobHandle>, stderr: bool) -> String {
     let mut log = String::new();
 
     loop {
@@ -220,11 +176,22 @@ pub async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, mut 
         }
 
         let trimmed = line.trim_end();
-        progress_bar.log(trimmed);
+
+        if let Some(job) = &job {
+            if stderr {
+                job.stderr(trimmed.to_string()).unwrap();
+            } else {
+                job.stdout(trimmed.to_string()).unwrap();
+            }
+        }
 
         log += trimmed;
         log += "\n";
     }
 
     log
+}
+
+pub fn get_label_width(targets: &TargetNodeMap) -> Option<usize> {
+    targets.keys().map(|n| n.len()).max()
 }

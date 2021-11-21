@@ -12,8 +12,8 @@ use shell_escape::unix::escape;
 use tokio::io::{AsyncWriteExt, BufReader};
 use tokio::process::Child;
 
+use crate::job::JobHandle;
 use crate::nix::{Key, NixResult};
-use crate::progress::TaskProgress;
 use crate::util::capture_stream;
 
 const SCRIPT_TEMPLATE: &'static str = include_str!("./key_uploader.template.sh");
@@ -30,7 +30,7 @@ pub fn generate_script<'a>(key: &'a Key, destination: &'a Path, require_ownershi
     escape(key_script.into())
 }
 
-pub async fn feed_uploader(mut uploader: Child, key: &Key, progress: TaskProgress, logs: &mut String) -> NixResult<()> {
+pub async fn feed_uploader(mut uploader: Child, key: &Key, job: Option<JobHandle>) -> NixResult<()> {
     let mut reader = key.reader().await?;
     let mut stdin = uploader.stdin.take().unwrap();
 
@@ -42,13 +42,11 @@ pub async fn feed_uploader(mut uploader: Child, key: &Key, progress: TaskProgres
     let stderr = BufReader::new(uploader.stderr.take().unwrap());
 
     let futures = join3(
-        capture_stream(stdout, progress.clone()),
-        capture_stream(stderr, progress.clone()),
+        capture_stream(stdout, job.clone(), false),
+        capture_stream(stderr, job.clone(), true),
         uploader.wait(),
     );
-    let (stdout_str, stderr_str, exit) = futures.await;
-    logs.push_str(&stdout_str);
-    logs.push_str(&stderr_str);
+    let (_, _, exit) = futures.await;
 
     let exit = exit?;
 

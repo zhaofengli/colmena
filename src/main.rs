@@ -1,9 +1,12 @@
+#![deny(unused_must_use)]
+
 use std::env;
 
 mod nix;
 mod cli;
 mod command;
 mod progress;
+mod job;
 mod troubleshooter;
 mod util;
 

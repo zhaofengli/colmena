@@ -15,11 +15,13 @@ use super::{
     NixResult,
     NodeName,
     NodeConfig,
+    NodeFilter,
     ProfileMap,
 };
+use super::deployment::TargetNode;
 use super::NixCommand;
 use crate::util::CommandExecution;
-use crate::progress::TaskProgress;
+use crate::job::JobHandle;
 
 const HIVE_EVAL: &'static [u8] = include_bytes!("eval.nix");
 
@@ -116,6 +118,88 @@ impl Hive {
         Ok(options)
     }
 
+    /// Convenience wrapper to filter nodes for CLI actions.
+    pub async fn select_nodes(&self, filter: Option<NodeFilter>, ssh_config: Option<PathBuf>, ssh_only: bool) -> NixResult<HashMap<NodeName, TargetNode>> {
+        let mut node_configs = None;
+
+        log::info!("Enumerating nodes...");
+
+        let all_nodes = self.node_names().await?;
+        let selected_nodes = match filter {
+            Some(filter) => {
+                if filter.has_node_config_rules() {
+                    log::debug!("Retrieving deployment info for all nodes...");
+
+                    let all_node_configs = self.deployment_info().await?;
+                    let filtered = filter.filter_node_configs(all_node_configs.iter())
+                        .into_iter().collect();
+
+                    node_configs = Some(all_node_configs);
+
+                    filtered
+                } else {
+                    filter.filter_node_names(&all_nodes)?
+                        .into_iter().collect()
+                }
+            }
+            None => all_nodes.clone(),
+        };
+
+        let n_selected = selected_nodes.len();
+
+        let mut node_configs = if let Some(configs) = node_configs {
+            configs
+        } else {
+            log::debug!("Retrieving deployment info for selected nodes...");
+            self.deployment_info_selected(&selected_nodes).await?
+        };
+
+        let mut targets = HashMap::new();
+        let mut n_ssh = 0;
+        for node in selected_nodes.into_iter() {
+            let config = node_configs.remove(&node).unwrap();
+
+            let host = config.to_ssh_host().map(|mut host| {
+                n_ssh += 1;
+
+                if let Some(ssh_config) = &ssh_config {
+                    host.set_ssh_config(ssh_config.clone());
+                }
+                host.upcast()
+            });
+            let ssh_host = host.is_some();
+            let target = TargetNode::new(node.clone(), host, config);
+
+            if !ssh_only || ssh_host {
+                targets.insert(node, target);
+            }
+        }
+
+        let skipped = n_selected - n_ssh;
+
+        if targets.is_empty() {
+            if skipped != 0 {
+                log::warn!("No hosts selected.");
+            } else {
+                log::warn!("No hosts selected ({} skipped).", skipped);
+            }
+        } else if targets.len() == all_nodes.len() {
+            log::info!("Selected all {} nodes.", targets.len());
+        } else if !ssh_only || skipped == 0 {
+            log::info!("Selected {} out of {} hosts.", targets.len(), all_nodes.len());
+        } else {
+            log::info!("Selected {} out of {} hosts ({} skipped).", targets.len(), all_nodes.len(), skipped);
+        }
+
+        Ok(targets)
+    }
+
+    /// Returns a list of all node names.
+    pub async fn node_names(&self) -> NixResult<Vec<NodeName>> {
+        self.nix_instantiate("attrNames hive.nodes").eval()
+            .capture_json().await
+    }
+
     /// Retrieve deployment info for all nodes.
     pub async fn deployment_info(&self) -> NixResult<HashMap<NodeName, NodeConfig>> {
         // FIXME: Really ugly :(
@@ -133,7 +217,7 @@ impl Hive {
     }
 
     /// Retrieve deployment info for a single node.
-    pub async fn deployment_info_for(&self, node: &NodeName) -> NixResult<Option<NodeConfig>> {
+    pub async fn deployment_info_single(&self, node: &NodeName) -> NixResult<Option<NodeConfig>> {
         let expr = format!("toJSON (hive.nodes.\"{}\".config.deployment or null)", node.as_str());
         let s: String = self.nix_instantiate(&expr).eval_with_builders().await?
             .capture_json().await?;
@@ -141,48 +225,45 @@ impl Hive {
         Ok(serde_json::from_str(&s).unwrap())
     }
 
+    /// Retrieve deployment info for a list of nodes.
+    pub async fn deployment_info_selected(&self, nodes: &[NodeName]) -> NixResult<HashMap<NodeName, NodeConfig>> {
+        let nodes_expr = SerializedNixExpresssion::new(nodes)?;
+
+        // FIXME: Really ugly :(
+        let s: String = self.nix_instantiate(&format!("hive.deploymentConfigJsonSelected {}", nodes_expr.expression()))
+            .eval_with_builders().await?
+            .capture_json().await?;
+
+        let configs: HashMap<NodeName, NodeConfig> = serde_json::from_str(&s).unwrap();
+        for config in configs.values() {
+            config.validate()?;
+            for key in config.keys.values() {
+                key.validate()?;
+            }
+        }
+
+        Ok(configs)
+    }
+
     /// Evaluates selected nodes.
     ///
     /// Evaluation may take up a lot of memory, so we make it possible
     /// to split up the evaluation process into chunks and run them
     /// concurrently with other processes (e.g., build and apply).
-    pub async fn eval_selected(&self, nodes: &Vec<NodeName>, progress_bar: TaskProgress) -> (NixResult<StoreDerivation<ProfileMap>>, Option<String>) {
-        // FIXME: The return type is ugly...
+    pub async fn eval_selected(&self, nodes: &Vec<NodeName>, job: Option<JobHandle>) -> NixResult<StoreDerivation<ProfileMap>> {
+        let nodes_expr = SerializedNixExpresssion::new(nodes)?;
 
-        let nodes_expr = SerializedNixExpresssion::new(nodes);
-        if let Err(e) = nodes_expr {
-            return (Err(e), None);
-        }
-        let nodes_expr = nodes_expr.unwrap();
+        let expr = format!("hive.buildSelected {}", nodes_expr.expression());
 
-        let expr = format!("hive.buildSelected {{ names = {}; }}", nodes_expr.expression());
-
-        let command = match self.nix_instantiate(&expr).instantiate_with_builders().await {
-            Ok(command) => command,
-            Err(e) => {
-                return (Err(e), None);
-            }
-        };
-
+        let command = self.nix_instantiate(&expr).instantiate_with_builders().await?;
         let mut execution = CommandExecution::new(command);
-        execution.set_progress_bar(progress_bar);
+        execution.set_job(job);
 
-        let eval = execution
-            .capture_store_path().await;
+        let path = execution.capture_store_path().await?;
+        let drv = path.to_derivation()
+            .expect("The result should be a store derivation");
 
-        let (_, stderr) = execution.get_logs();
-
-        match eval {
-            Ok(path) => {
-                let drv = path.to_derivation()
-                    .expect("The result should be a store derivation");
-
-                (Ok(drv), stderr.cloned())
-            }
-            Err(e) => {
-                (Err(e), stderr.cloned())
-            }
-        }
+        Ok(drv)
     }
 
     /// Evaluates an expression using values from the configuration

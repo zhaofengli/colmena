@@ -1,20 +1,17 @@
-use std::collections::HashMap;
 use std::env;
 use std::path::PathBuf;
-use std::sync::Arc;
 
 use clap::{Arg, App, SubCommand, ArgMatches};
 
 use crate::nix::deployment::{
     Deployment,
     Goal,
-    Target,
-    DeploymentOptions,
+    Options,
     EvaluationNodeLimit,
     ParallelismLimit,
 };
-use crate::nix::NixError;
-use crate::nix::host::local as localhost;
+use crate::progress::SimpleProgressOutput;
+use crate::nix::{NixError, NodeFilter};
 use crate::util;
 
 pub fn register_deploy_args<'a, 'b>(command: App<'a, 'b>) -> App<'a, 'b> {
@@ -118,105 +115,60 @@ pub fn subcommand() -> App<'static, 'static> {
 pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> Result<(), NixError> {
     let hive = util::hive_from_args(local_args).await?;
 
-    log::info!("Enumerating nodes...");
-    let all_nodes = hive.deployment_info().await?;
-
-    let nix_options = hive.nix_options().await?;
-
-    let selected_nodes = match local_args.value_of("on") {
-        Some(filter) => {
-            util::filter_nodes(&all_nodes, filter)
-        }
-        None => all_nodes.keys().cloned().collect(),
-    };
-
-    if selected_nodes.len() == 0 {
-        log::warn!("No hosts matched. Exiting...");
-        quit::with_code(2);
-    }
-
     let ssh_config = env::var("SSH_CONFIG_FILE")
         .ok().map(PathBuf::from);
 
-    // FIXME: This is ugly :/ Make an enum wrapper for this fake "keys" goal
-    let goal_arg = local_args.value_of("goal").unwrap();
-    let goal = if goal_arg == "keys" {
-        Goal::Build
+    let filter = if let Some(f) = local_args.value_of("on") {
+        Some(NodeFilter::new(f)?)
     } else {
-        Goal::from_str(goal_arg).unwrap()
+        None
     };
 
-    let build_only = goal == Goal::Build && goal_arg != "keys";
+    let goal_arg = local_args.value_of("goal").unwrap();
+    let goal = Goal::from_str(goal_arg).unwrap();
 
-    let mut targets = HashMap::new();
-    for node in &selected_nodes {
-        let config = all_nodes.get(node).unwrap();
-        let host = config.to_ssh_host();
-        match host {
-            Some(mut host) => {
-                if let Some(ssh_config) = ssh_config.as_ref() {
-                    host.set_ssh_config(ssh_config.clone());
-                }
+    let targets = hive.select_nodes(filter, ssh_config, goal.requires_target_host()).await?;
+    let n_targets = targets.len();
 
-                targets.insert(
-                    node.clone(),
-                    Target::new(host.upcast(), config.clone()),
-                );
-            }
-            None => {
-                if build_only {
-                    targets.insert(
-                        node.clone(),
-                        Target::new(localhost(nix_options.clone()), config.clone()),
-                    );
-                }
-            }
+    let mut output = SimpleProgressOutput::new(local_args.is_present("verbose"));
+    let progress = output.get_sender();
+
+    let mut deployment = Deployment::new(hive, targets, goal, progress);
+
+    // FIXME: Configure limits
+    let options = {
+        let mut options = Options::default();
+        options.set_substituters_push(!local_args.is_present("no-substitutes"));
+        options.set_gzip(!local_args.is_present("no-gzip"));
+        options.set_upload_keys(!local_args.is_present("no-keys"));
+        options.set_force_replace_unknown_profiles(local_args.is_present("force-replace-unknown-profiles"));
+
+        if local_args.is_present("keep-result") {
+            options.set_create_gc_roots(true);
         }
-    }
 
-    if targets.len() == all_nodes.len() {
-        log::info!("Selected all {} nodes.", targets.len());
-    } else if targets.len() == selected_nodes.len() {
-        log::info!("Selected {} out of {} hosts.", targets.len(), all_nodes.len());
-    } else {
-        log::info!("Selected {} out of {} hosts ({} skipped)", targets.len(), all_nodes.len(), selected_nodes.len() - targets.len());
-    }
-
-    if targets.len() == 0 {
-        log::warn!("No selected nodes are accessible over SSH. Exiting...");
-        quit::with_code(2);
-    }
-
-    let mut deployment = Deployment::new(hive, targets, goal);
-
-    let mut options = DeploymentOptions::default();
-    options.set_substituters_push(!local_args.is_present("no-substitutes"));
-    options.set_gzip(!local_args.is_present("no-gzip"));
-    options.set_progress_bar(!local_args.is_present("verbose"));
-    options.set_upload_keys(!local_args.is_present("no-keys"));
-    options.set_force_replace_unknown_profiles(local_args.is_present("force-replace-unknown-profiles"));
-
-    if local_args.is_present("keep-result") {
-        options.set_create_gc_roots(true);
-    }
+        options
+    };
 
     deployment.set_options(options);
 
-    if local_args.is_present("no-keys") && goal_arg == "keys" {
+    if local_args.is_present("no-keys") && goal == Goal::UploadKeys {
         log::error!("--no-keys cannot be used when the goal is to upload keys");
         quit::with_code(1);
     }
 
-    let mut parallelism_limit = ParallelismLimit::default();
-    parallelism_limit.set_apply_limit({
-        let limit = local_args.value_of("parallel").unwrap().parse::<usize>().unwrap();
-        if limit == 0 {
-            selected_nodes.len() // HACK
-        } else {
-            local_args.value_of("parallel").unwrap().parse::<usize>().unwrap()
-        }
-    });
-    deployment.set_parallelism_limit(parallelism_limit);
+    let parallelism_limit = {
+        let mut limit = ParallelismLimit::default();
+        limit.set_apply_limit({
+            let limit = local_args.value_of("parallel").unwrap().parse::<usize>().unwrap();
+            if limit == 0 {
+                n_targets
+            } else {
+                limit
+            }
+        });
+        limit
+    };
 
     let evaluation_node_limit = match local_args.value_of("eval-node-limit").unwrap() {
         "auto" => EvaluationNodeLimit::Heuristic,
@@ -229,19 +181,16 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> 
             }
         }
     };
+
+    deployment.set_parallelism_limit(parallelism_limit);
     deployment.set_evaluation_node_limit(evaluation_node_limit);
 
-    let deployment = Arc::new(deployment);
+    let (deployment, output) = tokio::join!(
+        deployment.execute(),
+        output.run_until_completion(),
+    );
 
-    let success = if goal_arg == "keys" {
-        deployment.upload_keys().await
-    } else {
-        deployment.execute().await
-    };
-
-    if !success {
-        quit::with_code(10);
-    }
+    deployment?; output?;
 
     Ok(())
 }

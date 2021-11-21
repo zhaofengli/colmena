@@ -9,7 +9,7 @@ use tokio::process::Command;
 use super::{CopyDirection, CopyOptions, Host, key_uploader};
 use crate::nix::{StorePath, Profile, Goal, NixResult, NixCommand, NixError, Key, SYSTEM_PROFILE};
 use crate::util::CommandExecution;
-use crate::progress::TaskProgress;
+use crate::job::JobHandle;
 
 /// A remote machine connected over SSH.
 #[derive(Debug)]
@@ -30,8 +30,7 @@ pub struct Ssh {
     privilege_escalation_command: Vec<String>,
 
     friendly_name: String,
-    progress_bar: TaskProgress,
-    logs: String,
+    job: Option<JobHandle>,
 }
 
 #[async_trait]
@@ -61,6 +60,10 @@ impl Host for Ssh {
         Ok(())
     }
     async fn activate(&mut self, profile: &Profile, goal: Goal) -> NixResult<()> {
+        if !goal.is_real_goal() {
+            return Err(NixError::Unsupported);
+        }
+
         if goal.should_switch_profile() {
             let path = profile.as_path().to_str().unwrap();
             let set_profile = self.ssh(&["nix-env", "--profile", SYSTEM_PROFILE, "--set", path]);
@@ -70,6 +73,10 @@ impl Host for Ssh {
         let activation_command = profile.activation_command(goal).unwrap();
         let v: Vec<&str> = activation_command.iter().map(|s| &**s).collect();
         let command = self.ssh(&v);
+        self.run_command(command).await
+    }
+    async fn run_command(&mut self, command: &[&str]) -> NixResult<()> {
+        let command = self.ssh(&command);
         self.run_command(command).await
     }
     async fn active_derivation_known(&mut self) -> NixResult<bool> {
@@ -93,11 +100,8 @@ impl Host for Ssh {
             Err(e) => Err(e),
         }
     }
-    fn set_progress_bar(&mut self, bar: TaskProgress) {
-        self.progress_bar = bar;
-    }
-    async fn dump_logs(&self) -> Option<&str> {
-        Some(&self.logs)
+    fn set_job(&mut self, job: Option<JobHandle>) {
+        self.job = job;
     }
 }
 
@@ -111,8 +115,7 @@ impl Ssh {
             ssh_config: None,
             friendly_name,
             privilege_escalation_command: Vec::new(),
-            progress_bar: TaskProgress::default(),
-            logs: String::new(),
+            job: None,
         }
     }
 
@@ -157,15 +160,9 @@ impl Ssh {
 
     async fn run_command(&mut self, command: Command) -> NixResult<()> {
         let mut execution = CommandExecution::new(command);
-
-        execution.set_progress_bar(self.progress_bar.clone());
+        execution.set_job(self.job.clone());
 
         let result = execution.run().await;
-
-        // FIXME: Bad - Order of lines is messed up
-        let (stdout, stderr) = execution.get_logs();
-        self.logs += stdout.unwrap();
-        self.logs += stderr.unwrap();
 
         result
     }
@@ -228,7 +225,9 @@ impl Ssh {
 
     /// Uploads a single key.
     async fn upload_key(&mut self, name: &str, key: &Key, require_ownership: bool) -> NixResult<()> {
-        self.progress_bar.log(&format!("Deploying key {}", name));
+        if let Some(job) = &self.job {
+            job.message(format!("Uploading key {}", name))?;
+        }
 
         let dest_path = key.dest_dir().join(name);
         let key_script = key_uploader::generate_script(key, &dest_path, require_ownership);
@@ -240,6 +239,6 @@ impl Ssh {
         command.stdout(Stdio::piped());
 
         let uploader = command.spawn()?;
-        key_uploader::feed_uploader(uploader, key, self.progress_bar.clone(), &mut self.logs).await
+        key_uploader::feed_uploader(uploader, key, self.job.clone()).await
     }
 }

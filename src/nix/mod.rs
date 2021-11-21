@@ -33,7 +33,7 @@ pub mod profile;
 pub use profile::{Profile, ProfileMap};
 
 pub mod deployment;
-pub use deployment::{Goal, Target, Deployment};
+pub use deployment::Goal;
 
 pub mod info;
 pub use info::NixCheck;
@@ -87,10 +87,19 @@ pub enum NixError {
     #[snafu(display("Current Nix version does not support Flakes"))]
     NoFlakesSupport,
 
+    #[snafu(display("Don't know how to connect to the node"))]
+    NoTargetHost,
+
     #[snafu(display("Node name cannot be empty"))]
     EmptyNodeName,
 
-    #[snafu(display("Nix Error: {}", message))]
+    #[snafu(display("Filter rule cannot be empty"))]
+    EmptyFilterRule,
+
+    #[snafu(display("Deployment already executed"))]
+    DeploymentAlreadyExecuted,
+
+    #[snafu(display("Unknown error: {}", message))]
     Unknown { message: String },
 }
 
@@ -118,6 +127,13 @@ impl From<ExitStatus> for NixError {
             Some(exit_code) => Self::NixFailure { exit_code },
             None => Self::NixKilled { signal: status.signal().unwrap() },
         }
+    }
+}
+
+impl NixError {
+    pub fn unknown(error: Box<dyn std::error::Error>) -> Self {
+        let message = error.to_string();
+        Self::Unknown { message }
     }
 }
 
@@ -152,6 +168,14 @@ pub struct NodeConfig {
 
     #[validate(custom = "validate_keys")]
     keys: HashMap<String, Key>,
+}
+
+#[async_trait]
+trait NixCommand {
+    async fn passthrough(&mut self) -> NixResult<()>;
+    async fn capture_output(&mut self) -> NixResult<String>;
+    async fn capture_json<T>(&mut self) -> NixResult<T> where T: DeserializeOwned;
+    async fn capture_store_path(&mut self) -> NixResult<StorePath>;
 }
 
 impl NodeName {
@@ -216,14 +240,6 @@ impl NodeConfig {
             host
         })
     }
-}
-
-#[async_trait]
-trait NixCommand {
-    async fn passthrough(&mut self) -> NixResult<()>;
-    async fn capture_output(&mut self) -> NixResult<String>;
-    async fn capture_json<T>(&mut self) -> NixResult<T> where T: DeserializeOwned;
-    async fn capture_store_path(&mut self) -> NixResult<StorePath>;
 }
 
 #[async_trait]

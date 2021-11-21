@@ -20,7 +20,7 @@ in rustPlatform.buildRustPackage rec {
     src = lib.cleanSource ./.;
   };
 
-  cargoSha256 = "sha256-DJ+8XeGyg2EQdnHjmzN37fIuYa7HH+unM27RFHXHaso=";
+  cargoSha256 = "sha256-HGqecerb5LgnPhetqBYEmDKpJBkgzLS+iviVkDgVyGI=";
 
   postInstall = lib.optionalString (stdenv.hostPlatform == stdenv.buildPlatform) ''
     mkdir completions

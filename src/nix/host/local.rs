@@ -6,9 +6,9 @@ use async_trait::async_trait;
 use tokio::process::Command;
 
 use super::{CopyDirection, CopyOptions, Host, key_uploader};
-use crate::nix::{StorePath, Profile, Goal, NixResult, NixCommand, Key, SYSTEM_PROFILE};
+use crate::nix::{StorePath, Profile, Goal, NixError, NixResult, NixCommand, Key, SYSTEM_PROFILE};
 use crate::util::CommandExecution;
-use crate::progress::TaskProgress;
+use crate::job::JobHandle;
 
 /// The local machine running Colmena.
 ///
@@ -16,16 +16,14 @@ use crate::progress::TaskProgress;
 /// (e.g., building Linux derivations on macOS).
 #[derive(Debug)]
 pub struct Local {
-    progress_bar: TaskProgress,
-    logs: String,
+    job: Option<JobHandle>,
     nix_options: Vec<String>,
 }
 
 impl Local {
     pub fn new(nix_options: Vec<String>) -> Self {
         Self {
-            progress_bar: TaskProgress::default(),
-            logs: String::new(),
+            job: None,
             nix_options,
         }
     }
@@ -36,6 +34,7 @@ impl Host for Local {
     async fn copy_closure(&mut self, _closure: &StorePath, _direction: CopyDirection, _options: CopyOptions) -> NixResult<()> {
         Ok(())
     }
+
     async fn realize_remote(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
         let mut command = Command::new("nix-store");
 
@@ -47,20 +46,15 @@ impl Host for Local {
 
         let mut execution = CommandExecution::new(command);
 
-        execution.set_progress_bar(self.progress_bar.clone());
+        execution.set_job(self.job.clone());
 
-        let result = execution.run().await;
+        execution.run().await?;
+        let (stdout, _) = execution.get_logs();
 
-        let (stdout, stderr) = execution.get_logs();
-        self.logs += stderr.unwrap();
-
-        match result {
-            Ok(()) => {
-                stdout.unwrap().lines().map(|p| p.to_string().try_into()).collect()
-            }
-            Err(e) => Err(e),
-        }
+        stdout.unwrap().lines()
+            .map(|p| p.to_string().try_into()).collect()
     }
+
     async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> NixResult<()> {
         for (name, key) in keys {
             self.upload_key(&name, &key, require_ownership).await?;
@@ -68,7 +62,12 @@ impl Host for Local {
 
         Ok(())
     }
+
     async fn activate(&mut self, profile: &Profile, goal: Goal) -> NixResult<()> {
+        if !goal.is_real_goal() {
+            return Err(NixError::Unsupported);
+        }
+
         if goal.should_switch_profile() {
             let path = profile.as_path().to_str().unwrap();
             Command::new("nix-env")
@@ -85,32 +84,23 @@ impl Host for Local {
 
         let mut execution = CommandExecution::new(command);
 
-        execution.set_progress_bar(self.progress_bar.clone());
+        execution.set_job(self.job.clone());
 
         let result = execution.run().await;
-
-        // FIXME: Bad - Order of lines is messed up
-        let (stdout, stderr) = execution.get_logs();
-        self.logs += stdout.unwrap();
-        self.logs += stderr.unwrap();
 
         result
     }
     async fn active_derivation_known(&mut self) -> NixResult<bool> {
         Ok(true)
     }
-    fn set_progress_bar(&mut self, bar: TaskProgress) {
-        self.progress_bar = bar;
-    }
-    async fn dump_logs(&self) -> Option<&str> {
-        Some(&self.logs)
-    }
 }
 
 impl Local {
     /// "Uploads" a single key.
     async fn upload_key(&mut self, name: &str, key: &Key, require_ownership: bool) -> NixResult<()> {
-        self.progress_bar.log(&format!("Deploying key {}", name));
+        if let Some(job) = &self.job {
+            job.message(format!("Deploying key {}", name))?;
+        }
 
         let dest_path = key.dest_dir().join(name);
         let key_script = format!("'{}'", key_uploader::generate_script(key, &dest_path, require_ownership));
@@ -123,6 +113,6 @@ impl Local {
         command.stdout(Stdio::piped());
 
         let uploader = command.spawn()?;
-        key_uploader::feed_uploader(uploader, key, self.progress_bar.clone(), &mut self.logs).await
+        key_uploader::feed_uploader(uploader, key, self.job.clone()).await
     }
 }

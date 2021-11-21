@@ -446,14 +446,15 @@ let
     value = evalNode name hive.${name};
   }) nodeNames);
 
-  deploymentConfigJson = toJSON (lib.attrsets.mapAttrs (name: eval: eval.config.deployment) nodes);
+  toplevel = lib.mapAttrs (name: eval: eval.config.system.build.toplevel) nodes;
 
-  toplevel = lib.attrsets.mapAttrs (name: eval: eval.config.system.build.toplevel) nodes;
+  deploymentConfigJson = toJSON (lib.mapAttrs (name: eval: eval.config.deployment) nodes);
 
-  buildAll = buildSelected {
-    names = nodeNames;
-  };
-  buildSelected = { names ? null }: let
+  deploymentConfigJsonSelected = names: toJSON
+    (listToAttrs (map (name: { inherit name; value = nodes.${name}.config.deployment; }) names));
+
+  buildAll = buildSelected nodeNames;
+  buildSelected = names: let
     # Change in the order of the names should not cause a derivation to be created
     selected = lib.attrsets.filterAttrs (name: _: elem name names) toplevel;
   in derivation rec {
@@ -470,7 +471,11 @@ let
     inherit pkgs lib nodes;
   };
 in {
-  inherit nodes deploymentConfigJson toplevel buildAll buildSelected introspect;
+  inherit
+    nodes toplevel
+    deploymentConfigJson deploymentConfigJsonSelected
+    buildAll buildSelected introspect;
+
   meta = hive.meta;
 
   docs = {

@@ -24,7 +24,7 @@
       # Full user manual
       manual = let
         colmena = self.packages.${system}.colmena;
-        evalNix = import ./src/nix/eval.nix {
+        evalNix = import ./src/nix/hive/eval.nix {
           hermetic = true;
         };
         deploymentOptionsMd = (pkgs.nixosOptionsDoc {
