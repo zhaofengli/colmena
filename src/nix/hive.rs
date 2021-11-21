@@ -13,6 +13,7 @@ use super::{
     Flake,
     StoreDerivation,
     NixResult,
+    NodeName,
     NodeConfig,
     ProfileMap,
 };
@@ -116,12 +117,12 @@ impl Hive {
     }
 
     /// Retrieve deployment info for all nodes.
-    pub async fn deployment_info(&self) -> NixResult<HashMap<String, NodeConfig>> {
+    pub async fn deployment_info(&self) -> NixResult<HashMap<NodeName, NodeConfig>> {
         // FIXME: Really ugly :(
         let s: String = self.nix_instantiate("hive.deploymentConfigJson").eval_with_builders().await?
             .capture_json().await?;
 
-        let configs: HashMap<String, NodeConfig> = serde_json::from_str(&s).unwrap();
+        let configs: HashMap<NodeName, NodeConfig> = serde_json::from_str(&s).unwrap();
         for config in configs.values() {
             config.validate()?;
             for key in config.keys.values() {
@@ -132,8 +133,8 @@ impl Hive {
     }
 
     /// Retrieve deployment info for a single node.
-    pub async fn deployment_info_for(&self, node: &str) -> NixResult<Option<NodeConfig>> {
-        let expr = format!("toJSON (hive.nodes.\"{}\".config.deployment or null)", node);
+    pub async fn deployment_info_for(&self, node: &NodeName) -> NixResult<Option<NodeConfig>> {
+        let expr = format!("toJSON (hive.nodes.\"{}\".config.deployment or null)", node.as_str());
         let s: String = self.nix_instantiate(&expr).eval_with_builders().await?
             .capture_json().await?;
 
@@ -145,7 +146,7 @@ impl Hive {
     /// Evaluation may take up a lot of memory, so we make it possible
     /// to split up the evaluation process into chunks and run them
     /// concurrently with other processes (e.g., build and apply).
-    pub async fn eval_selected(&self, nodes: &Vec<String>, progress_bar: TaskProgress) -> (NixResult<StoreDerivation<ProfileMap>>, Option<String>) {
+    pub async fn eval_selected(&self, nodes: &Vec<NodeName>, progress_bar: TaskProgress) -> (NixResult<StoreDerivation<ProfileMap>>, Option<String>) {
         // FIXME: The return type is ugly...
 
         let nodes_expr = SerializedNixExpresssion::new(nodes);

@@ -13,6 +13,12 @@ use std::path::PathBuf;
 use tempfile::NamedTempFile;
 use tokio_test::block_on;
 
+macro_rules! node {
+    ($n:expr) => {
+        NodeName::new($n.to_string()).unwrap()
+    }
+}
+
 fn set_eq<T>(a: &[T], b: &[T]) -> bool
 where
     T: Eq + Hash,
@@ -61,7 +67,7 @@ impl TempHive {
     }
 
     /// Asserts that the specified nodes can be fully evaluated.
-    pub fn eval_success(text: &str, nodes: Vec<String>) {
+    pub fn eval_success(text: &str, nodes: Vec<NodeName>) {
         let hive = Self::new(text);
         let progress = TaskProgress::new("tests".to_string(), 5);
         let (profiles, _) = block_on(hive.eval_selected(&nodes, progress));
@@ -69,7 +75,7 @@ impl TempHive {
     }
 
     /// Asserts that the specified nodes will fail to evaluate.
-    pub fn eval_failure(text: &str, nodes: Vec<String>) {
+    pub fn eval_failure(text: &str, nodes: Vec<NodeName>) {
         let hive = Self::new(text);
         let progress = TaskProgress::new("tests".to_string(), 5);
         let (profiles, _) = block_on(hive.eval_selected(&nodes, progress));
@@ -125,26 +131,28 @@ fn test_parse_simple() {
 
     assert!(set_eq(
         &["host-a", "host-b"],
-        &nodes.keys().map(String::as_str).collect::<Vec<&str>>(),
+        &nodes.keys().map(NodeName::as_str).collect::<Vec<&str>>(),
     ));
 
     // host-a
+    let host_a = &nodes[&node!("host-a")];
     assert!(set_eq(
         &["common-tag", "a-tag"],
-        &nodes["host-a"].tags.iter().map(String::as_str).collect::<Vec<&str>>(),
+        &host_a.tags.iter().map(String::as_str).collect::<Vec<&str>>(),
     ));
-    assert_eq!(Some("host-a"), nodes["host-a"].target_host.as_deref());
-    assert_eq!(None, nodes["host-a"].target_port);
-    assert_eq!(Some("root"), nodes["host-a"].target_user.as_deref());
+    assert_eq!(Some("host-a"), host_a.target_host.as_deref());
+    assert_eq!(None, host_a.target_port);
+    assert_eq!(Some("root"), host_a.target_user.as_deref());
 
     // host-b
+    let host_b = &nodes[&node!("host-b")];
     assert!(set_eq(
         &["common-tag"],
-        &nodes["host-b"].tags.iter().map(String::as_str).collect::<Vec<&str>>(),
+        &host_b.tags.iter().map(String::as_str).collect::<Vec<&str>>(),
     ));
-    assert_eq!(Some("somehost.tld"), nodes["host-b"].target_host.as_deref());
-    assert_eq!(Some(1234), nodes["host-b"].target_port);
-    assert_eq!(Some("luser"), nodes["host-b"].target_user.as_deref());
+    assert_eq!(Some("somehost.tld"), host_b.target_host.as_deref());
+    assert_eq!(Some(1234), host_b.target_port);
+    assert_eq!(Some("luser"), host_b.target_user.as_deref());
 }
 
 #[test]
@@ -160,7 +168,7 @@ fn test_parse_flake() {
     let nodes = block_on(hive.deployment_info()).unwrap();
     assert!(set_eq(
         &["host-a", "host-b"],
-        &nodes.keys().map(String::as_str).collect::<Vec<&str>>(),
+        &nodes.keys().map(NodeName::as_str).collect::<Vec<&str>>(),
     ));
 }
 
@@ -257,7 +265,7 @@ fn test_eval_non_existent_pkg() {
           environment.systemPackages = with pkgs; [ thisPackageDoesNotExist ];
         };
       }
-    "#, vec![ "test".to_string() ]);
+    "#, vec![ node!("test") ]);
 }
 
 // Nixpkgs config tests
@@ -279,7 +287,7 @@ fn test_nixpkgs_overlay_meta_nixpkgs() {
           environment.systemPackages = with pkgs; [ my-coreutils ];
         };
       }
-    "#, vec![ "test".to_string() ]);
+    "#, vec![ node!("test") ]);
 }
 
 #[test]
@@ -295,7 +303,7 @@ fn test_nixpkgs_overlay_node_config() {
           environment.systemPackages = with pkgs; [ my-coreutils ];
         };
       }
-    "#, vec![ "test".to_string() ]);
+    "#, vec![ node!("test") ]);
 }
 
 #[test]
@@ -318,7 +326,7 @@ fn test_nixpkgs_overlay_both() {
           environment.systemPackages = with pkgs; [ meta-coreutils node-busybox ];
         };
       }
-    "#, vec![ "test".to_string() ]);
+    "#, vec![ node!("test") ]);
 }
 
 #[test]
@@ -337,7 +345,7 @@ fn test_nixpkgs_config_meta_nixpkgs() {
           boot.isContainer = assert pkgs.config.allowUnfree; true;
         };
       }
-    "#, vec![ "test".to_string() ]);
+    "#, vec![ node!("test") ]);
 }
 
 #[test]
@@ -352,7 +360,7 @@ fn test_nixpkgs_config_node_config() {
           boot.isContainer = assert pkgs.config.allowUnfree; true;
         };
       }
-    "#, vec![ "test".to_string() ]);
+    "#, vec![ node!("test") ]);
 }
 
 #[test]
@@ -381,7 +389,7 @@ fn test_nixpkgs_config_override() {
             .replace("META_VAL", "true")
             .replace("NODE_VAL", "false")
             .replace("EXPECTED_VAL", "false"),
-        vec![ "test".to_string() ]
+        vec![ node!("test") ]
     );
 
     TempHive::eval_success(
@@ -389,7 +397,7 @@ fn test_nixpkgs_config_override() {
             .replace("META_VAL", "false")
             .replace("NODE_VAL", "true")
             .replace("EXPECTED_VAL", "true"),
-        vec![ "test".to_string() ]
+        vec![ node!("test") ]
     );
 }
 

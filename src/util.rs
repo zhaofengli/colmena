@@ -8,7 +8,7 @@ use glob::Pattern as GlobPattern;
 use tokio::io::{AsyncRead, AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
-use super::nix::{Flake, NodeConfig, Hive, HivePath, NixResult};
+use super::nix::{Flake, NodeName, NodeConfig, Hive, HivePath, NixResult};
 use super::progress::TaskProgress;
 
 enum NodeFilter {
@@ -145,7 +145,7 @@ pub async fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
     Ok(hive)
 }
 
-pub fn filter_nodes(nodes: &HashMap<String, NodeConfig>, filter: &str) -> Vec<String> {
+pub fn filter_nodes(nodes: &HashMap<NodeName, NodeConfig>, filter: &str) -> Vec<NodeName> {
     let filters: Vec<NodeFilter> = filter.split(",").map(|pattern| {
         use NodeFilter::*;
         if let Some(tag_pattern) = pattern.strip_prefix("@") {

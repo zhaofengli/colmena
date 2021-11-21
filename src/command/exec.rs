@@ -141,7 +141,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> 
                     None => None,
                 };
 
-                let progress = progress.create_task_progress(name.clone());
+                let progress = progress.create_task_progress(name.to_string());
 
                 let command_v: Vec<&str> = command.iter().map(|s| s.as_str()).collect();
                 let command = host.ssh(&command_v);

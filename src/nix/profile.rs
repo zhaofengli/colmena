@@ -11,6 +11,7 @@ use super::{
     Goal,
     NixResult,
     NixError,
+    NodeName,
     StorePath,
 };
 
@@ -65,10 +66,10 @@ impl Profile {
 
 /// A map of names to their associated NixOS system profiles.
 #[derive(Debug)]
-pub struct ProfileMap(HashMap<String, Profile>);
+pub struct ProfileMap(HashMap<NodeName, Profile>);
 
 impl Deref for ProfileMap {
-    type Target = HashMap<String, Profile>;
+    type Target = HashMap<NodeName, Profile>;
 
     fn deref(&self) -> &Self::Target {
         &self.0
@@ -98,7 +99,7 @@ impl TryFrom<Vec<StorePath>> for ProfileMap {
 
                 let path = paths[0].as_path();
                 let json: String = fs::read_to_string(path)?;
-                let mut raw_map: HashMap<String, StorePath> = serde_json::from_str(&json).map_err(|_| NixError::BadOutput {
+                let mut raw_map: HashMap<NodeName, StorePath> = serde_json::from_str(&json).map_err(|_| NixError::BadOutput {
                     output: String::from("The returned profile map is invalid"),
                 })?;
 
@@ -122,7 +123,7 @@ impl ProfileMap {
         // This will actually try to build all profiles, but since they
         // already exist only the GC roots will be created.
         for (node, profile) in self.0.iter() {
-            let path = base.join(format!("node-{}", node));
+            let path = base.join(format!("node-{}", node.as_str()));
 
             let mut command = Command::new("nix-store");
             command.args(&["--no-build-output", "--indirect", "--add-root", path.to_str().unwrap()]);

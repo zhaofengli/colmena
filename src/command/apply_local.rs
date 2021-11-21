@@ -12,7 +12,7 @@ use crate::nix::deployment::{
     Target,
     DeploymentOptions,
 };
-use crate::nix::{NixError, host};
+use crate::nix::{NixError, NodeName, host};
 use crate::util;
 
 pub fn subcommand() -> App<'static, 'static> {
@@ -90,11 +90,15 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> 
     }
 
     let hive = util::hive_from_args(local_args).await.unwrap();
-    let hostname = if local_args.is_present("node") {
-        local_args.value_of("node").unwrap().to_owned()
-    } else {
-        hostname::get().expect("Could not get hostname")
-            .to_string_lossy().into_owned()
+    let hostname = {
+        let s = if local_args.is_present("node") {
+            local_args.value_of("node").unwrap().to_owned()
+        } else {
+            hostname::get().expect("Could not get hostname")
+                .to_string_lossy().into_owned()
+        };
+
+        NodeName::new(s)?
     };
     let goal = Goal::from_str(local_args.value_of("goal").unwrap()).unwrap();
 
@@ -102,7 +106,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> 
         if let Some(info) = hive.deployment_info_for(&hostname).await.unwrap() {
             let nix_options = hive.nix_options().await.unwrap();
             if !info.allows_local_deployment() {
-                log::error!("Local deployment is not enabled for host {}.", hostname);
+                log::error!("Local deployment is not enabled for host {}.", hostname.as_str());
                 log::error!("Hint: Set deployment.allowLocalDeployment to true.");
                 quit::with_code(2);
             }
@@ -111,7 +115,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> 
                 info.clone(),
             )
         } else {
-            log::error!("Host {} is not present in the Hive configuration.", hostname);
+            log::error!("Host {} is not present in the Hive configuration.", hostname.as_str());
             quit::with_code(2);
         }
     };

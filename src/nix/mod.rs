@@ -1,12 +1,14 @@
 use std::collections::HashMap;
 use std::convert::TryFrom;
+use std::hash::Hash;
+use std::ops::Deref;
 use std::os::unix::process::ExitStatusExt;
 use std::path::Path;
 use std::process::{ExitStatus, Stdio};
 
 use async_trait::async_trait;
-use serde::de::DeserializeOwned;
-use serde::Deserialize;
+use serde::de::{self, DeserializeOwned};
+use serde::{Deserialize, Deserializer, Serialize};
 use snafu::Snafu;
 use tokio::process::Command;
 use users::get_current_username;
@@ -38,6 +40,9 @@ pub use info::NixCheck;
 
 pub mod flake;
 pub use flake::Flake;
+
+pub mod node_filter;
+pub use node_filter::NodeFilter;
 
 #[cfg(test)]
 mod tests;
@@ -82,6 +87,9 @@ pub enum NixError {
     #[snafu(display("Current Nix version does not support Flakes"))]
     NoFlakesSupport,
 
+    #[snafu(display("Node name cannot be empty"))]
+    EmptyNodeName,
+
     #[snafu(display("Nix Error: {}", message))]
     Unknown { message: String },
 }
@@ -113,6 +121,14 @@ impl From<ExitStatus> for NixError {
     }
 }
 
+/// A node's attribute name.
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
+#[serde(transparent)]
+pub struct NodeName(
+    #[serde(deserialize_with = "NodeName::deserialize")]
+    String
+);
+
 #[derive(Debug, Clone, Validate, Deserialize)]
 pub struct NodeConfig {
     #[serde(rename = "targetHost")]
@@ -136,6 +152,47 @@ pub struct NodeConfig {
 
     #[validate(custom = "validate_keys")]
     keys: HashMap<String, Key>,
+}
+
+impl NodeName {
+    /// Returns the string.
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
+    /// Creates a NodeName from a String.
+    pub fn new(name: String) -> NixResult<Self> {
+        let validated = Self::validate(name)?;
+        Ok(Self(validated))
+    }
+
+    /// Deserializes a potentially-invalid node name.
+    fn deserialize<'de, D>(deserializer: D) -> Result<String, D::Error>
+        where D: Deserializer<'de>
+    {
+        use de::Error;
+        String::deserialize(deserializer)
+            .and_then(|s| {
+                Self::validate(s).map_err(|e| Error::custom(e.to_string()))
+            })
+    }
+
+    fn validate(s: String) -> NixResult<String> {
+        // FIXME: Elaborate
+        if s.len() == 0 {
+            return Err(NixError::EmptyNodeName);
+        }
+
+        Ok(s)
+    }
+}
+
+impl Deref for NodeName {
+    type Target = str;
+
+    fn deref(&self) -> &str {
+        self.0.as_str()
+    }
 }
 
 impl NodeConfig {

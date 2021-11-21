@@ -5,7 +5,7 @@ use std::sync::Arc;
 use futures::future::join_all;
 use tokio::sync::{Mutex, Semaphore};
 
-use super::{Hive, Host, CopyOptions, NodeConfig, Profile, StoreDerivation, ProfileMap, host};
+use super::{Hive, Host, CopyOptions, NodeName, NodeConfig, Profile, StoreDerivation, ProfileMap, host};
 use super::key::{Key, UploadAt};
 use crate::progress::{Progress, TaskProgress, OutputStyle};
 
@@ -109,9 +109,9 @@ impl Goal {
 /// Internal deployment stages.
 #[derive(Debug)]
 enum Stage {
-    Evaluate(Vec<String>),
-    Build(Vec<String>),
-    Apply(String),
+    Evaluate(Vec<NodeName>),
+    Build(Vec<NodeName>),
+    Apply(NodeName),
 }
 
 /// Results of a deployment to a node.
@@ -168,9 +168,9 @@ impl DeploymentResult {
         }
     }
 
-    fn print_failed_nodes(&self, prefix: &'static str, nodes: &Vec<String>, full_logs: bool) {
+    fn print_failed_nodes(&self, prefix: &'static str, nodes: &Vec<NodeName>, full_logs: bool) {
         let msg = if nodes.len() == 1 {
-            format!("{} {} failed.", prefix, nodes[0])
+            format!("{} {} failed.", prefix, nodes[0].as_str())
         } else {
             format!("{} {} nodes failed.", prefix, nodes.len())
         };
@@ -209,8 +209,8 @@ impl Target {
 pub struct Deployment {
     hive: Hive,
     goal: Goal,
-    target_names: Vec<String>,
-    targets: Mutex<HashMap<String, Target>>,
+    target_names: Vec<NodeName>,
+    targets: Mutex<HashMap<NodeName, Target>>,
     label_width: usize,
     parallelism_limit: ParallelismLimit,
     evaluation_node_limit: EvaluationNodeLimit,
@@ -219,8 +219,8 @@ pub struct Deployment {
 }
 
 impl Deployment {
-    pub fn new(hive: Hive, targets: HashMap<String, Target>, goal: Goal) -> Self {
-        let target_names: Vec<String> = targets.keys().cloned().collect();
+    pub fn new(hive: Hive, targets: HashMap<NodeName, Target>, goal: Goal) -> Self {
+        let target_names: Vec<NodeName> = targets.keys().cloned().collect();
 
         let label_width = if let Some(len) = target_names.iter().map(|n| n.len()).max() {
             max(BATCH_OPERATION_LABEL.len(), len)
@@ -280,7 +280,7 @@ impl Deployment {
                     let progress = progress.clone();
                     futures.push(async move {
                         let permit = arc_self.parallelism_limit.apply.acquire().await.unwrap();
-                        let mut task = progress.create_task_progress(node.clone());
+                        let mut task = progress.create_task_progress(node.to_string());
 
                         task.log("Uploading keys...");
 
@@ -288,7 +288,7 @@ impl Deployment {
                             task.failure_err(&e);
 
                             let mut results = arc_self.results.lock().await;
-                            let stage = Stage::Apply(node.to_string());
+                            let stage = Stage::Apply(node);
                             let logs = target.host.dump_logs().await.map(|s| s.to_string());
                             results.push(DeploymentResult::failure(stage, logs));
                             return;
@@ -337,7 +337,7 @@ impl Deployment {
                     let progress = progress.clone();
 
                     // FIXME: Eww
-                    let chunk: Vec<String> = chunk.iter().map(|s| s.to_string()).collect();
+                    let chunk: Vec<NodeName> = chunk.iter().map(|s| s.clone()).collect();
 
                     futures.push(async move {
                         let drv = {
@@ -424,7 +424,7 @@ impl Deployment {
                                 targets.remove(&node).unwrap()
                             };
                             let profile = profiles.get(&node).cloned()
-                                .expect(&format!("Somehow profile for {} was not built", node));
+                                .expect(&format!("Somehow profile for {} was not built", node.as_str()));
 
                             futures.push(async move {
                                 arc_self.apply_profile(&node, target, profile, progress).await
@@ -457,7 +457,7 @@ impl Deployment {
         }
     }
 
-    async fn eval_profiles(self: Arc<Self>, chunk: &Vec<String>, progress: TaskProgress) -> Option<StoreDerivation<ProfileMap>> {
+    async fn eval_profiles(self: Arc<Self>, chunk: &Vec<NodeName>, progress: TaskProgress) -> Option<StoreDerivation<ProfileMap>> {
         let (eval, logs) = self.hive.eval_selected(&chunk, progress.clone()).await;
 
         match eval {
@@ -476,7 +476,7 @@ impl Deployment {
         }
     }
 
-    async fn build_profiles(self: Arc<Self>, chunk: &Vec<String>, derivation: StoreDerivation<ProfileMap>, progress: TaskProgress) -> Option<ProfileMap> {
+    async fn build_profiles(self: Arc<Self>, chunk: &Vec<NodeName>, derivation: StoreDerivation<ProfileMap>, progress: TaskProgress) -> Option<ProfileMap> {
         let nix_options = self.hive.nix_options().await.unwrap();
         // FIXME: Remote build?
         let mut builder = host::local(nix_options);
@@ -506,7 +506,7 @@ impl Deployment {
         }
     }
 
-    async fn apply_profile(self: Arc<Self>, name: &str, mut target: Target, profile: Profile, multi: Arc<Progress>) {
+    async fn apply_profile(self: Arc<Self>, name: &NodeName, mut target: Target, profile: Profile, multi: Arc<Progress>) {
         let permit = self.parallelism_limit.apply.acquire().await.unwrap();
 
         let mut bar = multi.create_task_progress(name.to_string());
@@ -546,7 +546,7 @@ impl Deployment {
                 bar.failure_err(&e);
 
                 let mut results = self.results.lock().await;
-                let stage = Stage::Apply(name.to_string());
+                let stage = Stage::Apply(name.clone());
                 let logs = target.host.dump_logs().await.map(|s| s.to_string());
                 results.push(DeploymentResult::failure(stage, logs));
                 return;
@@ -570,7 +570,7 @@ impl Deployment {
                         bar.failure_err(&e);
 
                         let mut results = self.results.lock().await;
-                        let stage = Stage::Apply(name.to_string());
+                        let stage = Stage::Apply(name.clone());
                         let logs = target.host.dump_logs().await.map(|s| s.to_string());
                         results.push(DeploymentResult::failure(stage, logs));
                         return;
@@ -580,7 +580,7 @@ impl Deployment {
                 bar.success(self.goal.success_str().unwrap());
 
                 let mut results = self.results.lock().await;
-                let stage = Stage::Apply(name.to_string());
+                let stage = Stage::Apply(name.clone());
                 let logs = target.host.dump_logs().await.map(|s| s.to_string());
                 results.push(DeploymentResult::success(stage, logs));
             }
@@ -588,7 +588,7 @@ impl Deployment {
                 bar.failure(&format!("Failed: {}", e));
 
                 let mut results = self.results.lock().await;
-                let stage = Stage::Apply(name.to_string());
+                let stage = Stage::Apply(name.clone());
                 let logs = target.host.dump_logs().await.map(|s| s.to_string());
                 results.push(DeploymentResult::failure(stage, logs));
             }
