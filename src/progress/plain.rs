@@ -32,9 +32,13 @@ impl PlainOutput {
         }
     }
 
-    fn print(&self, line: Line) {
+    fn print(&mut self, line: Line) {
         if line.noisy {
             return;
+        }
+
+        if line.label.len() > self.label_width {
+            self.label_width = line.label.len();
         }
 
         let label_style = match line.style {
@@ -82,7 +86,6 @@ impl ProgressOutput for PlainOutput {
             let message = self.receiver.recv().await;
 
             if message.is_none() {
-                log::info!("All senders dropped");
                 return Ok(self);
             }
 
