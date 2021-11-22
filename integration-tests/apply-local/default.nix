@@ -1,7 +1,7 @@
 let
   tools = import ../tools.nix {};
 in tools.makeTest {
-  name = "colmena-exec";
+  name = "colmena-apply-local";
 
   bundle = ./.;
 

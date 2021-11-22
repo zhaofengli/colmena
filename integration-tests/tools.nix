@@ -37,7 +37,7 @@ let
       nix.binaryCaches = lib.mkForce [];
 
       virtualisation = {
-        memorySize = 1024;
+        memorySize = 2048;
         writableStore = true;
         additionalPaths = [
           "${pkgs.path}"
@@ -46,7 +46,9 @@ let
         ];
       };
     };
-    target = {
+    target = { lib, ... }: {
+      nix.binaryCaches = lib.mkForce [];
+
       services.openssh.enable = true;
       users.users.root.openssh.authorizedKeys.keys = [
         sshKeys.snakeOilPublicKey
@@ -112,6 +114,15 @@ let
       deployer.succeed("ssh -o StrictHostKeyChecking=accept-new alpha ls")
 
       deployer.succeed("cp --no-preserve=mode -r ${bundle} /tmp/bundle && chmod u+w /tmp/bundle")
+
+      orig_store_paths = set(deployer.succeed("ls /nix/store | sort").strip().split("\n"))
+      def get_new_store_paths():
+          cur_store_paths = set(deployer.succeed("ls /nix/store | sort").strip().split("\n"))
+          new_store_paths = cur_store_paths.difference(orig_store_paths)
+          deployer.log(f"{len(new_store_paths)} store paths were created")
+
+          l = list(map(lambda n: f"/nix/store/{n}", new_store_paths))
+          return l
     '' + test.testScript;
 
     bundle = pkgs.stdenv.mkDerivation {
