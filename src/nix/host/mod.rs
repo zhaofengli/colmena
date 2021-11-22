@@ -74,6 +74,9 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     /// exist on the host.
     async fn realize_remote(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>>;
 
+    /// Provides a JobHandle to use during operations.
+    fn set_job(&mut self, bar: Option<JobHandle>);
+
     /// Realizes the specified local derivation on the host then retrieves the outputs.
     async fn realize(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
         let options = CopyOptions::default();
@@ -121,10 +124,5 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     #[allow(unused_variables)] 
     async fn run_command(&mut self, command: &[&str]) -> NixResult<()> {
         Err(NixError::Unsupported)
-    }
-
-    /// Provides a JobHandle to use during operations.
-    #[allow(unused_variables)] 
-    fn set_job(&mut self, bar: Option<JobHandle>) {
     }
 }

@@ -284,6 +284,7 @@ impl Deployment {
             // FIXME: Remote builder?
             let nix_options = self.hive.nix_options().await.unwrap();
             let mut builder = host::local(nix_options);
+            builder.set_job(Some(job.clone()));
 
             let map = derivation.realize(&mut *builder).await?;
 

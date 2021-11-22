@@ -93,6 +93,10 @@ impl Host for Local {
     async fn active_derivation_known(&mut self) -> NixResult<bool> {
         Ok(true)
     }
+
+    fn set_job(&mut self, job: Option<JobHandle>) {
+        self.job = job;
+    }
 }
 
 impl Local {
