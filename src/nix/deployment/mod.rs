@@ -335,6 +335,7 @@ impl Deployment {
             job.state(JobState::Running)?;
 
             let host = target.host.as_mut().unwrap();
+            host.set_job(Some(job.clone()));
             host.copy_closure(
                 push_profile.as_store_path(),
                 CopyDirection::ToRemote,
@@ -367,6 +368,7 @@ impl Deployment {
                 job.message("Uploading pre-activation keys...".to_string())?;
 
                 let host = target.host.as_mut().unwrap();
+                host.set_job(Some(job.clone()));
                 host.upload_keys(&keys, false).await?;
 
                 job.success_with_message("Uploaded keys (pre-activation)".to_string())?;
@@ -382,6 +384,7 @@ impl Deployment {
         let profile_r = profile.clone();
         let mut target = activation_job.run(|job| async move {
             let host = target.host.as_mut().unwrap();
+            host.set_job(Some(job.clone()));
 
             if !target.config.replace_unknown_profiles {
                 job.message("Checking remote profile...".to_string())?;
@@ -424,6 +427,7 @@ impl Deployment {
                 job.message("Uploading post-activation keys...".to_string())?;
 
                 let host = target.host.as_mut().unwrap();
+                host.set_job(Some(job.clone()));
                 host.upload_keys(&keys, true).await?;
 
                 job.success_with_message("Uploaded keys (post-activation)".to_string())?;
