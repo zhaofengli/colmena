@@ -16,7 +16,7 @@ in rustPlatform.buildRustPackage rec {
   apiVersion = builtins.concatStringsSep "." (lib.take 2 (lib.splitString "." version));
 
   src = lib.cleanSourceWith {
-    filter = name: type: !(type == "directory" && builtins.elem (baseNameOf name) [ "target" "manual" ]);
+    filter = name: type: !(type == "directory" && builtins.elem (baseNameOf name) [ "target" "manual" "integration-tests" ]);
     src = lib.cleanSource ./.;
   };
 
