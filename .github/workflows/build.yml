@@ -8,12 +8,12 @@ jobs:
     strategy:
       matrix:
         nix:
-          - name: 2.3.16
-            url: https://releases.nixos.org/nix/nix-2.3.16/install
           - name: 2.4
             url: https://releases.nixos.org/nix/nix-2.4/install
-          - name: 2.5pre
-            url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.5pre20211026_5667822/install
+          #- name: 2.3.16
+          #  url: https://releases.nixos.org/nix/nix-2.3.16/install
+          #- name: 2.5pre
+          #  url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.5pre20211026_5667822/install
     steps:
       - uses: actions/checkout@v2.3.5
       - uses: cachix/install-nix-action@v15
@@ -21,7 +21,9 @@ jobs:
           install_url: ${{ matrix.nix.url }}
           extra_nix_config: |
             experimental-features = nix-command flakes
-      - uses: cachix/cachix-action@v10
+
+      - name: Enable Binary Cache
+        uses: cachix/cachix-action@v10
         with:
           name: colmena
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
