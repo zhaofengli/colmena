@@ -7,21 +7,15 @@ in
 , metaOptionsMd ? notFound "meta options text"
 , colmena ? null
 
-, version ? null   # Full version (default: detected from colmena)
-, unstable ? null  # Whether this build is unstable (default: detected from version)
+# Full version
+, version ? if colmena != null then colmena.version else "unstable"
+
+# Whether this build is unstable
+, unstable ? version == "unstable" || lib.hasInfix "-" version
 }:
 
 let
-  versionComp =
-    if version == null then
-      if colmena != null then colmena.version else "unstable"
-    else version;
-
-  unstableComp =
-    if unstable == null then versionComp == "unstable" || lib.hasInfix "-" versionComp
-    else unstable;
-
-  apiVersion = builtins.concatStringsSep "." (lib.take 2 (lib.splitString "." versionComp));
+  apiVersion = builtins.concatStringsSep "." (lib.take 2 (lib.splitString "." version));
 
   redirectTemplate = lib.escapeShellArg ''
     <!doctype html>
@@ -38,10 +32,9 @@ let
   '';
 
 in stdenv.mkDerivation {
-  inherit deploymentOptionsMd metaOptionsMd;
+  inherit version deploymentOptionsMd metaOptionsMd;
 
-  pname = "colmena-manual" + (if unstableComp then "-unstable" else "");
-  version = versionComp;
+  pname = "colmena-manual" + (if unstable then "-unstable" else "");
 
   src = nix-gitignore.gitignoreSource [] ./.;
 
@@ -49,11 +42,11 @@ in stdenv.mkDerivation {
 
   outputs = [ "out" "redirectFarm" ];
 
-  COLMENA_VERSION = versionComp;
-  COLMENA_UNSTABLE = unstableComp;
+  COLMENA_VERSION = version;
+  COLMENA_UNSTABLE = unstable;
 
   patchPhase = ''
-    if [ -z "${toString unstableComp}" ]; then
+    if [ -z "${toString unstable}" ]; then
         sed "s|@apiVersion@|${apiVersion}|g" book.stable.toml > book.toml
     fi
   '';
@@ -78,7 +71,7 @@ in stdenv.mkDerivation {
     mkdir -p $redirectFarm
 
     subdir="/unstable"
-    if [ -z "${toString unstableComp}" ]; then
+    if [ -z "${toString unstable}" ]; then
       subdir="/${apiVersion}"
     fi
 
