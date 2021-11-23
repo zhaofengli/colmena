@@ -55,7 +55,7 @@ impl Flake {
 
     /// Returns the local directory, if it exists.
     pub fn local_dir(&self) -> Option<&Path> {
-        self.local_dir.as_ref().map(|d| d.as_path())
+        self.local_dir.as_deref()
     }
 }
 

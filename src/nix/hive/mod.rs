@@ -23,7 +23,7 @@ use super::NixCommand;
 use crate::util::CommandExecution;
 use crate::job::JobHandle;
 
-const HIVE_EVAL: &'static [u8] = include_bytes!("eval.nix");
+const HIVE_EVAL: &[u8] = include_bytes!("eval.nix");
 
 #[derive(Debug)]
 pub enum HivePath {
@@ -250,7 +250,7 @@ impl Hive {
     /// Evaluation may take up a lot of memory, so we make it possible
     /// to split up the evaluation process into chunks and run them
     /// concurrently with other processes (e.g., build and apply).
-    pub async fn eval_selected(&self, nodes: &Vec<NodeName>, job: Option<JobHandle>) -> NixResult<StoreDerivation<ProfileMap>> {
+    pub async fn eval_selected(&self, nodes: &[NodeName], job: Option<JobHandle>) -> NixResult<StoreDerivation<ProfileMap>> {
         let nodes_expr = SerializedNixExpresssion::new(nodes)?;
 
         let expr = format!("hive.buildSelected {}", nodes_expr.expression());
@@ -260,7 +260,7 @@ impl Hive {
         execution.set_job(job);
 
         let path = execution.capture_store_path().await?;
-        let drv = path.to_derivation()
+        let drv = path.into_derivation()
             .expect("The result should be a store derivation");
 
         Ok(drv)
@@ -286,7 +286,7 @@ impl Hive {
         }
 
         let expr = "toJSON (hive.meta.machinesFile or null)";
-        let s: String = self.nix_instantiate(&expr).eval()
+        let s: String = self.nix_instantiate(expr).eval()
             .capture_json().await?;
 
         let parsed: Option<String> = serde_json::from_str(&s).unwrap();
@@ -303,7 +303,7 @@ impl Hive {
             options.append(&mut vec![
                 "--option".to_owned(),
                 "builders".to_owned(),
-                format!("@{}", machines_file).to_owned()
+                format!("@{}", machines_file),
             ]);
         }
 
@@ -311,7 +311,7 @@ impl Hive {
     }
 
     fn nix_instantiate(&self, expression: &str) -> NixInstantiate {
-        NixInstantiate::new(&self, expression.to_owned())
+        NixInstantiate::new(self, expression.to_owned())
     }
 
     fn path(&self) -> &HivePath {
@@ -410,7 +410,7 @@ struct SerializedNixExpresssion {
 }
 
 impl SerializedNixExpresssion {
-    pub fn new<'de, T>(data: T) -> NixResult<Self> where T: Serialize {
+    pub fn new<T>(data: T) -> NixResult<Self> where T: Serialize {
         let mut tmp = NamedTempFile::new()?;
         let json = serde_json::to_vec(&data).expect("Could not serialize data");
         tmp.write_all(&json)?;

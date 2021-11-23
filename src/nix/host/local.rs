@@ -57,14 +57,14 @@ impl Host for Local {
 
     async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> NixResult<()> {
         for (name, key) in keys {
-            self.upload_key(&name, &key, require_ownership).await?;
+            self.upload_key(name, key, require_ownership).await?;
         }
 
         Ok(())
     }
 
     async fn activate(&mut self, profile: &Profile, goal: Goal) -> NixResult<()> {
-        if !goal.is_real_goal() {
+        if !goal.requires_activation() {
             return Err(NixError::Unsupported);
         }
 

@@ -28,7 +28,7 @@ impl StorePath {
     }
 
     /// Converts the store path into a store derivation.
-    pub fn to_derivation<T: TryFrom<Vec<StorePath>>>(self) -> Option<StoreDerivation<T>> {
+    pub fn into_derivation<T: TryFrom<Vec<StorePath>>>(self) -> Option<StoreDerivation<T>> {
         if self.is_derivation() {
             Some(StoreDerivation::<T>::from_store_path_unchecked(self))
         } else {
@@ -57,9 +57,9 @@ impl TryFrom<String> for StorePath {
     }
 }
 
-impl Into<PathBuf> for StorePath {
-    fn into(self) -> PathBuf {
-        self.0
+impl From<StorePath> for PathBuf {
+    fn from(sp: StorePath) -> Self {
+        sp.0
     }
 }
 

@@ -111,11 +111,11 @@ impl SimpleProgressOutput {
         match self {
             Self::Plain(o) => {
                 o.run_until_completion().await
-                    .map(|o| Self::Plain(o))
+                    .map(Self::Plain)
             }
             Self::Spinner(o) => {
                 o.run_until_completion().await
-                    .map(|o| Self::Spinner(o))
+                    .map(Self::Spinner)
             }
         }
     }

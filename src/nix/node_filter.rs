@@ -31,7 +31,7 @@ impl NodeFilter {
         let filter = filter.as_ref();
         let trimmed = filter.trim();
 
-        if trimmed.len() == 0 {
+        if trimmed.is_empty() {
             log::warn!("Filter \"{}\" is blank and will match nothing", filter);
 
             return Ok(Self {
@@ -39,14 +39,14 @@ impl NodeFilter {
             });
         }
 
-        let rules = trimmed.split(",").map(|pattern| {
+        let rules = trimmed.split(',').map(|pattern| {
             let pattern = pattern.trim();
 
-            if pattern.len() == 0 {
+            if pattern.is_empty() {
                 return Err(NixError::EmptyFilterRule);
             }
 
-            if let Some(tag_pattern) = pattern.strip_prefix("@") {
+            if let Some(tag_pattern) = pattern.strip_prefix('@') {
                 Ok(Rule::MatchTag(GlobPattern::new(tag_pattern).unwrap()))
             } else {
                 Ok(Rule::MatchName(GlobPattern::new(pattern).unwrap()))
@@ -66,14 +66,14 @@ impl NodeFilter {
     /// especially when its values (e.g., tags) depend on other parts of
     /// the configuration.
     pub fn has_node_config_rules(&self) -> bool {
-        self.rules.iter().find(|rule| rule.matches_node_config()).is_some()
+        self.rules.iter().any(|rule| rule.matches_node_config())
     }
 
     /// Runs the filter against a set of NodeConfigs and returns the matched ones.
     pub fn filter_node_configs<'a, I>(&self, nodes: I) -> HashSet<NodeName>
         where I: Iterator<Item = (&'a NodeName, &'a NodeConfig)>
     {
-        if self.rules.len() == 0 {
+        if self.rules.is_empty() {
             return HashSet::new();
         }
 
@@ -232,7 +232,7 @@ mod tests {
 
         nodes.insert(node!("gamma-b"), NodeConfig {
             tags: vec![ "ewaste".to_string() ],
-            ..template.clone()
+            ..template
         });
 
         assert_eq!(4, nodes.len());

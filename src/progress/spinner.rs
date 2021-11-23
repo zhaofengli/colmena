@@ -59,9 +59,8 @@ struct JobState {
 impl SpinnerOutput {
     pub fn new() -> Self {
         let meta_bar = {
-            let bar = ProgressBar::new(100)
-                .with_style(get_spinner_style(DEFAULT_LABEL_WIDTH, LineStyle::Normal));
-            bar
+            ProgressBar::new(100)
+                .with_style(get_spinner_style(DEFAULT_LABEL_WIDTH, LineStyle::Normal))
         };
 
         let (sender, receiver) = create_channel();
@@ -84,7 +83,7 @@ impl SpinnerOutput {
             state.clone()
         } else {
             let bar = self.create_bar(LineStyle::Normal);
-            let state = JobState::new(bar.clone());
+            let state = JobState::new(bar);
             self.job_state.insert(job_id, state.clone());
             state
         }
@@ -95,7 +94,7 @@ impl SpinnerOutput {
         let bar = ProgressBar::new(100)
             .with_style(self.get_spinner_style(style));
 
-        let bar = self.multi.add(bar.clone());
+        let bar = self.multi.add(bar);
         bar.enable_steady_tick(100);
         bar
     }

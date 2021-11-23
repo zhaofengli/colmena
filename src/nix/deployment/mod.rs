@@ -198,7 +198,8 @@ impl Deployment {
 
     fn get_chunks(&mut self) -> Vec<TargetNodeMap> {
         let eval_limit = self.evaluation_node_limit.get_limit()
-            .unwrap_or(self.targets.len());
+            .unwrap_or_else(|| self.targets.len());
+
         let mut result = Vec::new();
 
         for chunk in self.targets.drain().chunks(eval_limit).into_iter() {
@@ -226,7 +227,7 @@ impl Deployment {
         }
 
         for (name, profile) in profiles.iter() {
-            let target = chunk.remove(&name).unwrap();
+            let target = chunk.remove(name).unwrap();
             self.clone().deploy_node(parent.clone(), target, profile.clone()).await?;
         }
 

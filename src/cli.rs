@@ -7,21 +7,21 @@ use lazy_static::lazy_static;
 use crate::command;
 
 /// Base URL of the manual, without the trailing slash.
-const MANUAL_URL_BASE: &'static str = "https://zhaofengli.github.io/colmena";
+const MANUAL_URL_BASE: &str = "https://zhaofengli.github.io/colmena";
 
 /// URL to the manual.
 ///
 /// We maintain CLI and Nix API stability for each minor version.
 /// This ensures that the user always sees accurate documentations, and we can
 /// easily perform updates to the manual after a release.
-const MANUAL_URL: &'static str = concatcp!(MANUAL_URL_BASE, "/", env!("CARGO_PKG_VERSION_MAJOR"), ".", env!("CARGO_PKG_VERSION_MINOR"));
+const MANUAL_URL: &str = concatcp!(MANUAL_URL_BASE, "/", env!("CARGO_PKG_VERSION_MAJOR"), ".", env!("CARGO_PKG_VERSION_MINOR"));
 
 /// The note shown when the user is using a pre-release version.
 ///
 /// API stability cannot be guaranteed for pre-release versions.
 /// Links to the version currently in development automatically
 /// leads the user to the unstable manual.
-const MANUAL_DISCREPANCY_NOTE: &'static str = "Note: You are using a pre-release version of Colmena, so the supported options may be different from what's in the manual.";
+const MANUAL_DISCREPANCY_NOTE: &str = "Note: You are using a pre-release version of Colmena, so the supported options may be different from what's in the manual.";
 
 lazy_static! {
     static ref LONG_ABOUT: String = {
@@ -32,8 +32,8 @@ For more details, read the manual at <{}>.
 
 "#, MANUAL_URL);
 
-        if env!("CARGO_PKG_VERSION_PRE").len() != 0 {
-            message += &MANUAL_DISCREPANCY_NOTE;
+        if !env!("CARGO_PKG_VERSION_PRE").is_empty() {
+            message += MANUAL_DISCREPANCY_NOTE;
         }
 
         message
@@ -157,7 +157,7 @@ pub async fn run() {
         return gen_completions(args);
     }
 
-    if let Some(_) = matches.subcommand_matches("gen-help-markdown") {
+    if matches.subcommand_matches("gen-help-markdown").is_some() {
         return gen_help_markdown();
     };
 

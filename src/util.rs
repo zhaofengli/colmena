@@ -112,7 +112,7 @@ pub async fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
             let path = args.value_of("config").expect("The config arg should exist").to_owned();
             let fpath = canonicalize_cli_path(&path);
 
-            if !fpath.exists() && path.contains(":") {
+            if !fpath.exists() && path.contains(':') {
                 // Treat as flake URI
                 let flake = Flake::from_uri(path).await?;
                 let hive_path = HivePath::Flake(flake);
@@ -157,7 +157,7 @@ The list is comma-separated and globs are supported. To match tags, prepend the 
 }
 
 fn canonicalize_cli_path(path: &str) -> PathBuf {
-    if !path.starts_with("/") {
+    if !path.starts_with('/') {
         format!("./{}", path).into()
     } else {
         path.into()

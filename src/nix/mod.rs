@@ -47,7 +47,7 @@ pub use node_filter::NodeFilter;
 #[cfg(test)]
 mod tests;
 
-pub const SYSTEM_PROFILE: &'static str = "/nix/var/nix/profiles/system";
+pub const SYSTEM_PROFILE: &str = "/nix/var/nix/profiles/system";
 
 pub type NixResult<T> = Result<T, NixError>;
 
@@ -203,7 +203,7 @@ impl NodeName {
 
     fn validate(s: String) -> NixResult<String> {
         // FIXME: Elaborate
-        if s.len() == 0 {
+        if s.is_empty() {
             return Err(NixError::EmptyNodeName);
         }
 
@@ -230,7 +230,7 @@ impl NodeConfig {
                     Some(uname) => uname.clone(),
                     None => get_current_username().unwrap().into_string().unwrap(),
                 };
-            let mut host = Ssh::new(username.clone(), target_host.clone());
+            let mut host = Ssh::new(username, target_host.clone());
             host.set_privilege_escalation_command(self.privilege_escalation_command.clone());
 
             if let Some(target_port) = self.target_port {
@@ -333,7 +333,7 @@ fn validate_keys(keys: &HashMap<String, Key>) -> Result<(), ValidationErrorType>
             return Err(ValidationErrorType::new("Secret key name cannot be absolute"));
         }
 
-        if path.components().collect::<Vec<_>>().len() != 1 {
+        if path.components().count() != 1 {
             return Err(ValidationErrorType::new("Secret key name cannot contain path separators"));
         }
     }

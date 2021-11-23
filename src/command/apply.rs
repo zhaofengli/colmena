@@ -118,11 +118,9 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> 
     let ssh_config = env::var("SSH_CONFIG_FILE")
         .ok().map(PathBuf::from);
 
-    let filter = if let Some(f) = local_args.value_of("on") {
-        Some(NodeFilter::new(f)?)
-    } else {
-        None
-    };
+    let filter = local_args.value_of("on")
+        .map(NodeFilter::new)
+        .transpose()?;
 
     let goal_arg = local_args.value_of("goal").unwrap();
     let goal = Goal::from_str(goal_arg).unwrap();

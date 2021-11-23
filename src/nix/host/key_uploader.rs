@@ -16,7 +16,7 @@ use crate::job::JobHandle;
 use crate::nix::{Key, NixResult};
 use crate::util::capture_stream;
 
-const SCRIPT_TEMPLATE: &'static str = include_str!("./key_uploader.template.sh");
+const SCRIPT_TEMPLATE: &str = include_str!("./key_uploader.template.sh");
 
 pub fn generate_script<'a>(key: &'a Key, destination: &'a Path, require_ownership: bool) -> Cow<'a, str> {
     let key_script = SCRIPT_TEMPLATE.to_string()

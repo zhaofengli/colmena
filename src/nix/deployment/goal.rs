@@ -67,34 +67,16 @@ impl Goal {
 
     pub fn should_switch_profile(&self) -> bool {
         use Goal::*;
-        match self {
-            Boot | Switch => true,
-            _ => false,
-        }
+        matches!(self, Boot | Switch)
     }
 
     pub fn requires_activation(&self) -> bool {
         use Goal::*;
-        match self {
-            Build | UploadKeys | Push => false,
-            _ => true,
-        }
+        !matches!(self, Build | UploadKeys | Push)
     }
 
     pub fn requires_target_host(&self) -> bool {
         use Goal::*;
-        match self {
-            Build => false,
-            _ => true,
-        }
-    }
-
-    /// Is this a real goal supported by switch-to-configuration?
-    pub fn is_real_goal(&self) -> bool {
-        use Goal::*;
-        match self {
-            Build | UploadKeys | Push => false,
-            _ => true,
-        }
+        !matches!(self, Build)
     }
 }

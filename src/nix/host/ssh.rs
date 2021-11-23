@@ -54,13 +54,13 @@ impl Host for Ssh {
     }
     async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> NixResult<()> {
         for (name, key) in keys {
-            self.upload_key(&name, &key, require_ownership).await?;
+            self.upload_key(name, key, require_ownership).await?;
         }
 
         Ok(())
     }
     async fn activate(&mut self, profile: &Profile, goal: Goal) -> NixResult<()> {
-        if !goal.is_real_goal() {
+        if !goal.requires_activation() {
             return Err(NixError::Unsupported);
         }
 
@@ -76,7 +76,7 @@ impl Host for Ssh {
         self.run_command(command).await
     }
     async fn run_command(&mut self, command: &[&str]) -> NixResult<()> {
-        let command = self.ssh(&command);
+        let command = self.ssh(command);
         self.run_command(command).await
     }
     async fn active_derivation_known(&mut self) -> NixResult<bool> {
@@ -86,7 +86,7 @@ impl Host for Ssh {
 
         match paths {
             Ok(paths) => {
-                for path in paths.lines().into_iter() {
+                if let Some(path) = paths.lines().into_iter().next() {
                     let remote_profile: StorePath = path.to_string().try_into().unwrap();
                     if remote_profile.exists() {
                         return Ok(true);

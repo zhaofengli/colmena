@@ -395,7 +395,7 @@ impl JobMonitor {
         metadata.state = new_state;
 
         if message.is_some() {
-            metadata.custom_message = message.clone();
+            metadata.custom_message = message;
         }
 
         let metadata = if new_state == JobState::Waiting {
@@ -513,10 +513,7 @@ impl JobMonitor {
 impl JobState {
     /// Returns whether this state is final.
     pub fn is_final(&self) -> bool {
-        match self {
-            Self::Failed | Self::Succeeded => true,
-            _ => false,
-        }
+        matches!(self, Self::Failed | Self::Succeeded)
     }
 }
 
@@ -718,11 +715,11 @@ impl JobMetadata {
         let node_list = describe_node_list(&self.nodes)
             .unwrap_or_else(|| "some node(s)".to_string());
 
-        let message = self.custom_message.as_ref().map(|e| e.as_str())
+        let message = self.custom_message.as_deref()
             .unwrap_or("No message");
 
         Some(match (self.job_type, self.state) {
-            (JobType::Meta, JobState::Succeeded) => format!("All done!"),
+            (JobType::Meta, JobState::Succeeded) => "All done!".to_string(),
 
             (JobType::Evaluate, JobState::Running) => format!("Evaluating {}", node_list),
             (JobType::Evaluate, JobState::Succeeded) => format!("Evaluated {}", node_list),
@@ -732,19 +729,19 @@ impl JobMetadata {
             (JobType::Build, JobState::Succeeded) => format!("Built {}", node_list),
             (JobType::Build, JobState::Failed) => format!("Build failed: {}", message),
 
-            (JobType::Push, JobState::Running) => format!("Pushing system closure"),
-            (JobType::Push, JobState::Succeeded) => format!("Pushed system closure"),
+            (JobType::Push, JobState::Running) => "Pushing system closure".to_string(),
+            (JobType::Push, JobState::Succeeded) => "Pushed system closure".to_string(),
             (JobType::Push, JobState::Failed) => format!("Push failed: {}", message),
 
-            (JobType::UploadKeys, JobState::Running) => format!("Uploading keys"),
-            (JobType::UploadKeys, JobState::Succeeded) => format!("Uploaded keys"),
+            (JobType::UploadKeys, JobState::Running) => "Uploading keys".to_string(),
+            (JobType::UploadKeys, JobState::Succeeded) => "Uploaded keys".to_string(),
             (JobType::UploadKeys, JobState::Failed) => format!("Key upload failed: {}", message),
 
-            (JobType::Activate, JobState::Running) => format!("Activating system profile"),
+            (JobType::Activate, JobState::Running) => "Activating system profile".to_string(),
             (JobType::Activate, JobState::Failed) => format!("Activation failed: {}", message),
 
             (_, JobState::Failed) => format!("Failed: {}", message),
-            (_, JobState::Succeeded) => format!("Succeeded"),
+            (_, JobState::Succeeded) => "Succeeded".to_string(),
             _ => "".to_string(),
         })
     }
@@ -760,7 +757,7 @@ impl JobMetadata {
             JobType::Push => format!("Failed to push system closure to {}", node_list),
             JobType::UploadKeys => format!("Failed to upload keys to {}", node_list),
             JobType::Activate => format!("Failed to deploy to {}", node_list),
-            JobType::Meta => format!("Failed to complete requested operation"),
+            JobType::Meta => "Failed to complete requested operation".to_string(),
             _ => format!("Failed to complete job on {}", node_list),
         }
     }
@@ -775,10 +772,7 @@ impl Event {
 
 impl EventPayload {
     fn privileged(&self) -> bool {
-        match self {
-            Self::ShutdownMonitor => true,
-            _ => false,
-        }
+        matches!(self, Self::ShutdownMonitor)
     }
 }
 
@@ -856,7 +850,7 @@ fn describe_node_list(nodes: &[NodeName]) -> Option<String> {
     while let Some((_, node)) = iter.next() {
         let next = iter.peek();
 
-        if s.len() != 0 {
+        if !s.is_empty() {
             if next.is_none() {
                 s += if total > 2 { ", and " } else { " and " };
             } else {

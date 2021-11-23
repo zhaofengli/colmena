@@ -160,7 +160,7 @@ fn validate_unix_name(name: &str) -> Result<(), ValidationError> {
     }
 }
 
-fn validate_dest_dir(dir: &PathBuf) -> Result<(), ValidationError> {
+fn validate_dest_dir(dir: &Path) -> Result<(), ValidationError> {
     if dir.has_root() {
         Ok(())
     } else {

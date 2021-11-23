@@ -28,7 +28,7 @@ impl Profile {
             return Err(NixError::InvalidProfile);
         }
 
-        if let None = path.to_str() {
+        if path.to_str().is_none() {
             Err(NixError::InvalidProfile)
         } else {
             Ok(Self(path))
@@ -43,11 +43,10 @@ impl Profile {
                 .expect("The string should be UTF-8 valid")
                 .to_string();
 
-            let mut v = Vec::new();
-            v.push(switch_to_configuration);
-            v.push(goal.to_string());
-
-            Some(v)
+            Some(vec![
+                switch_to_configuration,
+                goal.to_string(),
+            ])
         } else {
             None
         }
@@ -60,7 +59,7 @@ impl Profile {
 
     /// Returns the raw store path.
     pub fn as_path(&self) -> &Path {
-        &self.0.as_path()
+        self.0.as_path()
     }
 }
 
