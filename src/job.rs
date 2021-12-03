@@ -778,19 +778,17 @@ impl EventPayload {
 
 impl Display for EventPayload {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Event")?;
-
         match self {
-            EventPayload::ChildStdout(o)        => write!(f, "[  stdout]: {}", o)?,
-            EventPayload::ChildStderr(o)        => write!(f, "[  stderr]: {}", o)?,
-            EventPayload::Message(m)            => write!(f, "[ message]: {}", m)?,
-            EventPayload::Creation(_)           => write!(f, "[ created]")?,
-            EventPayload::NewState(s)           => write!(f, "[   state] {:?}", s)?,
-            EventPayload::SuccessWithMessage(m) => write!(f, "[ success]: {}", m)?,
-            EventPayload::Noop(m)               => write!(f, "[    noop]: {}", m)?,
-            EventPayload::Failure(e)            => write!(f, "[ failure]: {}", e)?,
-            EventPayload::ShutdownMonitor       => write!(f, "[shutdown]")?,
-            EventPayload::ProfilesBuilt(pm)     => write!(f, "[   built]: {:?}", pm)?,
+            EventPayload::ChildStdout(o)        => write!(f, "  stdout) {}", o)?,
+            EventPayload::ChildStderr(o)        => write!(f, "  stderr) {}", o)?,
+            EventPayload::Message(m)            => write!(f, " message) {}", m)?,
+            EventPayload::Creation(_)           => write!(f, " created)")?,
+            EventPayload::NewState(s)           => write!(f, "   state) {:?}", s)?,
+            EventPayload::SuccessWithMessage(m) => write!(f, " success) {}", m)?,
+            EventPayload::Noop(m)               => write!(f, "    noop) {}", m)?,
+            EventPayload::Failure(e)            => write!(f, " failure) {}", e)?,
+            EventPayload::ShutdownMonitor       => write!(f, "shutdown)")?,
+            EventPayload::ProfilesBuilt(pm)     => write!(f, "   built) {:?}", pm)?,
         }
 
         Ok(())
