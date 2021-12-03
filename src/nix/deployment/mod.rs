@@ -329,16 +329,15 @@ impl Deployment {
 
         let nodes = vec![target.name.clone()];
 
+        let permit = self.parallelism_limit.apply.acquire().await.unwrap();
+
         let push_job = parent.create_job(JobType::Push, nodes.clone())?;
         let push_profile = profile.clone();
         let arc_self = self.clone();
-        let mut target = push_job.run_waiting(|job| async move {
+        let mut target = push_job.run(|job| async move {
             if target.host.is_none() {
                 return Err(NixError::Unsupported);
             }
-
-            let permit = arc_self.parallelism_limit.apply.acquire().await.unwrap();
-            job.state(JobState::Running)?;
 
             let host = target.host.as_mut().unwrap();
             host.set_job(Some(job.clone()));
@@ -347,7 +346,6 @@ impl Deployment {
                 CopyDirection::ToRemote,
                 arc_self.options.to_copy_options()).await?;
 
-            drop(permit);
             Ok(target)
         }).await?;
 
@@ -440,6 +438,8 @@ impl Deployment {
                 Ok(())
             }).await?;
         }
+
+        drop(permit);
 
         Ok(())
     }
