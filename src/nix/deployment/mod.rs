@@ -226,10 +226,15 @@ impl Deployment {
             return Ok(());
         }
 
+        let mut futures = Vec::new();
+
         for (name, profile) in profiles.iter() {
             let target = chunk.remove(name).unwrap();
-            self.clone().deploy_node(parent.clone(), target, profile.clone()).await?;
+            futures.push(self.clone().deploy_node(parent.clone(), target, profile.clone()));
         }
+
+        let result: NixResult<Vec<()>> = join_all(futures).await.into_iter().collect();
+        result?;
 
         // Create GC root
         if self.options.create_gc_roots {
