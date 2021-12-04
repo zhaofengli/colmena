@@ -268,7 +268,7 @@ let
     in hive;
 
     rawToHive = rawHive:
-      if typeOf rawHive == "lambda" then rawHive {}
+      if typeOf rawHive == "lambda" || rawHive ? __functor then rawHive {}
       else if typeOf rawHive == "set" then rawHive
       else throw "The config must evaluate to an attribute set.";
   in

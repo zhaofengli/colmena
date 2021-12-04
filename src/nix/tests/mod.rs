@@ -427,6 +427,17 @@ fn test_hive_autocall() {
       }
     "#);
 
+    TempHive::valid(r#"
+      {
+        some = "value";
+        __functor = self: { argument ? "with default value" }: {
+          borg = { ... }: {
+            boot.isContainer = assert self.some == "value"; true;
+          };
+        };
+      }
+    "#);
+
     TempHive::invalid(r#"
       {
         thisWontWork
