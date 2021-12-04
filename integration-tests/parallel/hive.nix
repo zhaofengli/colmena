@@ -1,12 +1,5 @@
 let
   tools = import ./tools.nix { insideVm = true; };
-
-  testPkg = let
-    text = builtins.trace "must appear during evaluation" ''
-      echo "must appear during build"
-      mkdir -p $out
-    '';
-  in tools.pkgs.runCommand "test-package" {} text;
 in {
   meta = {
     nixpkgs = tools.pkgs;
@@ -14,6 +7,11 @@ in {
 
   defaults = {
     environment.etc."deployment".text = "SUCCESS";
+
+    system.activationScripts.activationDelay.text = ''
+      >&2 echo "Activation triggered --- $(date +%s%N)"
+      sleep 3
+    '';
   };
 
   deployer = tools.getStandaloneConfigFor "deployer";

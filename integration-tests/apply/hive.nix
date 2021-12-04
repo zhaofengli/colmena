@@ -12,17 +12,8 @@ in {
     nixpkgs = tools.pkgs;
   };
 
-  alpha = { lib, ... }: {
-    imports = [
-      (tools.getStandaloneConfigFor "alpha")
-    ];
-
-    environment.systemPackages = [ testPkg ];
-    environment.etc."deployment".text = "SUCCESS";
-
-    system.activationScripts.colmena-test.text = ''
-      echo "must appear during activation"
-    '';
+  defaults = {
+    environment.etc."deployment".text = "FIRST";
 
     # Will be created during activation
     users.users.testuser = {
@@ -75,6 +66,18 @@ in {
       group = "testgroup";
       permissions = "600";
     };
+  };
+
+  alpha = { lib, ... }: {
+    imports = [
+      (tools.getStandaloneConfigFor "alpha")
+    ];
+
+    environment.systemPackages = [ testPkg ];
+
+    system.activationScripts.colmena-test.text = ''
+      echo "must appear during activation"
+    '';
   };
 
   deployer = tools.getStandaloneConfigFor "deployer";
