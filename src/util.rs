@@ -130,6 +130,15 @@ pub async fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
     };
 
     let hive_path = HivePath::from_path(path).await?;
+    match &hive_path {
+        HivePath::Legacy(p) => {
+            log::info!("Using configuration: {}", p.to_string_lossy());
+        }
+        HivePath::Flake(flake) => {
+            log::info!("Using flake: {}", flake.uri());
+        }
+    }
+
     let mut hive = Hive::new(hive_path)?;
 
     if args.is_present("show-trace") {
