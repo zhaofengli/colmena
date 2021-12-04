@@ -50,6 +50,14 @@ For a sample configuration, check the manual at <{}>.
     };
 }
 
+/// Display order in `--help` for arguments that should be shown first.
+///
+/// Currently reserved for -f/--config.
+const HELP_ORDER_FIRST: usize = 100;
+
+/// Display order in `--help` for arguments that are not very important.
+const HELP_ORDER_LOW: usize = 2000;
+
 macro_rules! register_command {
     ($module:ident, $app:ident) => {
         $app = $app.subcommand(command::$module::subcommand());
@@ -92,6 +100,8 @@ pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
             .long("config")
             .value_name("CONFIG")
             .help("Path to a Hive expression, a flake.nix, or a Nix Flake URI")
+            .long_help(&CONFIG_HELP)
+            .display_order(HELP_ORDER_FIRST)
 
             // The default value is a lie (sort of)!
             //
@@ -100,7 +110,6 @@ pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
             // or "hive.nix". This behavior is disabled if --config/-f
             // is explicitly supplied by the user (occurrences_of > 0).
             .default_value("hive.nix")
-            .long_help(&CONFIG_HELP)
             .global(true))
         .arg(Arg::with_name("show-trace")
             .long("show-trace")
@@ -115,6 +124,7 @@ pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
 
 It's also possible to specify the preference using environment variables. See <https://bixense.com/clicolors>.
 "#)
+            .display_order(HELP_ORDER_LOW)
             .value_name("WHEN")
             .possible_values(&["auto", "always", "never"])
             .default_value("auto")
