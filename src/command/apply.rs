@@ -128,7 +128,8 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> 
     let targets = hive.select_nodes(filter, ssh_config, goal.requires_target_host()).await?;
     let n_targets = targets.len();
 
-    let mut output = SimpleProgressOutput::new(local_args.is_present("verbose"));
+    let verbose = local_args.is_present("verbose") || goal == Goal::DryActivate;
+    let mut output = SimpleProgressOutput::new(verbose);
     let progress = output.get_sender();
 
     let mut deployment = Deployment::new(hive, targets, goal, progress);
