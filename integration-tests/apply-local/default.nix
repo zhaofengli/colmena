@@ -6,7 +6,7 @@ in tools.makeTest {
   bundle = ./.;
 
   testScript = ''
-    deployer.succeed("cd /tmp/bundle && ${tools.colmenaExec} apply-local -v")
+    deployer.succeed("cd /tmp/bundle && ${tools.colmenaExec} apply-local")
     deployer.succeed("grep SUCCESS /etc/deployment")
   '';
 }

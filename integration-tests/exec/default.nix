@@ -6,7 +6,7 @@ in tools.makeTest {
   bundle = ./.;
 
   testScript = ''
-    logs = deployer.succeed("cd /tmp/bundle && ${tools.colmenaExec} exec -v --on @target -- echo output from '$(hostname)' 2>&1")
+    logs = deployer.succeed("cd /tmp/bundle && ${tools.colmenaExec} exec --on @target -- echo output from '$(hostname)' 2>&1")
 
     assert "output from alpha" in logs
     assert "output from beta" in logs

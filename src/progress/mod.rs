@@ -93,7 +93,9 @@ pub enum LineStyle {
 
 impl SimpleProgressOutput {
     pub fn new(verbose: bool) -> Self {
-        if verbose {
+        let tty = atty::is(atty::Stream::Stdout);
+
+        if verbose || !tty {
             Self::Plain(PlainOutput::new())
         } else {
             Self::Spinner(SpinnerOutput::new())

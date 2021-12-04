@@ -7,10 +7,10 @@ in tools.makeTest {
 
   testScript = ''
     deployer.succeed("cd /tmp/bundle &&" \
-        "${tools.colmenaExec} apply push -v --eval-node-limit 4 --on @target")
+        "${tools.colmenaExec} apply push --eval-node-limit 4 --on @target")
 
     logs = deployer.succeed("cd /tmp/bundle &&" \
-        "run-copy-stderr ${tools.colmenaExec} apply switch -v --eval-node-limit 4 --parallel 4 --on @target")
+        "run-copy-stderr ${tools.colmenaExec} apply switch --eval-node-limit 4 --parallel 4 --on @target")
 
     for node in [alpha, beta, gamma]:
         node.succeed("grep SUCCESS /etc/deployment")
