@@ -119,6 +119,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "clicolors-control"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90082ee5dcdd64dc4e9e0d37fbf3ee325419e39c0092191e0393df65518f741e"
+dependencies = [
+ "atty",
+ "lazy_static",
+ "libc",
+ "winapi",
+]
+
+[[package]]
 name = "colmena"
 version = "0.3.0-pre"
 dependencies = [
@@ -126,6 +138,7 @@ dependencies = [
  "async-trait",
  "atty",
  "clap",
+ "clicolors-control",
  "console 0.13.0",
  "const_format",
  "env_logger",

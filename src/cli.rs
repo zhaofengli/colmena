@@ -1,7 +1,10 @@
 //! Global CLI Setup.
 
+use std::env;
+
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use const_format::concatcp;
+use env_logger::fmt::WriteStyle;
 use lazy_static::lazy_static;
 
 use crate::command;
@@ -104,7 +107,18 @@ pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
             .help("Show debug information for Nix commands")
             .long_help("Passes --show-trace to Nix commands")
             .global(true)
-            .takes_value(false));
+            .takes_value(false))
+        .arg(Arg::with_name("color")
+            .long("color")
+            .help("When to colorize the output")
+            .long_help(r#"When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
+
+It's also possible to specify the preference using environment variables. See <https://bixense.com/clicolors>.
+"#)
+            .value_name("WHEN")
+            .possible_values(&["auto", "always", "never"])
+            .default_value("auto")
+            .global(true));
 
     if include_internal {
         app = app.subcommand(SubCommand::with_name("gen-completions")
@@ -139,6 +153,9 @@ pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
 pub async fn run() {
     let mut app = build_cli(true);
     let matches = app.clone().get_matches();
+
+    set_color_pref(matches.value_of("color").unwrap());
+    init_logging();
 
     handle_command!(apply, matches);
     handle_command!("apply-local", apply_local, matches);
@@ -220,4 +237,30 @@ fn gen_help_markdown() {
         print!("{}", help_html);
         println!("</div></pre>");
     }
+}
+
+fn set_color_pref(cli: &str) {
+    if cli != "auto" {
+        clicolors_control::set_colors_enabled(cli == "always");
+    }
+}
+
+fn init_logging() {
+    if env::var("RUST_LOG").is_err() {
+        // HACK
+        env::set_var("RUST_LOG", "info")
+    }
+
+    // make env_logger conform to our detection logic
+    let style = if clicolors_control::colors_enabled() {
+        WriteStyle::Always
+    } else {
+        WriteStyle::Never
+    };
+
+    env_logger::builder()
+        .format_timestamp(None)
+        .format_module_path(false)
+        .write_style(style)
+        .init();
 }
