@@ -140,9 +140,8 @@ impl Deployment {
                     futures.push(deployment.clone().upload_keys_to_node(meta.clone(), target));
                 }
 
-                let result: NixResult<Vec<()>> = join_all(futures).await.into_iter().collect();
-
-                result?;
+                join_all(futures).await
+                    .into_iter().collect::<NixResult<Vec<()>>>()?;
 
                 Ok(())
             });
@@ -166,9 +165,8 @@ impl Deployment {
                     futures.push(deployment.clone().execute_chunk(meta.clone(), chunk));
                 }
 
-                let result: NixResult<Vec<()>> = join_all(futures).await.into_iter().collect();
-
-                result?;
+                join_all(futures).await
+                    .into_iter().collect::<NixResult<Vec<()>>>()?;
 
                 Ok(())
             });
@@ -233,8 +231,8 @@ impl Deployment {
             futures.push(self.clone().deploy_node(parent.clone(), target, profile.clone()));
         }
 
-        let result: NixResult<Vec<()>> = join_all(futures).await.into_iter().collect();
-        result?;
+        join_all(futures).await
+            .into_iter().collect::<NixResult<Vec<()>>>()?;
 
         // Create GC root
         if self.options.create_gc_roots {

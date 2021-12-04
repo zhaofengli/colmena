@@ -52,7 +52,7 @@
 
     devShell = pkgs.mkShell {
       inputsFrom = [ defaultPackage ];
-      nativeBuildInputs = with pkgs; [ mdbook python3 ];
+      packages = with pkgs; [ clippy mdbook python3 ];
       shellHook = ''
         export NIX_PATH=nixpkgs=${pkgs.path}
       '';
