@@ -1,6 +1,6 @@
 {
   apply = import ./apply;
-  apply-fail = import ./apply-fail;
   apply-local = import ./apply-local;
+  parallel = import ./parallel;
   exec = import ./exec;
 }
