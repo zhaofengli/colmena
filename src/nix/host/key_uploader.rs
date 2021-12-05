@@ -46,7 +46,8 @@ pub async fn feed_uploader(mut uploader: Child, key: &Key, job: Option<JobHandle
         capture_stream(stderr, job.clone(), true),
         uploader.wait(),
     );
-    let (_, _, exit) = futures.await;
+    let (stdout, stderr, exit) = futures.await;
+    stdout?; stderr?;
 
     let exit = exit?;
 

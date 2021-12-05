@@ -58,9 +58,9 @@ impl CommandExecution {
             child.wait(),
         );
 
-        let (stdout_str, stderr_str, wait) = futures.await;
-        self.stdout = Some(stdout_str);
-        self.stderr = Some(stderr_str);
+        let (stdout, stderr, wait) = futures.await;
+        self.stdout = Some(stdout?);
+        self.stderr = Some(stderr?);
 
         let exit = wait?;
 
@@ -173,12 +173,14 @@ fn canonicalize_cli_path(path: &str) -> PathBuf {
     }
 }
 
-pub async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, job: Option<JobHandle>, stderr: bool) -> String {
+pub async fn capture_stream<R>(mut stream: BufReader<R>, job: Option<JobHandle>, stderr: bool) -> NixResult<String>
+    where R: AsyncRead + Unpin
+{
     let mut log = String::new();
 
     loop {
         let mut line = String::new();
-        let len = stream.read_line(&mut line).await.unwrap();
+        let len = stream.read_line(&mut line).await?;
 
         if len == 0 {
             break;
@@ -188,9 +190,9 @@ pub async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, job:
 
         if let Some(job) = &job {
             if stderr {
-                job.stderr(trimmed.to_string()).unwrap();
+                job.stderr(trimmed.to_string())?;
             } else {
-                job.stdout(trimmed.to_string()).unwrap();
+                job.stdout(trimmed.to_string())?;
             }
         }
 
@@ -198,7 +200,7 @@ pub async fn capture_stream<R: AsyncRead + Unpin>(mut stream: BufReader<R>, job:
         log += "\n";
     }
 
-    log
+    Ok(log)
 }
 
 pub fn get_label_width(targets: &TargetNodeMap) -> Option<usize> {
