@@ -61,10 +61,12 @@ let
         ];
       };
 
-      environment.systemPackages = [
+      environment.systemPackages = with pkgs; [
+        git # for git flake tests
+
         # HACK: copy stderr to both stdout and stderr
         # (the test framework only captures stdout, and only stderr appears on screen during the build)
-        (pkgs.writeShellScriptBin "run-copy-stderr" ''
+        (writeShellScriptBin "run-copy-stderr" ''
           exec "$@" 2> >(tee /dev/stderr)
         '')
       ];
