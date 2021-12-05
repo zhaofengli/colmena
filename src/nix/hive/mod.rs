@@ -374,7 +374,8 @@ impl<'hive> NixInstantiate<'hive> {
 
     fn eval(self) -> Command {
         let mut command = self.instantiate();
-        command.arg("--eval").arg("--json");
+        command.arg("--eval").arg("--json")
+            .arg("--read-write-mode"); // For cases involving IFD
         command
     }
 
