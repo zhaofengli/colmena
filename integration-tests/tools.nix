@@ -1,13 +1,21 @@
 # Adapted from the NixOps test in Nixpkgs.
 #
-# We have four nodes: deployer, alpha, beta, gamma.
+# By default, we have four nodes: deployer, alpha, beta, gamma.
 # deployer is where colmena will run.
 #
 # `nixos/lib/build-vms.nix` will generate NixOS configurations
 # for each node, and we need to include those configurations
 # in our Colmena setup as well.
 
-{ insideVm ? false }:
+{ insideVm ? false
+, deployers ? [ "deployer" ]           # Nodes configured as deployers (with Colmena and pre-built system closure)
+, targets ? [ "alpha" "beta" "gamma" ] # Nodes configured as targets (minimal config)
+, prebuiltTarget ? "alpha"             # Target node to prebuild system closure for, or null
+}:
+
+with builtins;
+
+assert elem "deployer" deployers;
 
 let
   lock = builtins.fromJSON (builtins.readFile ../flake.lock);
@@ -16,6 +24,7 @@ let
     sha256 = lock.nodes.nixpkgs.locked.narHash;
   };
   pkgs = import pinned {};
+  inherit (pkgs) lib;
 
   colmena =
     if !insideVm then import ../default.nix { inherit pkgs; }
@@ -29,7 +38,12 @@ let
 
   # Common setup
   nodes = let
-    deployer = { lib, config, ... }: {
+    # Setup for deployer nodes
+    #
+    # We include the input closure of a prebuilt system profile
+    # so it can build system profiles for the targets without
+    # network access.
+    deployerConfig = { lib, config, ... }: {
       nix.nixPath = [
         "nixpkgs=${pkgs.path}"
       ];
@@ -41,8 +55,9 @@ let
         writableStore = true;
         additionalPaths = [
           "${pkgs.path}"
-          prebuiltNode
-          (inputClosureOf prebuiltNode)
+        ] ++ lib.optionals (prebuiltTarget != null) [
+          prebuiltSystem
+          (inputClosureOf prebuiltSystem)
         ];
       };
 
@@ -54,7 +69,11 @@ let
         '')
       ];
     };
-    target = { lib, ... }: {
+
+    # Setup for target nodes
+    #
+    # Kept as minimal as possible.
+    targetConfig = { lib, ... }: {
       nix.binaryCaches = lib.mkForce [];
 
       services.openssh.enable = true;
@@ -63,16 +82,14 @@ let
       ];
       virtualisation.writableStore = true;
     };
-  in {
-    inherit deployer;
-    alpha = target;
-    beta = target;
-    gamma = target;
-  };
 
-  prebuiltNode = let
+    deployerNodes = map (name: lib.nameValuePair name deployerConfig) deployers;
+    targetNodes = map (name: lib.nameValuePair name targetConfig) targets;
+  in listToAttrs (deployerNodes ++ targetNodes);
+
+  prebuiltSystem = let
     all = buildVms.buildVirtualNetwork nodes;
-  in all.alpha.config.system.build.toplevel;
+  in all.${prebuiltTarget}.config.system.build.toplevel;
 
   # Utilities
   getStandaloneConfigFor = node: let
@@ -109,17 +126,20 @@ let
   '';
 
   makeTest = test: let
+    targetList = "[${concatStringsSep ", " targets}]";
+
     fullScript = ''
       start_all()
-
-      deployer.succeed("nix-store -qR ${prebuiltNode}")
+    '' + lib.optionalString (prebuiltTarget != null) ''
+      deployer.succeed("nix-store -qR ${prebuiltSystem}")
+    '' + ''
       deployer.succeed("nix-store -qR ${pkgs.path}")
       deployer.succeed("ln -sf ${pkgs.path} /nixpkgs")
       deployer.succeed("mkdir -p /root/.ssh && touch /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa && cat ${sshKeys.snakeOilPrivateKey} > /root/.ssh/id_rsa")
 
-      for node in [alpha, beta, gamma]:
+      for node in ${targetList}:
           node.wait_for_unit("sshd.service")
-      deployer.succeed("ssh -o StrictHostKeyChecking=accept-new alpha ls")
+          deployer.succeed(f"ssh -o StrictHostKeyChecking=accept-new {node.name} true")
 
       deployer.succeed("cp --no-preserve=mode -r ${bundle} /tmp/bundle && chmod u+w /tmp/bundle")
 
@@ -151,6 +171,6 @@ let
     };
   in pkgs.nixosTest combined;
 in {
-  inherit pkgs nodes colmena colmenaExec prebuiltNode
+  inherit pkgs nodes colmena colmenaExec
     getStandaloneConfigFor inputClosureOf makeTest;
 }

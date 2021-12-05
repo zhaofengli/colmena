@@ -1,5 +1,8 @@
 let
-  tools = import ../tools.nix {};
+  tools = import ../tools.nix {
+    targets = [];
+    prebuiltTarget = "deployer";
+  };
 in tools.makeTest {
   name = "colmena-apply-local";
 

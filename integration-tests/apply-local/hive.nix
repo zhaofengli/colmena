@@ -1,5 +1,9 @@
 let
-  tools = import ./tools.nix { insideVm = true; };
+  tools = import ./tools.nix {
+    insideVm = true;
+    targets = [];
+    prebuiltTarget = "deployer";
+  };
 in {
   meta = {
     nixpkgs = tools.pkgs;
@@ -16,8 +20,4 @@ in {
 
     environment.etc."deployment".text = "SUCCESS";
   };
-
-  alpha = tools.getStandaloneConfigFor "alpha";
-  beta = tools.getStandaloneConfigFor "beta";
-  gamma = tools.getStandaloneConfigFor "gamma";
 }
