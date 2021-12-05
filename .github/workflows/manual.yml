@@ -1,9 +1,13 @@
 name: Manual
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - Build
     branches:
       - main
+    types:
+      - completed
 jobs:
   deploy-unstable:
     runs-on: ubuntu-latest
