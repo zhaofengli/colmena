@@ -9,7 +9,7 @@ Unlike NixOps which can be configured to manage the entire lifecycles of NixOS m
 
 ## `network` vs `meta`
 
-Colmena accepts [a set of options](/reference/meta.md) to configure the deployment itself as `meta`.
+Colmena accepts [a set of options](../reference/meta.md) to configure the deployment itself as `meta`.
 For NixOps compatibility, it also accepts `network` as an alias so you don't have to change your existing configuration.
 
 ## Pinning Nixpkgs
