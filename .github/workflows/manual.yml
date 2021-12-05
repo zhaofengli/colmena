@@ -22,17 +22,13 @@ jobs:
 
       # == Manual
       - name: Build manual
-        run: nix build -o out .#manual -L
-
-      # Ugly hack so it has permission to delete the worktree afterwards
-      - name: Copy manual
-        run: cp --no-preserve=mode -r out/ public/
+        run: nix build .#manual -L
 
       - name: Deploy manual
-        uses: JamesIves/github-pages-deploy-action@4.1.5
+        uses: JamesIves/github-pages-deploy-action@4.1.6
         with:
           branch: gh-pages
-          folder: public
+          folder: result
           target-folder: unstable
 
       # == Redirect Farm
@@ -41,15 +37,11 @@ jobs:
         run: echo "api_version=$(nix eval .#colmena.apiVersion)" >> $GITHUB_ENV
 
       - name: Build redirect farm
-        run: nix build -o out .#manual.redirectFarm -L
-
-      # Ugly hack so it has permission to delete the worktree afterwards
-      - name: Copy redirect farm
-        run: cp --no-preserve=mode -r out-redirectFarm/ redirect-farm/
+        run: nix build .#manual.redirectFarm -L
 
       - name: Deploy redirect farm
-        uses: JamesIves/github-pages-deploy-action@4.1.5
+        uses: JamesIves/github-pages-deploy-action@4.1.6
         with:
           branch: gh-pages
-          folder: redirect-farm
+          folder: result-redirectFarm
           target-folder: '${{ env.api_version }}'

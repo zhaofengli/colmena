@@ -1,14 +1,15 @@
+# This is the workflow file to deploy the user manual for
+# the next stable release. For the one that is currently in
+# effect, check the release branches (e.g., release-0.2.x).
+
 name: Manual (Stable)
 
 on:
   push:
     branches:
-      - "release-0.2.x"
+      - "release-0.3.x"
 jobs:
   deploy:
-    env:
-      LATEST_STABLE_API: 0.2
-
     runs-on: ubuntu-latest
 
     steps:
@@ -26,37 +27,31 @@ jobs:
       - name: Check API version
         run: echo "api_version=$(nix eval .#colmena.apiVersion | sed 's|\"||g')" >> $GITHUB_ENV
 
+      - name: Check latest stable API version
+        run: echo "latest_stable_api=$(curl -L https://raw.githubusercontent.com/zhaofengli/colmena/main/.github/latest_stable_api)" >> $GITHUB_ENV
+
       # == Manual
       - name: Build manual
-        run: nix build -o out .#manual -L
-
-      # Ugly hack so it has permission to delete the worktree afterwards
-      - name: Copy manual
-        run: cp --no-preserve=mode -r out/ public/
+        run: nix build .#manual -L
 
       - name: Deploy manual
-        uses: JamesIves/github-pages-deploy-action@4.1.5
+        uses: JamesIves/github-pages-deploy-action@4.1.6
         with:
           branch: gh-pages
-          folder: public
+          folder: result
           target-folder: '${{ env.api_version }}'
 
       # == Redirect Farm for Latest Stable
       # /stable -> /api_version
 
       - name: Build redirect farm
-        run: nix build -o out .#manual.redirectFarm -L
-        if: ${{ env.api_version == env.LATEST_STABLE_API }}
-
-      # Ugly hack so it has permission to delete the worktree afterwards
-      - name: Copy redirect farm
-        run: cp --no-preserve=mode -r out-redirectFarm/ redirect-farm/
-        if: ${{ env.api_version == env.LATEST_STABLE_API }}
+        run: nix build .#manual.redirectFarm -L
+        if: ${{ env.api_version == env.latest_stable_api }}
 
       - name: Deploy redirect farm
-        uses: JamesIves/github-pages-deploy-action@4.1.5
+        uses: JamesIves/github-pages-deploy-action@4.1.6
         with:
           branch: gh-pages
-          folder: redirect-farm
+          folder: result-redirectFarm
           target-folder: stable
-        if: ${{ env.api_version == env.LATEST_STABLE_API }}
+        if: ${{ env.api_version == env.latest_stable_api }}
