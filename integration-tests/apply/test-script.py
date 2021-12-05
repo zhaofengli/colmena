@@ -32,6 +32,7 @@ with subtest("Check that the new configurations are indeed applied"):
 
 with subtest("Check that key files have correct contents"):
     contents = {
+        "/run/keys/custom-name":            poison,
         "/run/keys/key-text":               poison,
         "/tmp/another-key-dir/key-command": "deployer",
         "/tmp/another-key-dir/key-file":    poison,
@@ -46,6 +47,7 @@ with subtest("Check that key files have correct contents"):
 
 with subtest("Check that key files have correct permissions"):
     permissions = {
+        "/run/keys/custom-name":            "600 root root",
         "/run/keys/key-text":               "600 root root",
         "/tmp/another-key-dir/key-command": "600 root root",
         "/tmp/another-key-dir/key-file":    "600 root root",

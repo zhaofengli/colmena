@@ -16,7 +16,7 @@ let
 
   # Hive-wide options
   metaOptions = { lib, ... }: let
-    types = lib.types;
+    inherit (lib) types;
   in {
     options = {
       name = lib.mkOption {
@@ -89,7 +89,7 @@ let
   #
   # Largely compatible with NixOps/Morph.
   deploymentOptions = { name, lib, ... }: let
-    types = lib.types;
+    inherit (lib) types;
   in {
     options = {
       deployment = {
@@ -187,10 +187,17 @@ let
     };
   };
 
-  keyType = { lib, ... }: let
-    types = lib.types;
+  keyType = { lib, name, ... }: let
+    inherit (lib) types;
   in {
     options = {
+      name = lib.mkOption {
+        description = ''
+          File name of the key.
+        '';
+        default = name;
+        type = types.str;
+      };
       text = lib.mkOption {
         description = ''
           Content of the key.

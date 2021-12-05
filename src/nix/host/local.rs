@@ -106,8 +106,8 @@ impl Local {
             job.message(format!("Deploying key {}", name))?;
         }
 
-        let dest_path = key.dest_dir().join(name);
-        let key_script = format!("'{}'", key_uploader::generate_script(key, &dest_path, require_ownership));
+        let path = key.path();
+        let key_script = format!("'{}'", key_uploader::generate_script(key, &path, require_ownership));
 
         let mut command = Command::new("sh");
 

@@ -229,8 +229,8 @@ impl Ssh {
             job.message(format!("Uploading key {}", name))?;
         }
 
-        let dest_path = key.dest_dir().join(name);
-        let key_script = key_uploader::generate_script(key, &dest_path, require_ownership);
+        let path = key.path();
+        let key_script = key_uploader::generate_script(key, &path, require_ownership);
 
         let mut command = self.ssh(&["sh", "-c", &key_script]);
 

@@ -22,11 +22,15 @@ in {
     };
     users.groups.testgroup = {};
 
+    # /run/keys/custom-name
+    deployment.keys.original-name = {
+      name = "custom-name";
+      text = "@poison@";
+    };
+
     # /run/keys/key-text
     deployment.keys.key-text = {
-      text = ''
-        @poison@
-      '';
+      text = "@poison@";
     };
 
     # /tmp/another-key-dir/key-command
