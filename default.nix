@@ -38,7 +38,7 @@ in rustPlatform.buildRustPackage rec {
 
   meta = with lib; {
     description = "A simple, stateless NixOS deployment tool";
-    homepage = "https://zhaofengli.github.io/colmena/${apiVersion}";
+    homepage = "https://zhaofengli.github.io/colmena/${passthru.apiVersion}";
     license = licenses.mit;
     maintainers = with maintainers; [ zhaofengli ];
     platforms = platforms.linux;

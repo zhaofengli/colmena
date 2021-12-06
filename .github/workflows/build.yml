@@ -35,8 +35,8 @@ jobs:
         run: nix build -L
         if: ${{ !contains(matrix.nix.name, '2.3') }}
 
-      - name: Build Colmena with flake-compat
-        run: nix-build
+      - name: Build and install Colmena with flake-compat
+        run: nix-env -if default.nix
 
       - name: Build manual
         run: nix build .#manual -L
