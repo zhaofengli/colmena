@@ -12,7 +12,8 @@
   };
 
   outputs = { self, nixpkgs, utils, ... }: let
-    supportedSystems = utils.lib.defaultSystems;
+    # We aren't testing against Darwin at the moment
+    supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" ];
   in utils.lib.eachSystem supportedSystems (system: let
     pkgs = import nixpkgs { inherit system; };
   in rec {
