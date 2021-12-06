@@ -7,13 +7,10 @@ let
 in {
   pkgs ? lockedPkgs,
 }: let
-  inherit (pkgs) lib stdenv rustPlatform;
+  inherit (pkgs) lib stdenv rustPlatform installShellFiles;
 in rustPlatform.buildRustPackage rec {
   pname = "colmena";
   version = "0.3.0-pre";
-
-  # We guarantee CLI and Nix API stability for the same minor version
-  apiVersion = builtins.concatStringsSep "." (lib.take 2 (lib.splitString "." version));
 
   src = lib.cleanSourceWith {
     filter = name: type: !(type == "directory" && builtins.elem (baseNameOf name) [ "target" "manual" "integration-tests" ]);
@@ -22,25 +19,28 @@ in rustPlatform.buildRustPackage rec {
 
   cargoSha256 = "sha256-YE+0jsdkzRaiUhPC71WBe/KcYERNy7nME26+ejrPRlc=";
 
-  postInstall = lib.optionalString (stdenv.hostPlatform == stdenv.buildPlatform) ''
-    mkdir completions
-    for shell in bash fish zsh; do
-      $out/bin/colmena gen-completions $shell > completions/$shell
-    done
+  nativeBuildInputs = [ installShellFiles ];
 
-    mkdir -p "$out/share/"{bash-completion/completions,fish/vendor_completions.d,zsh/site-functions}
-    cp completions/bash $out/share/bash-completion/completions/colmena
-    cp completions/fish $out/share/fish/vendor_completions.d/colmena.fish
-    cp completions/zsh $out/share/zsh/site-functions/_colmena
+  postInstall = lib.optionalString (stdenv.hostPlatform == stdenv.buildPlatform) ''
+    installShellCompletion --cmd colmena \
+      --bash <($out/bin/colmena gen-completions bash) \
+      --zsh <($out/bin/colmena gen-completions zsh) \
+      --fish <($out/bin/colmena gen-completions fish)
   '';
 
   # Recursive Nix is not stable yet
   doCheck = false;
+
+  passthru = {
+    # We guarantee CLI and Nix API stability for the same minor version
+    apiVersion = builtins.concatStringsSep "." (lib.take 2 (lib.splitString "." version));
+  };
 
   meta = with lib; {
     description = "A simple, stateless NixOS deployment tool";
     homepage = "https://zhaofengli.github.io/colmena/${apiVersion}";
     license = licenses.mit;
     maintainers = with maintainers; [ zhaofengli ];
+    platforms = platforms.linux;
   };
 }
