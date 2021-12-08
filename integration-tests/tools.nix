@@ -11,6 +11,9 @@
 , deployers ? [ "deployer" ]           # Nodes configured as deployers (with Colmena and pre-built system closure)
 , targets ? [ "alpha" "beta" "gamma" ] # Nodes configured as targets (minimal config)
 , prebuiltTarget ? "alpha"             # Target node to prebuild system closure for, or null
+
+, pkgs ? if insideVm then import <nixpkgs> {} else throw "Must specify pkgs"
+, colmena ? if !insideVm then pkgs.colmena else throw "Cannot eval inside VM"
 }:
 
 with builtins;
@@ -18,17 +21,8 @@ with builtins;
 assert elem "deployer" deployers;
 
 let
-  lock = builtins.fromJSON (builtins.readFile ../flake.lock);
-  pinned = if insideVm then <nixpkgs> else fetchTarball {
-    url = "https://github.com/NixOS/nixpkgs/archive/${lock.nodes.nixpkgs.locked.rev}.tar.gz";
-    sha256 = lock.nodes.nixpkgs.locked.narHash;
-  };
-  pkgs = import pinned {};
   inherit (pkgs) lib;
 
-  colmena =
-    if !insideVm then import ../default.nix { inherit pkgs; }
-    else throw "Cannot be used inside the VM";
   colmenaExec = "${colmena}/bin/colmena";
 
   sshKeys = import (pkgs.path + "/nixos/tests/ssh-keys.nix") pkgs;

@@ -1,5 +1,7 @@
+{ pkgs ? import ../nixpkgs.nix }:
+
 let
-  tools = import ../tools.nix {};
+  tools = pkgs.callPackage ../tools.nix {};
 in tools.makeTest {
   name = "colmena-parallel";
 

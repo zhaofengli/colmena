@@ -22,9 +22,8 @@ with subtest("Check that activation messages were logged correctly"):
     assert "must appear during activation" in logs
 
 with subtest("Check that we can still connect to the target nodes"):
-    deployer.succeed("ssh alpha true")
-    deployer.succeed("ssh beta true")
-    deployer.succeed("ssh gamma true")
+    for node in targets:
+        deployer.succeed(f"ssh {node.name} true")
 
 with subtest("Check that the new configurations are indeed applied"):
     for node in targets:

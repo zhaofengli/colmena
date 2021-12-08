@@ -1,5 +1,7 @@
+{ pkgs ? import ../nixpkgs.nix }:
+
 let
-  tools = import ../tools.nix {
+  tools = pkgs.callPackage ../tools.nix {
     targets = [];
     prebuiltTarget = "deployer";
   };
