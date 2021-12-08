@@ -11,12 +11,12 @@ use validator::Validate;
 
 use super::{
     Flake,
-    StoreDerivation,
     NixResult,
     NodeName,
     NodeConfig,
     NodeFilter,
-    ProfileMap,
+    ProfileDerivation,
+    StorePath,
 };
 use super::deployment::TargetNode;
 use super::NixCommand;
@@ -250,20 +250,24 @@ impl Hive {
     /// Evaluation may take up a lot of memory, so we make it possible
     /// to split up the evaluation process into chunks and run them
     /// concurrently with other processes (e.g., build and apply).
-    pub async fn eval_selected(&self, nodes: &[NodeName], job: Option<JobHandle>) -> NixResult<StoreDerivation<ProfileMap>> {
+    pub async fn eval_selected(&self, nodes: &[NodeName], job: Option<JobHandle>) -> NixResult<HashMap<NodeName, ProfileDerivation>> {
         let nodes_expr = SerializedNixExpresssion::new(nodes)?;
 
-        let expr = format!("hive.buildSelected {}", nodes_expr.expression());
+        let expr = format!("hive.evalSelected {}", nodes_expr.expression());
 
-        let command = self.nix_instantiate(&expr).instantiate_with_builders().await?;
+        let command = self.nix_instantiate(&expr)
+            .eval_with_builders().await?;
         let mut execution = CommandExecution::new(command);
         execution.set_job(job);
+        execution.set_hide_stdout(true);
 
-        let path = execution.capture_store_path().await?;
-        let drv = path.into_derivation()
-            .expect("The result should be a store derivation");
-
-        Ok(drv)
+        execution
+            .capture_json::<HashMap<NodeName, StorePath>>().await?
+            .into_iter().map(|(name, path)| {
+                let path = path.into_derivation()?;
+                Ok((name, path))
+            })
+            .collect()
     }
 
     /// Evaluates an expression using values from the configuration
@@ -374,8 +378,10 @@ impl<'hive> NixInstantiate<'hive> {
 
     fn eval(self) -> Command {
         let mut command = self.instantiate();
-        command.arg("--eval").arg("--json")
-            .arg("--read-write-mode"); // For cases involving IFD
+        command.arg("--eval").arg("--json").arg("--strict")
+            // Ensures the derivations are instantiated
+            // Required for system profile evaluation and IFD
+            .arg("--read-write-mode");
         command
     }
 

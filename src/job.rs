@@ -13,7 +13,7 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tokio::time;
 use uuid::Uuid;
 
-use crate::nix::{NixResult, NixError, NodeName, ProfileMap};
+use crate::nix::{NixResult, NixError, NodeName};
 use crate::progress::{Sender as ProgressSender, Message as ProgressMessage, Line, LineStyle};
 
 pub type Sender = UnboundedSender<Event>;
@@ -208,9 +208,6 @@ pub enum EventPayload {
     /// The job wants to transition to a new state.
     NewState(JobState),
 
-    /// The job built a set of system profiles.
-    ProfilesBuilt(ProfileMap),
-
     /// The child process printed a line to stdout.
     ChildStdout(String),
 
@@ -346,19 +343,6 @@ impl JobMonitor {
 
                     if message.job_id != self.meta_job_id {
                         self.print_job_stats();
-                    }
-                }
-                EventPayload::ProfilesBuilt(profiles) => {
-                    if let Some(sender) = &self.progress {
-                        for (name, profile) in profiles.iter() {
-                            let text = format!("Built {:?}", profile.as_path());
-                            let line = Line::new(message.job_id, text)
-                                .label(name.as_str().to_string())
-                                .one_off()
-                                .style(LineStyle::Success);
-                            let pm = self.get_print_message(message.job_id, line);
-                            sender.send(pm).unwrap();
-                        }
                     }
                 }
                 EventPayload::ChildStdout(m) | EventPayload::ChildStderr(m) | EventPayload::Message(m) => {
@@ -598,11 +582,6 @@ impl JobHandleInner {
         self.send_payload(EventPayload::Failure(error.to_string()))
     }
 
-    /// Sends a set of built profiles.
-    pub fn profiles_built(&self, profiles: ProfileMap) -> NixResult<()> {
-        self.send_payload(EventPayload::ProfilesBuilt(profiles))
-    }
-
     /// Runs a closure, automatically updating the job monitor based on the result.
     async fn run_internal<F, U, T>(self: Arc<Self>, f: U, report_running: bool) -> NixResult<T>
         where U: FnOnce(Arc<Self>) -> F,
@@ -788,7 +767,6 @@ impl Display for EventPayload {
             EventPayload::Noop(m)               => write!(f, "    noop) {}", m)?,
             EventPayload::Failure(e)            => write!(f, " failure) {}", e)?,
             EventPayload::ShutdownMonitor       => write!(f, "shutdown)")?,
-            EventPayload::ProfilesBuilt(pm)     => write!(f, "   built) {:?}", pm)?,
         }
 
         Ok(())

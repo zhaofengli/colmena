@@ -1,7 +1,4 @@
-use std::collections::HashMap;
 use std::convert::TryFrom;
-use std::fs;
-use std::ops::{Deref, DerefMut};
 use std::path::Path;
 use std::process::Stdio;
 
@@ -11,9 +8,11 @@ use super::{
     Goal,
     NixResult,
     NixError,
-    NodeName,
     StorePath,
+    StoreDerivation,
 };
+
+pub type ProfileDerivation = StoreDerivation<Profile>;
 
 /// A NixOS system profile.
 #[derive(Clone, Debug)]
@@ -61,80 +60,40 @@ impl Profile {
     pub fn as_path(&self) -> &Path {
         self.0.as_path()
     }
-}
 
-/// A map of names to their associated NixOS system profiles.
-#[derive(Debug, Clone)]
-pub struct ProfileMap(HashMap<NodeName, Profile>);
+    /// Create a GC root for this profile.
+    pub async fn create_gc_root(&self, path: &Path) -> NixResult<()> {
+        let mut command = Command::new("nix-store");
+        command.args(&["--no-build-output", "--indirect", "--add-root", path.to_str().unwrap()]);
+        command.args(&["--realise", self.as_path().to_str().unwrap()]);
+        command.stdout(Stdio::null());
 
-impl Deref for ProfileMap {
-    type Target = HashMap<NodeName, Profile>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for ProfileMap {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
-    }
-}
-
-impl TryFrom<Vec<StorePath>> for ProfileMap {
-    type Error = NixError;
-
-    fn try_from(paths: Vec<StorePath>) -> NixResult<Self> {
-        match paths.len() {
-            0 => Err(NixError::BadOutput {
-                output: String::from("Build produced no outputs"),
-            }),
-            l if l > 1 => Err(NixError::BadOutput {
-                output: String::from("Build produced multiple outputs"),
-            }),
-            _ => {
-                // We expect a JSON file containing a
-                // HashMap<String, StorePath>
-
-                let path = paths[0].as_path();
-                let json: String = fs::read_to_string(path)?;
-                let mut raw_map: HashMap<NodeName, StorePath> = serde_json::from_str(&json).map_err(|_| NixError::BadOutput {
-                    output: String::from("The returned profile map is invalid"),
-                })?;
-
-                let mut checked_map = HashMap::new();
-                for (node, profile) in raw_map.drain() {
-                    let profile = Profile::from_store_path(profile)?;
-                    checked_map.insert(node, profile);
-                }
-
-                Ok(Self(checked_map))
-            }
-        }
-    }
-}
-
-impl ProfileMap {
-    /// Create GC roots for all profiles in the map.
-    ///
-    /// The created links will be located at `{base}/node-{node_name}`.
-    pub async fn create_gc_roots(&self, base: &Path) -> NixResult<()> {
-        // This will actually try to build all profiles, but since they
-        // already exist only the GC roots will be created.
-        for (node, profile) in self.0.iter() {
-            let path = base.join(format!("node-{}", node.as_str()));
-
-            let mut command = Command::new("nix-store");
-            command.args(&["--no-build-output", "--indirect", "--add-root", path.to_str().unwrap()]);
-            command.args(&["--realise", profile.as_path().to_str().unwrap()]);
-            command.stdout(Stdio::null());
-
-            let status = command.status().await?;
-            if !status.success() {
-                return Err(status.into());
-            }
+        let status = command.status().await?;
+        if !status.success() {
+            return Err(status.into());
         }
 
         Ok(())
+    }
+}
+
+impl TryFrom<Vec<StorePath>> for Profile {
+    type Error = NixError;
+
+    fn try_from(paths: Vec<StorePath>) -> NixResult<Self> {
+        if paths.is_empty() {
+            return Err(NixError::BadOutput {
+                output: String::from("There is no store path"),
+            });
+        }
+
+        if paths.len() > 1 {
+            return Err(NixError::BadOutput {
+                output: String::from("Build resulted in more than 1 store path"),
+            });
+        }
+
+        let path = paths.into_iter().next().unwrap();
+        Self::from_store_path(path)
     }
 }

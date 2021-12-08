@@ -135,15 +135,6 @@ impl Line {
         }
     }
 
-    /// Builder-like interface to set the line as an one-off output.
-    ///
-    /// For SpinnerOutput, this will create a new bar that immediately
-    /// finishes with the style (success or failure).
-    pub fn one_off(mut self) -> Self {
-        self.one_off = true;
-        self
-    }
-
     /// Builder-like interface to set the line as noisy.
     pub fn noisy(mut self) -> Self {
         self.noisy = true;

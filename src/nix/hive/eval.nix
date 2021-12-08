@@ -460,19 +460,11 @@ let
   deploymentConfigJsonSelected = names: toJSON
     (listToAttrs (map (name: { inherit name; value = nodes.${name}.config.deployment; }) names));
 
-  buildAll = buildSelected nodeNames;
-  buildSelected = names: let
-    # Change in the order of the names should not cause a derivation to be created
-    selected = lib.attrsets.filterAttrs (name: _: elem name names) toplevel;
-  in derivation rec {
-    name = "colmena-${hive.meta.name}";
-    system = currentSystem;
-    json = toJSON (lib.attrsets.mapAttrs (k: v: toString v) selected);
-    builder = pkgs.writeScript "${name}.sh" ''
-      #!/bin/sh
-      echo "$json" > $out
-    '';
-  };
+  evalAll = evalSelected nodeNames;
+  evalSelected = names: let
+    selected = lib.filterAttrs (name: _: elem name names) toplevel;
+    drvs = lib.mapAttrs (k: v: v.drvPath) selected;
+  in drvs;
 
   introspect = function: function {
     inherit pkgs lib nodes;
@@ -481,7 +473,7 @@ in {
   inherit
     nodes toplevel
     deploymentConfigJson deploymentConfigJsonSelected
-    buildAll buildSelected introspect;
+    evalAll evalSelected introspect;
 
   meta = hive.meta;
 

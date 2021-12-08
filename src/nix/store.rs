@@ -5,8 +5,9 @@ use std::ops::Deref;
 use std::fmt;
 
 use serde::{Serialize, Deserialize};
+use tokio::process::Command;
 
-use super::{Host, NixResult, NixError};
+use super::{Host, NixCommand, NixResult, NixError};
 
 /// A Nix store path.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,12 +28,24 @@ impl StorePath {
         }
     }
 
+    /// Returns the immediate dependencies of the store path.
+    pub async fn references(&self) -> NixResult<Vec<StorePath>> {
+        let references = Command::new("nix-store")
+            .args(&["--query", "--references"])
+            .arg(&self.0)
+            .capture_output().await?
+            .trim_end().split('\n')
+            .map(|p| StorePath(PathBuf::from(p))).collect();
+
+        Ok(references)
+    }
+
     /// Converts the store path into a store derivation.
-    pub fn into_derivation<T: TryFrom<Vec<StorePath>>>(self) -> Option<StoreDerivation<T>> {
+    pub fn into_derivation<T: TryFrom<Vec<StorePath>>>(self) -> NixResult<StoreDerivation<T>> {
         if self.is_derivation() {
-            Some(StoreDerivation::<T>::from_store_path_unchecked(self))
+            Ok(StoreDerivation::<T>::from_store_path_unchecked(self))
         } else {
-            None
+            Err(NixError::NotADerivation { store_path: self })
         }
     }
 }
@@ -64,6 +77,7 @@ impl From<StorePath> for PathBuf {
 }
 
 /// A store derivation (.drv) that will result in a T when built.
+#[derive(Debug, Clone)]
 pub struct StoreDerivation<T: TryFrom<Vec<StorePath>>>{
     path: StorePath,
     _target: PhantomData<T>,

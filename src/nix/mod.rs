@@ -30,7 +30,7 @@ pub mod key;
 pub use key::Key;
 
 pub mod profile;
-pub use profile::{Profile, ProfileMap};
+pub use profile::{Profile, ProfileDerivation};
 
 pub mod deployment;
 pub use deployment::Goal;
@@ -77,6 +77,9 @@ pub enum NixError {
 
     #[snafu(display("Failed to upload keys: {}", error))]
     KeyError { error: key::KeyError },
+
+    #[snafu(display("Store path {:?} is not a derivation", store_path))]
+    NotADerivation { store_path: StorePath },
 
     #[snafu(display("Invalid NixOS system profile"))]
     InvalidProfile,

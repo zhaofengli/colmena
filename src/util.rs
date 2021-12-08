@@ -14,6 +14,7 @@ use super::job::JobHandle;
 pub struct CommandExecution {
     command: Command,
     job: Option<JobHandle>,
+    hide_stdout: bool,
     stdout: Option<String>,
     stderr: Option<String>,
 }
@@ -23,6 +24,7 @@ impl CommandExecution {
         Self {
             command,
             job: None,
+            hide_stdout: false,
             stdout: None,
             stderr: None,
         }
@@ -31,6 +33,11 @@ impl CommandExecution {
     /// Sets the job associated with this execution.
     pub fn set_job(&mut self, job: Option<JobHandle>) {
         self.job = job;
+    }
+
+    /// Sets whether to hide stdout.
+    pub fn set_hide_stdout(&mut self, hide_stdout: bool) {
+        self.hide_stdout = hide_stdout;
     }
 
     /// Returns logs from the last invocation.
@@ -52,8 +59,10 @@ impl CommandExecution {
         let stdout = BufReader::new(child.stdout.take().unwrap());
         let stderr = BufReader::new(child.stderr.take().unwrap());
 
+        let stdout_job = if self.hide_stdout { None } else { self.job.clone() };
+
         let futures = join3(
-            capture_stream(stdout, self.job.clone(), false),
+            capture_stream(stdout, stdout_job, false),
             capture_stream(stderr, self.job.clone(), true),
             child.wait(),
         );

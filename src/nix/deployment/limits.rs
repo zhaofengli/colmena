@@ -14,9 +14,6 @@ pub struct ParallelismLimit {
     /// Limit of concurrent evaluation processes.
     pub evaluation: Semaphore,
 
-    /// Limit of concurrent build processes.
-    pub build: Semaphore,
-
     /// Limit of concurrent apply processes.
     pub apply: Semaphore,
 }
@@ -25,7 +22,6 @@ impl Default for ParallelismLimit {
     fn default() -> Self {
         Self {
             evaluation: Semaphore::new(1),
-            build: Semaphore::new(2),
             apply: Semaphore::new(10),
         }
     }
