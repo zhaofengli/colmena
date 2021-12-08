@@ -5,13 +5,9 @@
 name: Manual (Stable)
 
 on:
-  workflow_run:
-    workflows:
-      - Build
+  push:
     branches:
       - release-0.3.x
-    types:
-      - completed
 jobs:
   deploy:
     runs-on: ubuntu-latest
