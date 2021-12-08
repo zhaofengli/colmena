@@ -455,10 +455,10 @@ let
 
   toplevel = lib.mapAttrs (name: eval: eval.config.system.build.toplevel) nodes;
 
-  deploymentConfigJson = toJSON (lib.mapAttrs (name: eval: eval.config.deployment) nodes);
+  deploymentConfig = lib.mapAttrs (name: eval: eval.config.deployment) nodes;
 
-  deploymentConfigJsonSelected = names: toJSON
-    (listToAttrs (map (name: { inherit name; value = nodes.${name}.config.deployment; }) names));
+  deploymentConfigSelected = names:
+    listToAttrs (map (name: { inherit name; value = nodes.${name}.config.deployment; }) names);
 
   evalAll = evalSelected nodeNames;
   evalSelected = names: let
@@ -472,7 +472,7 @@ let
 in {
   inherit
     nodes toplevel
-    deploymentConfigJson deploymentConfigJsonSelected
+    deploymentConfig deploymentConfigSelected
     evalAll evalSelected introspect;
 
   meta = hive.meta;

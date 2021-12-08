@@ -202,11 +202,9 @@ impl Hive {
 
     /// Retrieve deployment info for all nodes.
     pub async fn deployment_info(&self) -> NixResult<HashMap<NodeName, NodeConfig>> {
-        // FIXME: Really ugly :(
-        let s: String = self.nix_instantiate("hive.deploymentConfigJson").eval_with_builders().await?
+        let configs: HashMap<NodeName, NodeConfig> = self.nix_instantiate("hive.deploymentConfig").eval_with_builders().await?
             .capture_json().await?;
 
-        let configs: HashMap<NodeName, NodeConfig> = serde_json::from_str(&s).unwrap();
         for config in configs.values() {
             config.validate()?;
             for key in config.keys.values() {
@@ -229,12 +227,10 @@ impl Hive {
     pub async fn deployment_info_selected(&self, nodes: &[NodeName]) -> NixResult<HashMap<NodeName, NodeConfig>> {
         let nodes_expr = SerializedNixExpresssion::new(nodes)?;
 
-        // FIXME: Really ugly :(
-        let s: String = self.nix_instantiate(&format!("hive.deploymentConfigJsonSelected {}", nodes_expr.expression()))
+        let configs: HashMap<NodeName, NodeConfig> = self.nix_instantiate(&format!("hive.deploymentConfigSelected {}", nodes_expr.expression()))
             .eval_with_builders().await?
             .capture_json().await?;
 
-        let configs: HashMap<NodeName, NodeConfig> = serde_json::from_str(&s).unwrap();
         for config in configs.values() {
             config.validate()?;
             for key in config.keys.values() {
