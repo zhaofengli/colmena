@@ -25,15 +25,17 @@ $ <b>colmena apply --on @tag-a</b>
 
 ## Installation
 
-To install the latest stable version to the user profile, use the following command:
+`colmena` is included in Nixpkgs beginning with 21.11.
+
+Use the following command to enter a shell environment with the `colmena` command:
 
 ```bash
-nix-env -if https://github.com/zhaofengli/colmena/tarball/stable
+nix-shell -p colmena
 ```
 
 ### Unstable Version
 
-To install the latest development version:
+To install the latest development version to your user profile:
 
 ```bash
 nix-env -if https://github.com/zhaofengli/colmena/tarball/main

@@ -4,10 +4,12 @@
 
 <!-- STABLE_BEGIN -->
 
-To install the latest stable version to the user profile, use the following command:
+`colmena` is included in Nixpkgs beginning with 21.11.
+
+For this tutorial, use the following command to enter an ephemeral environment with the `colmena` command:
 
 ```bash
-nix-env -if https://github.com/zhaofengli/colmena/tarball/stable
+nix-shell -p colmena
 ```
 
 If you are interested in trying out the bleeding-edge version of Colmena, Read [the unstable version](https://zhaofengli.github.io/colmena/unstable) of the Manual for instructions.
