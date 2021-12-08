@@ -7,7 +7,7 @@ deployer.succeed(f"sed -i 's|@poison@|{poison}|g' /tmp/bundle/hive.nix")
 targets = [alpha, beta, gamma]
 
 logs = deployer.succeed("cd /tmp/bundle &&" \
-    f"run-copy-stderr {colmena} apply --eval-node-limit 4 --on @target")
+    f"run-copy-stderr {colmena} apply --eval-node-limit 4 --on @target --keep-result")
 
 with subtest("Check that evaluation messages were logged correctly"):
     assert "must appear during evaluation" in logs
@@ -20,6 +20,12 @@ with subtest("Check that push messages were logged correctly"):
 
 with subtest("Check that activation messages were logged correctly"):
     assert "must appear during activation" in logs
+
+with subtest("Check that GC roots are created correctly"):
+    for node in targets:
+        profile = node.succeed("readlink /run/current-system")
+        gcroot = deployer.succeed(f"readlink /tmp/bundle/.gcroots/node-{node.name}")
+        assert gcroot == profile
 
 with subtest("Check that we can still connect to the target nodes"):
     for node in targets:
