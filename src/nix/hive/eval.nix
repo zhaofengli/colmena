@@ -428,6 +428,8 @@ let
       system.activationScripts.colmena-chown-keys = lib.mkIf (length commands != 0) script;
     };
   in evalConfig {
+    inherit (npkgs) system;
+
     modules = [
       assertionModule
       nixpkgsModule

@@ -268,6 +268,22 @@ fn test_eval_non_existent_pkg() {
 // Nixpkgs config tests
 
 #[test]
+fn test_nixpkgs_system() {
+    TempHive::valid(r#"
+      {
+        meta = {
+          nixpkgs = import <nixpkgs> {
+            system = "armv5tel-linux";
+          };
+        };
+        test = { pkgs, ... }: {
+          boot.isContainer = assert pkgs.system == "armv5tel-linux"; true;
+        };
+      }
+    "#);
+}
+
+#[test]
 fn test_nixpkgs_overlay_meta_nixpkgs() {
     // Only set overlays in meta.nixpkgs
     TempHive::eval_success(r#"
