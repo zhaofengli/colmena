@@ -44,9 +44,6 @@ pub use flake::Flake;
 pub mod node_filter;
 pub use node_filter::NodeFilter;
 
-#[cfg(test)]
-mod tests;
-
 pub const SYSTEM_PROFILE: &str = "/nix/var/nix/profiles/system";
 
 pub type NixResult<T> = Result<T, NixError>;

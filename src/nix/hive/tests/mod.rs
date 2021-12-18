@@ -154,7 +154,7 @@ fn test_parse_simple() {
 
 #[test]
 fn test_parse_flake() {
-    let flake_dir = PathBuf::from("./src/nix/tests/simple-flake");
+    let flake_dir = PathBuf::from("./src/nix/hive/tests/simple-flake");
     let flake = block_on(Flake::from_dir(flake_dir)).unwrap();
 
     let hive_path = HivePath::Flake(flake);

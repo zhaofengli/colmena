@@ -23,6 +23,9 @@ use super::NixCommand;
 use crate::util::CommandExecution;
 use crate::job::JobHandle;
 
+#[cfg(test)]
+mod tests;
+
 const HIVE_EVAL: &[u8] = include_bytes!("eval.nix");
 
 #[derive(Debug)]
