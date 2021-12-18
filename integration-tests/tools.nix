@@ -139,9 +139,9 @@ let
 
       deployer.succeed("cp --no-preserve=mode -r ${bundle} /tmp/bundle && chmod u+w /tmp/bundle")
 
-      orig_store_paths = set(deployer.succeed("ls /nix/store | sort").strip().split("\n"))
+      orig_store_paths = set(deployer.succeed("ls /nix/store").strip().split("\n"))
       def get_new_store_paths():
-          cur_store_paths = set(deployer.succeed("ls /nix/store | sort").strip().split("\n"))
+          cur_store_paths = set(deployer.succeed("ls /nix/store").strip().split("\n"))
           new_store_paths = cur_store_paths.difference(orig_store_paths)
           deployer.log(f"{len(new_store_paths)} store paths were created")
 
