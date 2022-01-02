@@ -281,6 +281,20 @@ fn test_nixpkgs_system() {
         };
       }
     "#);
+
+    TempHive::valid(r#"
+      {
+        meta = {
+          nixpkgs = import <nixpkgs> {
+            system = "x86_64-linux";
+          };
+        };
+        test = { pkgs, ... }: {
+          nixpkgs.system = "armv5tel-linux";
+          boot.isContainer = assert pkgs.system == "armv5tel-linux"; true;
+        };
+      }
+    "#);
 }
 
 #[test]
