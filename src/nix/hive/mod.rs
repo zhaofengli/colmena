@@ -219,11 +219,9 @@ impl Hive {
 
     /// Retrieve deployment info for a single node.
     pub async fn deployment_info_single(&self, node: &NodeName) -> NixResult<Option<NodeConfig>> {
-        let expr = format!("toJSON (hive.nodes.\"{}\".config.deployment or null)", node.as_str());
-        let s: String = self.nix_instantiate(&expr).eval_with_builders().await?
-            .capture_json().await?;
-
-        Ok(serde_json::from_str(&s).unwrap())
+        let expr = format!("hive.nodes.\"{}\".config.deployment or null", node.as_str());
+        self.nix_instantiate(&expr).eval_with_builders().await?
+            .capture_json().await
     }
 
     /// Retrieve deployment info for a list of nodes.
