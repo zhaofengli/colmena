@@ -10,12 +10,14 @@ jobs:
           - ubuntu-latest
           - macos-11
         nix:
-          - name: 2.4
-            url: https://releases.nixos.org/nix/nix-2.4/install
           #- name: 2.3.16
           #  url: https://releases.nixos.org/nix/nix-2.3.16/install
-          #- name: 2.5pre
-          #  url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.5pre20211026_5667822/install
+          #- name: 2.4
+          #  url: https://releases.nixos.org/nix/nix-2.4/install
+          - name: 2.5.1
+            url: https://releases.nixos.org/nix/nix-2.5.1/install
+          #- name: 2.6.0pre
+          #  url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.6.0pre20211228_ed3bc63/install
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2.3.5
@@ -55,8 +57,10 @@ jobs:
             url: https://releases.nixos.org/nix/nix-2.3.16/install
           - name: 2.4
             url: https://releases.nixos.org/nix/nix-2.4/install
-          - name: 2.5pre
-            url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.5pre20211026_5667822/install
+          - name: 2.5.1
+            url: https://releases.nixos.org/nix/nix-2.5.1/install
+          - name: 2.6.0pre
+            url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.6.0pre20211228_ed3bc63/install
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2.3.5
