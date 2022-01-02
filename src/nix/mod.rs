@@ -24,7 +24,7 @@ pub mod hive;
 pub use hive::{Hive, HivePath};
 
 pub mod store;
-pub use store::{StorePath, StoreDerivation};
+pub use store::{StorePath, StoreDerivation, BuildResult};
 
 pub mod key;
 pub use key::Key;
@@ -158,6 +158,10 @@ pub struct NodeConfig {
 
     #[serde(rename = "allowLocalDeployment")]
     allow_local_deployment: bool,
+
+    #[serde(rename = "buildOnTarget")]
+    build_on_target: bool,
+
     tags: Vec<String>,
 
     #[serde(rename = "replaceUnknownProfiles")]
@@ -222,6 +226,11 @@ impl Deref for NodeName {
 impl NodeConfig {
     pub fn tags(&self) -> &[String] { &self.tags }
     pub fn allows_local_deployment(&self) -> bool { self.allow_local_deployment }
+
+    pub fn build_on_target(&self) -> bool { self.build_on_target }
+    pub fn set_build_on_target(&mut self, enable: bool) {
+        self.build_on_target = enable;
+    }
 
     pub fn to_ssh_host(&self) -> Option<Ssh> {
         self.target_host.as_ref().map(|target_host| {

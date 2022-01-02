@@ -13,6 +13,19 @@ use super::{Host, NixCommand, NixResult, NixError};
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StorePath(PathBuf);
 
+/// A store derivation (.drv) that will result in a T when built.
+#[derive(Debug)]
+pub struct StoreDerivation<T: TryFrom<BuildResult<T>>>{
+    path: StorePath,
+    _target: PhantomData<T>,
+}
+
+/// Results of a build/realization.
+pub struct BuildResult<T: TryFrom<BuildResult<T>>> {
+    results: Vec<StorePath>,
+    _derivation: PhantomData<T>,
+}
+
 impl StorePath {
     /// Returns the raw store path.
     pub fn as_path(&self) -> &Path {
@@ -41,7 +54,7 @@ impl StorePath {
     }
 
     /// Converts the store path into a store derivation.
-    pub fn into_derivation<T: TryFrom<Vec<StorePath>>>(self) -> NixResult<StoreDerivation<T>> {
+    pub fn into_derivation<T: TryFrom<BuildResult<T>>>(self) -> NixResult<StoreDerivation<T>> {
         if self.is_derivation() {
             Ok(StoreDerivation::<T>::from_store_path_unchecked(self))
         } else {
@@ -76,14 +89,21 @@ impl From<StorePath> for PathBuf {
     }
 }
 
-/// A store derivation (.drv) that will result in a T when built.
-#[derive(Debug, Clone)]
-pub struct StoreDerivation<T: TryFrom<Vec<StorePath>>>{
-    path: StorePath,
-    _target: PhantomData<T>,
+impl<T: TryFrom<BuildResult<T>>> Clone for StoreDerivation<T> {
+    fn clone(&self) -> Self {
+        Self {
+            path: self.path.clone(),
+            _target: PhantomData,
+        }
+    }
 }
 
-impl<T: TryFrom<Vec<StorePath>>> StoreDerivation<T> {
+impl<T: TryFrom<BuildResult<T>>> StoreDerivation<T> {
+    /// Returns the store path.
+    pub fn as_store_path(&self) -> &StorePath {
+        &self.path
+    }
+
     fn from_store_path_unchecked(path: StorePath) -> Self {
         Self {
             path,
@@ -92,16 +112,38 @@ impl<T: TryFrom<Vec<StorePath>>> StoreDerivation<T> {
     }
 }
 
-impl<T: TryFrom<Vec<StorePath>, Error=NixError>> StoreDerivation<T> {
+impl<T: TryFrom<BuildResult<T>, Error=NixError>> StoreDerivation<T> {
     /// Builds the store derivation on a host, resulting in a T.
-    pub async fn realize(&self, host: &mut dyn Host) -> NixResult<T> {
+    pub async fn realize(&self, host: &mut Box<dyn Host>) -> NixResult<T> {
         let paths: Vec<StorePath> = host.realize(&self.path).await?;
-        paths.try_into()
+
+        let result = BuildResult {
+            results: paths,
+            _derivation: PhantomData,
+        };
+        result.try_into()
+    }
+
+    /// Builds the store derivation on a host without copying the results back.
+    pub async fn realize_remote(&self, host: &mut Box<dyn Host>) -> NixResult<T> {
+        let paths: Vec<StorePath> = host.realize_remote(&self.path).await?;
+
+        let result = BuildResult {
+            results: paths,
+            _derivation: PhantomData,
+        };
+        result.try_into()
     }
 }
 
-impl<T: TryFrom<Vec<StorePath>>> fmt::Display for StoreDerivation<T> {
+impl<T: TryFrom<BuildResult<T>>> fmt::Display for StoreDerivation<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self.path)
+    }
+}
+
+impl<T: TryFrom<BuildResult<T>, Error=NixError>> BuildResult<T> {
+    pub fn paths(&self) -> &[StorePath] {
+        self.results.as_slice()
     }
 }

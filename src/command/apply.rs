@@ -1,7 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 
-use clap::{Arg, App, SubCommand, ArgMatches};
+use clap::{Arg, App, SubCommand, ArgMatches, ArgSettings};
 
 use crate::nix::deployment::{
     Deployment,
@@ -89,6 +89,20 @@ To upload keys without building or deploying the rest of the configuration, use 
             .help("Do not use gzip")
             .long_help("Disables the use of gzip when copying closures to the remote host.")
             .takes_value(false))
+        .arg(Arg::with_name("build-on-target")
+            .long("build-on-target")
+            .help("Build the system profiles on the target nodes")
+            .long_help(r#"Build the system profiles on the target nodes themselves.
+
+If enabled, the system profiles will be built on the target nodes themselves, not on the host running Colmena itself.
+This overrides per-node perferences set in `deployment.buildOnTarget`.
+To temporarily disable remote build on all nodes, use `--no-build-on-target`.
+"#)
+            .takes_value(false))
+        .arg(Arg::with_name("no-build-on-target")
+            .long("no-build-on-target")
+            .set(ArgSettings::Hidden)
+            .takes_value(false))
         .arg(Arg::with_name("force-replace-unknown-profiles")
             .long("force-replace-unknown-profiles")
             .help("Ignore all targeted nodes deployment.replaceUnknownProfiles setting")
@@ -144,6 +158,12 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> 
 
         if local_args.is_present("keep-result") {
             options.set_create_gc_roots(true);
+        }
+
+        if local_args.is_present("no-build-on-target") {
+            options.set_force_build_on_target(false);
+        } else if local_args.is_present("build-on-target") {
+            options.set_force_build_on_target(true);
         }
 
         options

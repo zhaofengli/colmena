@@ -10,6 +10,7 @@ use super::{
     NixError,
     StorePath,
     StoreDerivation,
+    BuildResult,
 };
 
 pub type ProfileDerivation = StoreDerivation<Profile>;
@@ -75,12 +76,18 @@ impl Profile {
 
         Ok(())
     }
+
+    fn from_store_path_unchecked(path: StorePath) -> Self {
+        Self(path)
+    }
 }
 
-impl TryFrom<Vec<StorePath>> for Profile {
+impl TryFrom<BuildResult<Profile>> for Profile {
     type Error = NixError;
 
-    fn try_from(paths: Vec<StorePath>) -> NixResult<Self> {
+    fn try_from(result: BuildResult<Self>) -> NixResult<Self> {
+        let paths = result.paths();
+
         if paths.is_empty() {
             return Err(NixError::BadOutput {
                 output: String::from("There is no store path"),
@@ -93,7 +100,9 @@ impl TryFrom<Vec<StorePath>> for Profile {
             });
         }
 
-        let path = paths.into_iter().next().unwrap();
-        Self::from_store_path(path)
+        let path = paths.into_iter().next()
+            .unwrap().to_owned();
+
+        Ok(Self::from_store_path_unchecked(path))
     }
 }

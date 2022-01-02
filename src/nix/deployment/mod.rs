@@ -31,6 +31,7 @@ use super::{
     Profile,
     ProfileDerivation,
     CopyDirection,
+    CopyOptions,
     key::{Key, UploadAt as UploadKeyAt},
 };
 use super::host;
@@ -229,8 +230,29 @@ impl Deployment {
         let mut futures = Vec::new();
 
         for (name, profile_drv) in profile_drvs.iter() {
-            let target = chunk.remove(name).unwrap();
-            futures.push(self.clone().deploy_node(parent.clone(), target, profile_drv.clone()));
+            let mut target = chunk.remove(name).unwrap();
+
+            if let Some(force_build_on_target) = self.options.force_build_on_target {
+                target.config.set_build_on_target(force_build_on_target);
+            }
+
+            let job_handle = parent.clone();
+            let arc_self = self.clone();
+            futures.push(async move {
+                let (target, profile) = {
+                    if target.config.build_on_target() {
+                        arc_self.clone().build_on_node(job_handle.clone(), target, profile_drv.clone()).await?
+                    } else {
+                        arc_self.clone().build_and_push_node(job_handle.clone(), target, profile_drv.clone()).await?
+                    }
+                };
+
+                if arc_self.goal.requires_activation() {
+                    arc_self.activate_node(job_handle, target, profile).await
+                } else {
+                    Ok(())
+                }
+            });
         }
 
         join_all(futures).await
@@ -273,14 +295,45 @@ impl Deployment {
         }).await
     }
 
-    /// Builds, pushes, and optionally activates a system profile on a node.
-    ///
-    /// This will also upload keys to the node.
-    async fn deploy_node(self: DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile_drv: ProfileDerivation)
-        -> NixResult<()>
+    /// Builds a system profile directly on the node itself.
+    async fn build_on_node(self: DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile_drv: ProfileDerivation)
+        -> NixResult<(TargetNode, Profile)>
     {
         let nodes = vec![target.name.clone()];
-        let target_name = target.name.clone();
+
+        let permit = self.parallelism_limit.apply.acquire().await.unwrap();
+
+        let build_job = parent.create_job(JobType::Build, nodes.clone())?;
+        let (target, profile) = build_job.run(|job| async move {
+            if target.host.is_none() {
+                return Err(NixError::Unsupported);
+            }
+
+            let mut host = target.host.as_mut().unwrap();
+            host.set_job(Some(job.clone()));
+
+            host.copy_closure(
+                profile_drv.as_store_path(),
+                CopyDirection::ToRemote,
+                CopyOptions::default().include_outputs(true),
+                ).await?;
+
+            let profile = profile_drv.realize_remote(&mut host).await?;
+
+            job.success_with_message(format!("Built {:?} on target node", profile.as_path()))?;
+            Ok((target, profile))
+        }).await?;
+
+        drop(permit);
+
+        Ok((target, profile))
+    }
+
+    /// Builds and pushes a system profile on a node.
+    async fn build_and_push_node(self: DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile_drv: ProfileDerivation)
+        -> NixResult<(TargetNode, Profile)>
+    {
+        let nodes = vec![target.name.clone()];
 
         let permit = self.parallelism_limit.apply.acquire().await.unwrap();
 
@@ -292,21 +345,21 @@ impl Deployment {
             let mut builder = host::local(arc_self.nix_options.clone());
             builder.set_job(Some(job.clone()));
 
-            let profile = profile_drv.realize(&mut *builder).await?;
+            let profile = profile_drv.realize(&mut builder).await?;
 
             job.success_with_message(format!("Built {:?}", profile.as_path()))?;
             Ok(profile)
         }).await?;
 
         if self.goal == Goal::Build {
-            return Ok(());
+            return Ok((target, profile));
         }
 
         // Push closure to remote
         let push_job = parent.create_job(JobType::Push, nodes.clone())?;
         let push_profile = profile.clone();
         let arc_self = self.clone();
-        let mut target = push_job.run(|job| async move {
+        let target = push_job.run(|job| async move {
             if target.host.is_none() {
                 return Err(NixError::Unsupported);
             }
@@ -321,10 +374,21 @@ impl Deployment {
             Ok(target)
         }).await?;
 
-        if !self.goal.requires_activation() {
-            // We are done here :)
-            return Ok(());
-        }
+        drop(permit);
+
+        Ok((target, profile))
+    }
+
+    /// Activates a system profile on a node.
+    ///
+    /// This will also upload keys to the node.
+    async fn activate_node(self: DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile: Profile)
+        -> NixResult<()>
+    {
+        let nodes = vec![target.name.clone()];
+        let target_name = target.name.clone();
+
+        let permit = self.parallelism_limit.apply.acquire().await.unwrap();
 
         // Upload pre-activation keys
         let mut target = if self.options.upload_keys {
@@ -386,7 +450,7 @@ impl Deployment {
         }).await?;
 
         // Upload post-activation keys
-        if self.options.upload_keys {
+        let target = if self.options.upload_keys {
             let job = parent.create_job(JobType::UploadKeys, nodes.clone())?;
             job.run_waiting(|job| async move {
                 let keys = target.config.keys.iter()
@@ -396,7 +460,7 @@ impl Deployment {
 
                 if keys.is_empty() {
                     job.noop("No post-activation keys to upload".to_string())?;
-                    return Ok(());
+                    return Ok(target);
                 }
 
                 job.state(JobState::Running)?;
@@ -407,15 +471,21 @@ impl Deployment {
                 host.upload_keys(&keys, true).await?;
 
                 job.success_with_message("Uploaded keys (post-activation)".to_string())?;
-                Ok(())
-            }).await?;
-        }
+                Ok(target)
+            }).await?
+        } else {
+            target
+        };
 
         // Create GC root
         if self.options.create_gc_roots {
             let job = parent.create_job(JobType::CreateGcRoots, nodes.clone())?;
             let arc_self = self.clone();
             job.run_waiting(|job| async move {
+                if target.config.build_on_target() {
+                    job.noop("The system profile was built on target node itself".to_string())?;
+                }
+
                 if let Some(dir) = arc_self.hive.context_dir() {
                     job.state(JobState::Running)?;
                     let path = dir.join(".gcroots").join(format!("node-{}", &*target_name));

@@ -20,6 +20,9 @@ pub struct Options {
     /// directory if it exists.
     pub(super) create_gc_roots: bool,
 
+    /// Whether to override per-node setting to build on the nodes themselves.
+    pub(super) force_build_on_target: Option<bool>,
+
     /// Ignore the node-level `deployment.replaceUnknownProfiles` option.
     pub(super) force_replace_unknown_profiles: bool,
 }
@@ -39,6 +42,10 @@ impl Options {
 
     pub fn set_create_gc_roots(&mut self, enable: bool) {
         self.create_gc_roots = enable;
+    }
+
+    pub fn set_force_build_on_target(&mut self, enable: bool) {
+        self.force_build_on_target = Some(enable);
     }
 
     pub fn set_force_replace_unknown_profiles(&mut self, enable: bool) {
@@ -61,6 +68,7 @@ impl Default for Options {
             gzip: true,
             upload_keys: true,
             create_gc_roots: false,
+            force_build_on_target: None,
             force_replace_unknown_profiles: false,
         }
     }

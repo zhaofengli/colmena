@@ -10,6 +10,7 @@
     - [Secrets](./features/keys.md)
     - [Ad Hoc Evaluation](./features/eval.md)
     - [Parallelism](./features/parallelism.md)
+    - [Remote Builds](./features/remote-builds.md)
 - [Examples](./examples/index.md)
     - [Multi-Architecture Deployments](./examples/multi-arch.md)
 - [Reference](./reference/index.md)

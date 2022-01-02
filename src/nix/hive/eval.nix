@@ -67,6 +67,11 @@ let
 
           See https://nixos.org/manual/nix/stable/#chap-distributed-builds
           for the machine specification format.
+
+          This option is ignored when builds are initiated on the remote nodes
+          themselves via `deployment.buildOnTarget` or `--build-on-target`. To
+          still use the Nix distributed build functionality, configure the
+          builders on the target nodes with `nix.buildMachines`.
         '';
         default = null;
         apply = value: if value == null then null else toString value;
@@ -134,6 +139,26 @@ let
             To apply the configurations locally, run `colmena apply-local`.
             You can also set deployment.targetHost to null if the nost is not
             accessible over SSH (only local deployment will be possible).
+          '';
+          type = types.bool;
+          default = false;
+        };
+        buildOnTarget = lib.mkOption {
+          description = ''
+            Whether to build the system profiles on the target node itself.
+
+            When enabled, Colmena will copy the derivation to the target
+            node and initiate the build there. This avoids copying back the
+            build results involved with the native distributed build
+            feature. Furthermore, the `build` goal will be equivalent to
+            the `push` goal. Since builds happen on the target node, the
+            results are automatically "pushed" and won't exist in the local
+            Nix store.
+
+            You can temporarily override per-node settings by passing
+            `--build-on-target` (enable for all nodes) or
+            `--no-build-on-target` (disable for all nodes) on the command
+            line.
           '';
           type = types.bool;
           default = false;

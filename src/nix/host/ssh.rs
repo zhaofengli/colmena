@@ -40,17 +40,16 @@ impl Host for Ssh {
         self.run_command(command).await
     }
     async fn realize_remote(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
-        // FIXME
-        let paths = self.ssh(&["nix-store", "--no-gc-warning", "--realise", derivation.as_path().to_str().unwrap()])
-            .capture_output()
-            .await;
+        let command = self.ssh(&["nix-store", "--no-gc-warning", "--realise", derivation.as_path().to_str().unwrap()]);
 
-        match paths {
-            Ok(paths) => {
-                paths.lines().map(|p| p.to_string().try_into()).collect()
-            }
-            Err(e) => Err(e),
-        }
+        let mut execution = CommandExecution::new(command);
+        execution.set_job(self.job.clone());
+
+        let paths = execution
+            .capture_output()
+            .await?;
+
+        paths.lines().map(|p| p.to_string().try_into()).collect()
     }
     async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> NixResult<()> {
         for (name, key) in keys {

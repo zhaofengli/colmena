@@ -55,6 +55,11 @@ let
         ];
       };
 
+      services.openssh.enable = true;
+      users.users.root.openssh.authorizedKeys.keys = [
+        sshKeys.snakeOilPublicKey
+      ];
+
       environment.systemPackages = with pkgs; [
         git # for git flake tests
 

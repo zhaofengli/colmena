@@ -7,3 +7,4 @@ This section introduces the main features in Colmena:
 - **[Secrets](keys.md)** - Deploying sensitive files separate from the main configuration
 - **[Ad Hoc Evaluation](eval.md)** - Evaluating a Nix expression with access to your configuration
 - **[Parallelism](parallelism.md)** - Controlling how Colmena parallelizes the deployment process
+- **[Remote Builds](remote-builds.md)** - Building system profiles on remote machines
