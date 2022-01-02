@@ -83,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="tutorial/index.html"><strong aria-hidden="true">2.</strong> Tutorial</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorial/flakes.html"><strong aria-hidden="true">2.1.</strong> Usage with Flakes</a></li><li class="chapter-item expanded "><a href="tutorial/migration.html"><strong aria-hidden="true">2.2.</strong> Migrating from NixOps/morph</a></li></ol></li><li class="chapter-item expanded "><a href="features/index.html"><strong aria-hidden="true">3.</strong> Features</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="features/tags.html"><strong aria-hidden="true">3.1.</strong> Node Tagging</a></li><li class="chapter-item expanded "><a href="features/apply-local.html"><strong aria-hidden="true">3.2.</strong> Local Deployment</a></li><li class="chapter-item expanded "><a href="features/keys.html"><strong aria-hidden="true">3.3.</strong> Secrets</a></li><li class="chapter-item expanded "><a href="features/eval.html"><strong aria-hidden="true">3.4.</strong> Ad Hoc Evaluation</a></li><li class="chapter-item expanded "><a href="features/parallelism.html"><strong aria-hidden="true">3.5.</strong> Parallelism</a></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">4.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/multi-arch.html"><strong aria-hidden="true">4.1.</strong> Multi-Architecture Deployments</a></li></ol></li><li class="chapter-item expanded "><a href="reference/index.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="reference/deployment.html"><strong aria-hidden="true">5.1.</strong> Deployment Options</a></li><li class="chapter-item expanded "><a href="reference/meta.html"><strong aria-hidden="true">5.2.</strong> Meta Options</a></li><li class="chapter-item expanded "><a href="reference/cli.html"><strong aria-hidden="true">5.3.</strong> Command Line Arguments</a></li></ol></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">6.</strong> Contributing</a></li></ol>            </div>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="tutorial/index.html"><strong aria-hidden="true">2.</strong> Tutorial</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorial/flakes.html"><strong aria-hidden="true">2.1.</strong> Usage with Flakes</a></li><li class="chapter-item expanded "><a href="tutorial/migration.html"><strong aria-hidden="true">2.2.</strong> Migrating from NixOps/morph</a></li></ol></li><li class="chapter-item expanded "><a href="features/index.html"><strong aria-hidden="true">3.</strong> Features</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="features/tags.html"><strong aria-hidden="true">3.1.</strong> Node Tagging</a></li><li class="chapter-item expanded "><a href="features/apply-local.html"><strong aria-hidden="true">3.2.</strong> Local Deployment</a></li><li class="chapter-item expanded "><a href="features/keys.html"><strong aria-hidden="true">3.3.</strong> Secrets</a></li><li class="chapter-item expanded "><a href="features/eval.html"><strong aria-hidden="true">3.4.</strong> Ad Hoc Evaluation</a></li><li class="chapter-item expanded "><a href="features/parallelism.html"><strong aria-hidden="true">3.5.</strong> Parallelism</a></li><li class="chapter-item expanded "><a href="features/remote-builds.html"><strong aria-hidden="true">3.6.</strong> Remote Builds</a></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">4.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/multi-arch.html"><strong aria-hidden="true">4.1.</strong> Multi-Architecture Deployments</a></li></ol></li><li class="chapter-item expanded "><a href="reference/index.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="reference/deployment.html"><strong aria-hidden="true">5.1.</strong> Deployment Options</a></li><li class="chapter-item expanded "><a href="reference/meta.html"><strong aria-hidden="true">5.2.</strong> Meta Options</a></li><li class="chapter-item expanded "><a href="reference/cli.html"><strong aria-hidden="true">5.3.</strong> Command Line Arguments</a></li></ol></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">6.</strong> Contributing</a></li></ol>            </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
@@ -151,7 +151,7 @@
 <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
 <p><strong>Colmena</strong> is a simple, stateless <a href="https://nixos.org">NixOS</a> deployment tool modeled after <a href="https://github.com/NixOS/nixops">NixOps</a> and <a href="https://github.com/DBCDK/morph">morph</a>, written in Rust.
 It's a thin wrapper over Nix commands like <code>nix-instantiate</code> and <code>nix-copy-closure</code>, and supports parallel deployment.</p>
-<p>Interested? Get started <a href="tutorial">here</a>!</p>
+<p>Interested? Get started <a href="./tutorial/index.html">here</a>!</p>
 <pre><div class="hljs">$ <b>colmena apply --on @tag-a</b>
 [INFO ] Enumerating nodes...
 [INFO ] Selected 7 out of 45 hosts.
@@ -386,6 +386,7 @@ The options accepts one of the following:</p>
 <li><strong><a href="features/keys.html">Secrets</a></strong> - Deploying sensitive files separate from the main configuration</li>
 <li><strong><a href="features/eval.html">Ad Hoc Evaluation</a></strong> - Evaluating a Nix expression with access to your configuration</li>
 <li><strong><a href="features/parallelism.html">Parallelism</a></strong> - Controlling how Colmena parallelizes the deployment process</li>
+<li><strong><a href="features/remote-builds.html">Remote Builds</a></strong> - Building system profiles on remote machines</li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="node-tagging"><a class="header" href="#node-tagging">Node Tagging</a></h1>
@@ -518,6 +519,21 @@ This parallelism can be controlled primarily through two flags:</p>
 <p>By default, Colmena will automatically determine the maximum number of nodes to evaluate at the same time according to available RAM.
 This flag allows you to set the limit to a predetermined value.</p>
 <div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
+<h1 id="remote-builds"><a class="header" href="#remote-builds">Remote Builds</a></h1>
+<p>If the host running Colmena is not powerful enough, consider offloading the actual builds to remote machines.
+Colmena supports two ways to achieve this:</p>
+<h2 id="using-colmenas-deploymentbuildontarget"><a class="header" href="#using-colmenas-deploymentbuildontarget">Using Colmena's <code>deployment.buildOnTarget</code></a></h2>
+<p>If you set <a href="features/../reference/deployment.html#deploymentbuildontarget"><code>deployment.buildOnTarget = true;</code></a> for a node, then the actual build process will be initiated on the node itself.
+Colmena will evaluate the configuration locally before copying the derivations to the target node.
+You can temporarily enable this for all nodes by passing <code>--build-on-target</code> on the command line, or disable it with <code>--no-build-on-target</code>.</p>
+<p>This is most useful in scenarios where the machine running Colmena is bandwidth-constrained, or it's inconvenient to configure designated builders beforehand.
+With this method, the build results will <em>not</em> be copied back to the local machine or otherwise shared across the target nodes.
+If you have custom packages used on multiple nodes, the work required to build those packages will be duplicated across the nodes.</p>
+<h2 id="using-the-native-distributed-build-feature-in-nix"><a class="header" href="#using-the-native-distributed-build-feature-in-nix">Using the native distributed build feature in Nix</a></h2>
+<p>When <a href="https://nixos.org/manual/nix/unstable/advanced-topics/distributed-builds.html">distributed build</a> is enabled, Nix will transparently forward builds to the configured builders.
+After the builds are done, Nix will copy the results back to the local machine.</p>
+<p>Builders can either be configured globally or in your configuration with <a href="features/../reference/meta.html#machinesFile"><code>meta.machinesFile</code></a>.</p>
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="examples"><a class="header" href="#examples">Examples</a></h1>
 <p>This section contains examples of setups people commonly use:</p>
 <ul>
@@ -572,7 +588,7 @@ You can then deploy to the <code>rpi</code> node with <code>colmena apply --on r
 <!--
     The following is injected by the build system
 
-    Looking to improve the description? Head to `src/nix/eval.nix` in the repo :)
+    Looking to improve the description? Head to `src/nix/hive/eval.nix` in the repo :)
 -->
 <h2 id="deploymentallowlocaldeployment"><a class="header" href="#deploymentallowlocaldeployment">deployment.allowLocalDeployment</a></h2>
 <p>Allow the configuration to be applied locally on the host running
@@ -586,6 +602,24 @@ Colmena.</p>
 <p>To apply the configurations locally, run <code>colmena apply-local</code>.
 You can also set deployment.targetHost to null if the nost is not
 accessible over SSH (only local deployment will be possible).</p>
+<p><em><em>Type</em></em>:
+boolean</p>
+<p><em><em>Default</em></em></p>
+<pre><code>false
+</code></pre>
+<h2 id="deploymentbuildontarget"><a class="header" href="#deploymentbuildontarget">deployment.buildOnTarget</a></h2>
+<p>Whether to build the system profiles on the target node itself.</p>
+<p>When enabled, Colmena will copy the derivation to the target
+node and initiate the build there. This avoids copying back the
+build results involved with the native distributed build
+feature. Furthermore, the <code>build</code> goal will be equivalent to
+the <code>push</code> goal. Since builds happen on the target node, the
+results are automatically &quot;pushed&quot; and won't exist in the local
+Nix store.</p>
+<p>You can temporarily override per-node settings by passing
+<code>--build-on-target</code> (enable for all nodes) or
+<code>--no-build-on-target</code> (disable for all nodes) on the command
+line.</p>
 <p><em><em>Type</em></em>:
 boolean</p>
 <p><em><em>Default</em></em></p>
@@ -741,7 +775,7 @@ However, you cannot specify both at the same time.</p>
 <!--
     The following is injected by the build system
 
-    Looking to improve the descriptions? Head to `src/nix/eval.nix` in the repo :)
+    Looking to improve the descriptions? Head to `src/nix/hive/eval.nix` in the repo :)
 -->
 <h2 id="description"><a class="header" href="#description">description</a></h2>
 <p>A short description for the configuration.</p>
@@ -761,6 +795,10 @@ build machine(s) you can ensure that builds only take place on your
 local machine and/or the machines specified in this file.</p>
 <p>See https://nixos.org/manual/nix/stable/#chap-distributed-builds
 for the machine specification format.</p>
+<p>This option is ignored when builds are initiated on the remote nodes
+themselves via <code>deployment.buildOnTarget</code> or <code>--build-on-target</code>. To
+still use the Nix distributed build functionality, configure the
+builders on the target nodes with <code>nix.buildMachines</code>.</p>
 <p><em><em>Type</em></em>:
 null or path</p>
 <p><em><em>Default</em></em></p>
@@ -872,7 +910,14 @@ USAGE:</span>
     colmena apply [FLAGS] [OPTIONS] [goal]
 
 <span style='color:#a50'>FLAGS:
-</span>        <span style='color:#0a0'>--force-replace-unknown-profiles</span>    
+</span>        <span style='color:#0a0'>--build-on-target</span>                   
+            Build the system profiles on the target nodes themselves.
+            
+            If enabled, the system profiles will be built on the target nodes themselves, not on the host running
+            Colmena itself.
+            This overrides per-node perferences set in `deployment.buildOnTarget`.
+            To temporarily disable remote build on all nodes, use `--no-build-on-target`.
+        <span style='color:#0a0'>--force-replace-unknown-profiles</span>    
             If `deployment.replaceUnknownProfiles` is set for a target, using this switch
             will treat deployment.replaceUnknownProfiles as though it was set true and perform unknown profile
             replacement.
@@ -980,7 +1025,14 @@ USAGE:</span>
     colmena build [FLAGS] [OPTIONS]
 
 <span style='color:#a50'>FLAGS:
-</span>        <span style='color:#0a0'>--force-replace-unknown-profiles</span>    
+</span>        <span style='color:#0a0'>--build-on-target</span>                   
+            Build the system profiles on the target nodes themselves.
+            
+            If enabled, the system profiles will be built on the target nodes themselves, not on the host running
+            Colmena itself.
+            This overrides per-node perferences set in `deployment.buildOnTarget`.
+            To temporarily disable remote build on all nodes, use `--no-build-on-target`.
+        <span style='color:#0a0'>--force-replace-unknown-profiles</span>    
             If `deployment.replaceUnknownProfiles` is set for a target, using this switch
             will treat deployment.replaceUnknownProfiles as though it was set true and perform unknown profile
             replacement.
@@ -1044,7 +1096,14 @@ USAGE:</span>
     colmena upload-keys [FLAGS] [OPTIONS]
 
 <span style='color:#a50'>FLAGS:
-</span>        <span style='color:#0a0'>--force-replace-unknown-profiles</span>    
+</span>        <span style='color:#0a0'>--build-on-target</span>                   
+            Build the system profiles on the target nodes themselves.
+            
+            If enabled, the system profiles will be built on the target nodes themselves, not on the host running
+            Colmena itself.
+            This overrides per-node perferences set in `deployment.buildOnTarget`.
+            To temporarily disable remote build on all nodes, use `--no-build-on-target`.
+        <span style='color:#0a0'>--force-replace-unknown-profiles</span>    
             If `deployment.replaceUnknownProfiles` is set for a target, using this switch
             will treat deployment.replaceUnknownProfiles as though it was set true and perform unknown profile
             replacement.
