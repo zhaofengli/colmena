@@ -31,3 +31,4 @@ You are currently reading **version @apiVersion@** of the Colmena Manual, built 
 
 - [GitHub](https://github.com/zhaofengli/colmena)
 - [Deployment Options Reference](reference/deployment.md)
+- [Matrix Chat (#colmena:nixos.org)](https://matrix.to/#/#colmena:nixos.org)

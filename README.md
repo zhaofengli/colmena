@@ -1,5 +1,6 @@
 # Colmena
 
+[![Matrix Channel](https://img.shields.io/badge/Matrix-%23colmena%3Anixos.org-blueviolet)](https://matrix.to/#/#colmena:nixos.org)
 [![Stable Manual](https://img.shields.io/badge/Manual-Stable-informational)](https://zhaofengli.github.io/colmena/stable)
 [![Unstable Manual](https://img.shields.io/badge/Manual-Unstable-orange)](https://zhaofengli.github.io/colmena/unstable)
 [![Build](https://github.com/zhaofengli/colmena/workflows/Build/badge.svg)](https://github.com/zhaofengli/colmena/actions/workflows/build.yml)
