@@ -2,7 +2,7 @@
 # the next stable release. For the one that is currently in
 # effect, check the release branches (e.g., release-0.2.x).
 
-name: Manual (Stable)
+name: Deploy Stable Manual
 
 on:
   push:
