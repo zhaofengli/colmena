@@ -3,7 +3,7 @@
 **Colmena** is a simple, stateless [NixOS](https://nixos.org) deployment tool modeled after [NixOps](https://github.com/NixOS/nixops) and [morph](https://github.com/DBCDK/morph), written in Rust.
 It's a thin wrapper over Nix commands like `nix-instantiate` and `nix-copy-closure`, and supports parallel deployment.
 
-Interested? Get started [here](tutorial)!
+Interested? Get started [here](./tutorial/index.md)!
 
 <pre><div class="hljs">$ <b>colmena apply --on @tag-a</b>
 [INFO ] Enumerating nodes...
