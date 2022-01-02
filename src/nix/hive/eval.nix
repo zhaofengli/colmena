@@ -445,12 +445,26 @@ let
       hive.defaults
     ] ++ configs ++ (import (npkgs.path + "/nixos/modules/module-list.nix"));
     specialArgs = hive.meta.specialArgs // {
-      inherit name nodes;
+      inherit name;
+      nodes = uncheckedNodes;
       modulesPath = npkgs.path + "/nixos/modules";
     };
   };
 
   nodeNames = filter (name: ! elem name reservedNames) (attrNames hive);
+
+  # Used as the `nodes` argument in modules. We skip recursive type checking
+  # for performance.
+  uncheckedNodes = listToAttrs (map (name: let
+    configs = [
+      {
+        _module.check = false;
+      }
+    ] ++ configsFor name;
+  in {
+    inherit name;
+    value = evalNode name configs;
+  }) nodeNames);
 
   # Exported attributes
   #
