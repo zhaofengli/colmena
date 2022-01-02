@@ -208,6 +208,7 @@ mod tests {
             target_user: None,
             target_port: None,
             allow_local_deployment: false,
+            build_on_target: false,
             replace_unknown_profiles: false,
             privilege_escalation_command: vec![],
             keys: HashMap::new(),
