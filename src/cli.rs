@@ -146,6 +146,7 @@ It's also possible to specify the preference using environment variables. See <h
         // deprecated alias
         app = app.subcommand(command::eval::deprecated_alias());
 
+        #[cfg(debug_assertions)]
         register_command!(test_progress, app);
     }
 
@@ -178,6 +179,7 @@ pub async fn run() {
     // deprecated alias
     handle_command!("introspect", eval, matches);
 
+    #[cfg(debug_assertions)]
     handle_command!("test-progress", test_progress, matches);
 
     if let Some(args) = matches.subcommand_matches("gen-completions") {
