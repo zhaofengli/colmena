@@ -79,11 +79,12 @@ pub trait Host: Send + Sync + std::fmt::Debug {
 
     /// Realizes the specified local derivation on the host then retrieves the outputs.
     async fn realize(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
-        let options = CopyOptions::default();
+        let options = CopyOptions::default()
+            .include_outputs(true);
 
-        self.copy_closure(derivation, CopyDirection::ToRemote, options.include_outputs(false)).await?;
+        self.copy_closure(derivation, CopyDirection::ToRemote, options).await?;
         let paths = self.realize_remote(derivation).await?;
-        self.copy_closure(derivation, CopyDirection::FromRemote, options.include_outputs(true)).await?;
+        self.copy_closure(derivation, CopyDirection::FromRemote, options).await?;
 
         Ok(paths)
     }
