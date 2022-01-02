@@ -144,7 +144,7 @@ impl Deployment {
                 let mut futures = Vec::new();
 
                 for target in targets.into_values() {
-                    futures.push(deployment.clone().upload_keys_to_node(meta.clone(), target));
+                    futures.push(deployment.upload_keys_to_node(meta.clone(), target));
                 }
 
                 join_all(futures).await
@@ -169,7 +169,7 @@ impl Deployment {
                 let mut futures = Vec::new();
 
                 for chunk in chunks.into_iter() {
-                    futures.push(deployment.clone().execute_chunk(meta.clone(), chunk));
+                    futures.push(deployment.execute_chunk(meta.clone(), chunk));
                 }
 
                 join_all(futures).await
@@ -219,13 +219,13 @@ impl Deployment {
     }
 
     /// Executes the deployment against a portion of nodes.
-    async fn execute_chunk(self: DeploymentHandle, parent: JobHandle, mut chunk: TargetNodeMap) -> NixResult<()> {
+    async fn execute_chunk(self: &DeploymentHandle, parent: JobHandle, mut chunk: TargetNodeMap) -> NixResult<()> {
         if self.goal == Goal::UploadKeys {
             unreachable!(); // some logic is screwed up
         }
 
         let nodes: Vec<NodeName> = chunk.keys().cloned().collect();
-        let profile_drvs = self.clone().evaluate_nodes(parent.clone(), nodes.clone()).await?;
+        let profile_drvs = self.evaluate_nodes(parent.clone(), nodes.clone()).await?;
 
         let mut futures = Vec::new();
 
@@ -241,9 +241,9 @@ impl Deployment {
             futures.push(async move {
                 let (target, profile) = {
                     if target.config.build_on_target() {
-                        arc_self.clone().build_on_node(job_handle.clone(), target, profile_drv.clone()).await?
+                        arc_self.build_on_node(job_handle.clone(), target, profile_drv.clone()).await?
                     } else {
-                        arc_self.clone().build_and_push_node(job_handle.clone(), target, profile_drv.clone()).await?
+                        arc_self.build_and_push_node(job_handle.clone(), target, profile_drv.clone()).await?
                     }
                 };
 
@@ -262,7 +262,7 @@ impl Deployment {
     }
 
     /// Evaluates a set of nodes, returning their corresponding store derivations.
-    async fn evaluate_nodes(self: DeploymentHandle, parent: JobHandle, nodes: Vec<NodeName>)
+    async fn evaluate_nodes(self: &DeploymentHandle, parent: JobHandle, nodes: Vec<NodeName>)
         -> NixResult<HashMap<NodeName, ProfileDerivation>>
     {
         let job = parent.create_job(JobType::Evaluate, nodes.clone())?;
@@ -280,7 +280,7 @@ impl Deployment {
     }
 
     /// Only uploads keys to a node.
-    async fn upload_keys_to_node(self: DeploymentHandle, parent: JobHandle, mut target: TargetNode) -> NixResult<()> {
+    async fn upload_keys_to_node(self: &DeploymentHandle, parent: JobHandle, mut target: TargetNode) -> NixResult<()> {
         let nodes = vec![target.name.clone()];
         let job = parent.create_job(JobType::UploadKeys, nodes)?;
         job.run(|_| async move {
@@ -296,7 +296,7 @@ impl Deployment {
     }
 
     /// Builds a system profile directly on the node itself.
-    async fn build_on_node(self: DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile_drv: ProfileDerivation)
+    async fn build_on_node(self: &DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile_drv: ProfileDerivation)
         -> NixResult<(TargetNode, Profile)>
     {
         let nodes = vec![target.name.clone()];
@@ -330,7 +330,7 @@ impl Deployment {
     }
 
     /// Builds and pushes a system profile on a node.
-    async fn build_and_push_node(self: DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile_drv: ProfileDerivation)
+    async fn build_and_push_node(self: &DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile_drv: ProfileDerivation)
         -> NixResult<(TargetNode, Profile)>
     {
         let nodes = vec![target.name.clone()];
