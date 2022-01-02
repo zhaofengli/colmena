@@ -151,6 +151,7 @@ It's also possible to specify the preference using environment variables. See <h
     }
 
     register_command!(apply, app);
+    #[cfg(target_os = "linux")]
     register_command!(apply_local, app);
     register_command!(build, app);
     register_command!(eval, app);
@@ -169,6 +170,7 @@ pub async fn run() {
     init_logging();
 
     handle_command!(apply, matches);
+    #[cfg(target_os = "linux")]
     handle_command!("apply-local", apply_local, matches);
     handle_command!(build, matches);
     handle_command!(eval, matches);
