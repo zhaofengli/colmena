@@ -4,9 +4,11 @@ on:
   push:
 jobs:
   build:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
+        os:
+          - ubuntu-latest
+          - macos-11
         nix:
           - name: 2.4
             url: https://releases.nixos.org/nix/nix-2.4/install
@@ -14,6 +16,7 @@ jobs:
           #  url: https://releases.nixos.org/nix/nix-2.3.16/install
           #- name: 2.5pre
           #  url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.5pre20211026_5667822/install
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2.3.5
       - uses: cachix/install-nix-action@v15
@@ -43,9 +46,10 @@ jobs:
         if: ${{ !contains(matrix.nix.name, '2.3') }}
 
   tests:
-    runs-on: ubuntu-latest
     strategy:
       matrix:
+        os:
+          - ubuntu-latest
         nix:
           - name: 2.3.16
             url: https://releases.nixos.org/nix/nix-2.3.16/install
@@ -53,6 +57,7 @@ jobs:
             url: https://releases.nixos.org/nix/nix-2.4/install
           - name: 2.5pre
             url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.5pre20211026_5667822/install
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2.3.5
       - uses: cachix/install-nix-action@v15
