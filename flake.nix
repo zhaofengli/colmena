@@ -29,10 +29,10 @@
         };
         deploymentOptionsMd = (pkgs.nixosOptionsDoc {
           options = evalNix.docs.deploymentOptions pkgs;
-        }).optionsMDDoc;
+        }).optionsCommonMark;
         metaOptionsMd = (pkgs.nixosOptionsDoc {
           options = evalNix.docs.metaOptions pkgs;
-        }).optionsMDDoc;
+        }).optionsCommonMark;
       in pkgs.callPackage ./manual {
         inherit colmena deploymentOptionsMd metaOptionsMd;
       };

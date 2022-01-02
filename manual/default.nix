@@ -1,10 +1,6 @@
-let
-  notFound = typ: "<span style=\"color: red;\">Error: No ${typ} passed to the builder</span>";
-in
-
 { lib, stdenv, nix-gitignore, mdbook, python3, writeScript
-, deploymentOptionsMd ? notFound "deployment options text"
-, metaOptionsMd ? notFound "meta options text"
+, deploymentOptionsMd ? null
+, metaOptionsMd ? null
 , colmena ? null
 
 # Full version
@@ -59,8 +55,17 @@ in stdenv.mkDerivation {
         echo "Error: No colmena executable passed to the builder" >> src/reference/cli.md
     fi
 
-    echo "$deploymentOptionsMd" >> src/reference/deployment.md
-    echo "$metaOptionsMd" >> src/reference/meta.md
+    if [[ -n "$deploymentOptionsMd" ]]; then
+        cat "$deploymentOptionsMd" >> src/reference/deployment.md
+    else
+        echo "No deployment options text passed the the builder" >> src/reference/deployment.md
+    fi
+
+    if [[ -n "$metaOptionsMd" ]]; then
+        cat "$metaOptionsMd" >> src/reference/meta.md
+    else
+        echo "No meta options text passed the the builder" >> src/reference/meta.md
+    fi
 
     mdbook build -d $out
 
