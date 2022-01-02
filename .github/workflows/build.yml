@@ -74,6 +74,9 @@ jobs:
           name: colmena
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
+      - name: Set up pinned nixpkgs
+        run: echo "NIX_PATH=nixpkgs=$(nix-instantiate --eval flake-compat.nix -A defaultNix.inputs.nixpkgs.outPath | sed 's|\"||g')" >> $GITHUB_ENV
+
       - run: nix-shell --run "cargo test"
         if: ${{ !contains(matrix.nix.name, '2.3') }}
       - run: nix-shell --run "cargo test -- --skip flake"
