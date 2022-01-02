@@ -12,5 +12,5 @@ However, you cannot specify both at the same time.
 <!--
     The following is injected by the build system
 
-    Looking to improve the descriptions? Head to `src/nix/eval.nix` in the repo :)
+    Looking to improve the descriptions? Head to `src/nix/hive/eval.nix` in the repo :)
 -->

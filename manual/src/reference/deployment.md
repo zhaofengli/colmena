@@ -9,5 +9,5 @@ Colmena adds a set of extra options that can be used in your NixOS configuration
 <!--
     The following is injected by the build system
 
-    Looking to improve the description? Head to `src/nix/eval.nix` in the repo :)
+    Looking to improve the description? Head to `src/nix/hive/eval.nix` in the repo :)
 -->
