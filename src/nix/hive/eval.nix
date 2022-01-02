@@ -302,6 +302,13 @@ let
     };
   in mergedHive // meta;
 
+  configsFor = node: let
+    nodeConfig = hive.${node};
+  in
+    assert lib.assertMsg (!elem node reservedNames) "\"${node}\" is a reserved name and cannot be used as the name of a node";
+    if typeOf nodeConfig == "list" then nodeConfig
+    else [ nodeConfig ];
+
   mkNixpkgs = configName: pkgConf: let
     uninitializedError = typ: ''
       Passing ${typ} as ${configName} is no longer accepted with Flakes.
@@ -348,7 +355,7 @@ let
   lib = pkgs.lib;
   reservedNames = [ "defaults" "network" "meta" ];
 
-  evalNode = name: config: let
+  evalNode = name: configs: let
     npkgs =
       if hasAttr name hive.meta.nodeNixpkgs
       then mkNixpkgs "meta.nodeNixpkgs.${name}" hive.meta.nodeNixpkgs.${name}
@@ -436,8 +443,7 @@ let
       keyChownModule
       deploymentOptions
       hive.defaults
-      config
-    ] ++ (import (npkgs.path + "/nixos/modules/module-list.nix"));
+    ] ++ configs ++ (import (npkgs.path + "/nixos/modules/module-list.nix"));
     specialArgs = hive.meta.specialArgs // {
       inherit name nodes;
       modulesPath = npkgs.path + "/nixos/modules";
@@ -452,7 +458,7 @@ let
 
   nodes = listToAttrs (map (name: {
     inherit name;
-    value = evalNode name hive.${name};
+    value = evalNode name (configsFor name);
   }) nodeNames);
 
   toplevel = lib.mapAttrs (name: eval: eval.config.system.build.toplevel) nodes;

@@ -201,6 +201,28 @@ fn test_parse_unknown_option() {
 }
 
 #[test]
+fn test_config_list() {
+    TempHive::valid(r#"
+      with builtins;
+      {
+        host-a = [
+          {
+            time.timeZone = "America/Los_Angeles";
+          }
+          {
+            deployment.tags = [ "some-tag" ];
+          }
+        ];
+        host-b = { name, nodes, ... }:
+          assert length (attrNames nodes) == 2;
+          assert nodes.host-a.config.time.timeZone == "America/Los_Angeles";
+          assert elem "some-tag" nodes.host-a.config.deployment.tags;
+        {};
+      }
+    "#);
+}
+
+#[test]
 fn test_parse_key_text() {
     TempHive::valid(r#"
       {
