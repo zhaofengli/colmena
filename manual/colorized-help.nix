@@ -1,4 +1,4 @@
-{ runCommand, colmena, ansi2html }:
+{ lib, stdenv, runCommand, colmena, ansi2html }:
 
 with builtins;
 
@@ -6,7 +6,9 @@ let
   subcommands = [
     null
     "apply"
-    "apply-local"
+  ]
+  ++ lib.optional stdenv.isLinux "apply-local"
+  ++ [
     "build"
     "upload-keys"
     "eval"
