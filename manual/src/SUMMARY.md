@@ -16,5 +16,5 @@
 - [Reference](./reference/index.md)
     - [Deployment Options](./reference/deployment.md)
     - [Meta Options](./reference/meta.md)
-    - [Command Line Arguments](./reference/cli.md)
+    - [Command Line Options](./reference/cli.md)
 - [Contributing](./contributing.md)
