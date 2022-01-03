@@ -6,7 +6,16 @@ use crate::util;
 use crate::nix::NixError;
 
 pub fn subcommand() -> App<'static> {
-    App::new("eval")
+    subcommand_gen("eval")
+}
+
+pub fn deprecated_alias() -> App<'static> {
+    subcommand_gen("introspect")
+        .setting(AppSettings::Hidden)
+}
+
+fn subcommand_gen(name: &str) -> App<'static> {
+    App::new(name)
         .about("Evaluate an expression using the complete configuration")
         .long_about(r#"Evaluate an expression using the complete configuration
 
@@ -30,12 +39,6 @@ For example, to retrieve the configuration of one node, you may write something 
             .long("instantiate")
             .help("Actually instantiate the expression")
             .takes_value(false))
-}
-
-pub fn deprecated_alias() -> App<'static> {
-    subcommand()
-        .name("introspect")
-        .setting(AppSettings::Hidden)
 }
 
 pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), NixError> {
