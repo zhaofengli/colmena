@@ -7,8 +7,8 @@ pub use super::apply::run;
 
 pub fn subcommand() -> App<'static> {
     let command = App::new("build")
-        .about("Build the configuration but not push to remote machines")
-        .long_about(r#"Build the configuration but not push to remote machines
+        .about("Build configurations but not push to remote machines")
+        .long_about(r#"Build configurations but not push to remote machines
 
 This subcommand behaves as if you invoked `apply` with the `build` goal."#)
         .arg(Arg::new("goal")

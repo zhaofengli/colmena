@@ -7,8 +7,8 @@ use crate::nix::NixError;
 
 pub fn subcommand() -> App<'static> {
     App::new("eval")
-        .about("Evaluate expressions using the complete configuration")
-        .long_about(r#"Evaluate expressions using the complete configuration
+        .about("Evaluate an expression using the complete configuration")
+        .long_about(r#"Evaluate an expression using the complete configuration
 
 Your expression should take an attribute set with keys `pkgs`, `lib` and `nodes` (like a NixOS module) and return a JSON-serializable value.
 
