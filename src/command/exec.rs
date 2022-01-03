@@ -2,7 +2,7 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use clap::{Arg, App, AppSettings, SubCommand, ArgMatches};
+use clap::{Arg, App, AppSettings, ArgMatches};
 use futures::future::join_all;
 use tokio::sync::Semaphore;
 
@@ -11,12 +11,12 @@ use crate::job::{JobMonitor, JobState, JobType};
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
-pub fn subcommand() -> App<'static, 'static> {
-    let command = SubCommand::with_name("exec")
+pub fn subcommand() -> App<'static> {
+    let command = App::new("exec")
         .about("Run a command on remote machines")
         .setting(AppSettings::TrailingVarArg)
-        .arg(Arg::with_name("parallel")
-            .short("p")
+        .arg(Arg::new("parallel")
+            .short('p')
             .long("parallel")
             .value_name("LIMIT")
             .help("Deploy parallelism limit")
@@ -32,18 +32,18 @@ In `colmena exec`, the parallelism limit is disabled (0) by default.
                     Err(_) => Err(String::from("The value must be a valid number")),
                 }
             }))
-        .arg(Arg::with_name("verbose")
-            .short("v")
+        .arg(Arg::new("verbose")
+            .short('v')
             .long("verbose")
             .help("Be verbose")
             .long_help("Deactivates the progress spinner and prints every line of output.")
             .takes_value(false))
-        .arg(Arg::with_name("command")
+        .arg(Arg::new("command")
             .value_name("COMMAND")
             .last(true)
             .help("Command")
             .required(true)
-            .multiple(true)
+            .multiple_occurrences(true)
             .long_help(r#"Command to run
 
 It's recommended to use -- to separate Colmena options from the command to run. For example:
@@ -54,7 +54,7 @@ It's recommended to use -- to separate Colmena options from the command to run. 
     util::register_selector_args(command)
 }
 
-pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> Result<(), NixError> {
+pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), NixError> {
     let hive = util::hive_from_args(local_args).await?;
     let ssh_config = env::var("SSH_CONFIG_FILE")
         .ok().map(PathBuf::from);

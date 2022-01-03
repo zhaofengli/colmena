@@ -1,7 +1,7 @@
 use std::env;
 use std::collections::HashMap;
 
-use clap::{Arg, App, SubCommand, ArgMatches};
+use clap::{Arg, App, ArgMatches};
 use tokio::fs;
 use tokio::process::Command;
 
@@ -15,31 +15,31 @@ use crate::nix::{NixError, NodeName, host};
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
-pub fn subcommand() -> App<'static, 'static> {
-    SubCommand::with_name("apply-local")
+pub fn subcommand() -> App<'static> {
+    App::new("apply-local")
         .about("Apply configurations on the local machine")
-        .arg(Arg::with_name("goal")
+        .arg(Arg::new("goal")
             .help("Deployment goal")
             .long_help("Same as the targets for switch-to-configuration.\n\"push\" is noop in apply-local.")
             .default_value("switch")
             .index(1)
             .possible_values(&["push", "switch", "boot", "test", "dry-activate", "keys"]))
-        .arg(Arg::with_name("sudo")
+        .arg(Arg::new("sudo")
             .long("sudo")
             .help("Attempt to escalate privileges if not run as root"))
-        .arg(Arg::with_name("sudo-command")
+        .arg(Arg::new("sudo-command")
             .long("sudo-command")
             .value_name("COMMAND")
             .help("Command to use to escalate privileges")
             .default_value("sudo")
             .takes_value(true))
-        .arg(Arg::with_name("verbose")
-            .short("v")
+        .arg(Arg::new("verbose")
+            .short('v')
             .long("verbose")
             .help("Be verbose")
             .long_help("Deactivates the progress spinner and prints every line of output.")
             .takes_value(false))
-        .arg(Arg::with_name("no-keys")
+        .arg(Arg::new("no-keys")
             .long("no-keys")
             .help("Do not deploy keys")
             .long_help(r#"Do not deploy secret keys set in `deployment.keys`.
@@ -47,17 +47,17 @@ pub fn subcommand() -> App<'static, 'static> {
 By default, Colmena will deploy keys set in `deployment.keys` before activating the profile on this host.
 "#)
             .takes_value(false))
-        .arg(Arg::with_name("node")
+        .arg(Arg::new("node")
             .long("node")
             .help("Override the node name to use")
             .takes_value(true))
-        .arg(Arg::with_name("we-are-launched-by-sudo")
+        .arg(Arg::new("we-are-launched-by-sudo")
             .long("we-are-launched-by-sudo")
-            .hidden(true)
+            .hide(true)
             .takes_value(false))
 }
 
-pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> Result<(), NixError> {
+pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), NixError> {
     // Sanity check: Are we running NixOS?
     if let Ok(os_release) = fs::read_to_string("/etc/os-release").await {
         if !os_release.contains("ID=nixos\n") {

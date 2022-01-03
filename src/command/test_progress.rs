@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use clap::{App, AppSettings, SubCommand, ArgMatches};
+use clap::{App, AppSettings, ArgMatches};
 use tokio::time;
 
 use crate::job::{JobMonitor, JobType};
@@ -13,13 +13,13 @@ macro_rules! node {
     }
 }
 
-pub fn subcommand() -> App<'static, 'static> {
-    SubCommand::with_name("test-progress")
+pub fn subcommand() -> App<'static> {
+    App::new("test-progress")
         .about("Run progress spinner tests")
         .setting(AppSettings::Hidden)
 }
 
-pub async fn run(_global_args: &ArgMatches<'_>, _local_args: &ArgMatches<'_>) -> Result<(), NixError> {
+pub async fn run(_global_args: &ArgMatches, _local_args: &ArgMatches) -> Result<(), NixError> {
     let mut output = SpinnerOutput::new();
     let (monitor, meta) = JobMonitor::new(output.get_sender());
 

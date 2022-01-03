@@ -10,8 +10,8 @@ use clap::ArgMatches;
 use crate::nix::NixError;
 
 /// Runs a closure and tries to troubleshoot if it returns an error.
-pub async fn run_wrapped<'a, F, U, T>(global_args: &'a ArgMatches<'a>, local_args: &'a ArgMatches<'a>, f: U) -> T
-    where U: FnOnce(&'a ArgMatches<'a>, &'a ArgMatches<'a>) -> F,
+pub async fn run_wrapped<'a, F, U, T>(global_args: &'a ArgMatches, local_args: &'a ArgMatches, f: U) -> T
+    where U: FnOnce(&'a ArgMatches, &'a ArgMatches) -> F,
           F: Future<Output = Result<T, NixError>>,
 {
     match f(global_args, local_args).await {
@@ -30,7 +30,7 @@ pub async fn run_wrapped<'a, F, U, T>(global_args: &'a ArgMatches<'a>, local_arg
     }
 }
 
-fn troubleshoot(global_args: &ArgMatches<'_>, _local_args: &ArgMatches<'_>, error: &NixError) -> Result<(), NixError> {
+fn troubleshoot(global_args: &ArgMatches, _local_args: &ArgMatches, error: &NixError) -> Result<(), NixError> {
     if let NixError::NoFlakesSupport = error {
         // People following the tutorial might put hive.nix directly
         // in their Colmena checkout, and encounter NoFlakesSupport

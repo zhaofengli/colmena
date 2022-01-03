@@ -1,7 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 
-use clap::{Arg, App, SubCommand, ArgMatches, ArgSettings};
+use clap::{Arg, App, ArgMatches, ArgSettings};
 
 use crate::nix::deployment::{
     Deployment,
@@ -14,9 +14,9 @@ use crate::progress::SimpleProgressOutput;
 use crate::nix::{NixError, NodeFilter};
 use crate::util;
 
-pub fn register_deploy_args<'a, 'b>(command: App<'a, 'b>) -> App<'a, 'b> {
+pub fn register_deploy_args<'a>(command: App<'a>) -> App<'a> {
     command
-        .arg(Arg::with_name("eval-node-limit")
+        .arg(Arg::new("eval-node-limit")
             .long("eval-node-limit")
             .value_name("LIMIT")
             .help("Evaluation node limit")
@@ -38,8 +38,8 @@ Set to 0 to disable the limit.
                     Err(_) => Err(String::from("The value must be a valid number")),
                 }
             }))
-        .arg(Arg::with_name("parallel")
-            .short("p")
+        .arg(Arg::new("parallel")
+            .short('p')
             .long("parallel")
             .value_name("LIMIT")
             .help("Deploy parallelism limit")
@@ -55,7 +55,7 @@ Set to 0 to disable parallemism limit.
                     Err(_) => Err(String::from("The value must be a valid number")),
                 }
             }))
-        .arg(Arg::with_name("keep-result")
+        .arg(Arg::new("keep-result")
             .long("keep-result")
             .help("Create GC roots for built profiles")
             .long_help(r#"Create GC roots for built profiles.
@@ -64,13 +64,13 @@ The built system profiles will be added as GC roots so that they will not be rem
 The links will be created under .gcroots in the directory the Hive configuration is located.
 "#)
             .takes_value(false))
-        .arg(Arg::with_name("verbose")
-            .short("v")
+        .arg(Arg::new("verbose")
+            .short('v')
             .long("verbose")
             .help("Be verbose")
             .long_help("Deactivates the progress spinner and prints every line of output.")
             .takes_value(false))
-        .arg(Arg::with_name("no-keys")
+        .arg(Arg::new("no-keys")
             .long("no-keys")
             .help("Do not upload keys")
             .long_help(r#"Do not upload secret keys set in `deployment.keys`.
@@ -79,17 +79,17 @@ By default, Colmena will upload keys set in `deployment.keys` before deploying t
 To upload keys without building or deploying the rest of the configuration, use `colmena upload-keys`.
 "#)
             .takes_value(false))
-        .arg(Arg::with_name("no-substitutes")
+        .arg(Arg::new("no-substitutes")
             .long("no-substitutes")
             .help("Do not use substitutes")
             .long_help("Disables the use of substituters when copying closures to the remote host.")
             .takes_value(false))
-        .arg(Arg::with_name("no-gzip")
+        .arg(Arg::new("no-gzip")
             .long("no-gzip")
             .help("Do not use gzip")
             .long_help("Disables the use of gzip when copying closures to the remote host.")
             .takes_value(false))
-        .arg(Arg::with_name("build-on-target")
+        .arg(Arg::new("build-on-target")
             .long("build-on-target")
             .help("Build the system profiles on the target nodes")
             .long_help(r#"Build the system profiles on the target nodes themselves.
@@ -99,11 +99,11 @@ This overrides per-node perferences set in `deployment.buildOnTarget`.
 To temporarily disable remote build on all nodes, use `--no-build-on-target`.
 "#)
             .takes_value(false))
-        .arg(Arg::with_name("no-build-on-target")
+        .arg(Arg::new("no-build-on-target")
             .long("no-build-on-target")
-            .set(ArgSettings::Hidden)
+            .setting(ArgSettings::Hidden)
             .takes_value(false))
-        .arg(Arg::with_name("force-replace-unknown-profiles")
+        .arg(Arg::new("force-replace-unknown-profiles")
             .long("force-replace-unknown-profiles")
             .help("Ignore all targeted nodes deployment.replaceUnknownProfiles setting")
             .long_help(r#"If `deployment.replaceUnknownProfiles` is set for a target, using this switch
@@ -111,10 +111,10 @@ will treat deployment.replaceUnknownProfiles as though it was set true and perfo
             .takes_value(false))
 }
 
-pub fn subcommand() -> App<'static, 'static> {
-    let command = SubCommand::with_name("apply")
+pub fn subcommand() -> App<'static> {
+    let command = App::new("apply")
         .about("Apply configurations on remote machines")
-        .arg(Arg::with_name("goal")
+        .arg(Arg::new("goal")
             .help("Deployment goal")
             .long_help("Same as the targets for switch-to-configuration.\n\"push\" means only copying the closures to remote nodes.")
             .default_value("switch")
@@ -126,7 +126,7 @@ pub fn subcommand() -> App<'static, 'static> {
     util::register_selector_args(command)
 }
 
-pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> Result<(), NixError> {
+pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), NixError> {
     let hive = util::hive_from_args(local_args).await?;
 
     let ssh_config = env::var("SSH_CONFIG_FILE")

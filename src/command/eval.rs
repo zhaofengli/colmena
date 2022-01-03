@@ -1,12 +1,12 @@
 use std::path::PathBuf;
 
-use clap::{Arg, App, AppSettings, SubCommand, ArgMatches};
+use clap::{Arg, App, AppSettings, ArgMatches};
 
 use crate::util;
 use crate::nix::NixError;
 
-pub fn subcommand() -> App<'static, 'static> {
-    SubCommand::with_name("eval")
+pub fn subcommand() -> App<'static> {
+    App::new("eval")
         .about("Evaluate expressions using the complete configuration")
         .long_about(r#"Evaluate expressions using the complete configuration
 
@@ -16,29 +16,29 @@ For example, to retrieve the configuration of one node, you may write something 
 
     { nodes, ... }: nodes.node-a.config.networking.hostName
 "#)
-        .arg(Arg::with_name("expression_file")
+        .arg(Arg::new("expression_file")
             .index(1)
             .value_name("FILE")
             .help("The .nix file containing the expression")
             .takes_value(true))
-        .arg(Arg::with_name("expression")
-            .short("E")
+        .arg(Arg::new("expression")
+            .short('E')
             .value_name("EXPRESSION")
             .help("The Nix expression")
             .takes_value(true))
-        .arg(Arg::with_name("instantiate")
+        .arg(Arg::new("instantiate")
             .long("instantiate")
             .help("Actually instantiate the expression")
             .takes_value(false))
 }
 
-pub fn deprecated_alias() -> App<'static, 'static> {
+pub fn deprecated_alias() -> App<'static> {
     subcommand()
         .name("introspect")
         .setting(AppSettings::Hidden)
 }
 
-pub async fn run(global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> Result<(), NixError> {
+pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), NixError> {
     if let Some("introspect") = global_args.subcommand_name() {
         log::warn!("`colmena introspect` has been renamed to `colmena eval`. Please update your scripts.");
     }

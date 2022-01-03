@@ -2,7 +2,8 @@
 
 use std::env;
 
-use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+use clap::{App, AppSettings, Arg, ArgMatches, ColorChoice};
+use clap_complete::Shell;
 use const_format::concatcp;
 use env_logger::fmt::WriteStyle;
 use lazy_static::lazy_static;
@@ -85,7 +86,7 @@ macro_rules! handle_command {
     };
 }
 
-pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
+pub fn build_cli(include_internal: bool) -> App<'static> {
     let version = env!("CARGO_PKG_VERSION");
     let mut app = App::new("Colmena")
         .bin_name("colmena")
@@ -93,14 +94,13 @@ pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
         .author("Zhaofeng Li <hello@zhaofeng.li>")
         .about("NixOS deployment tool")
         .long_about(LONG_ABOUT.as_str())
-        .global_setting(AppSettings::ColoredHelp)
         .setting(AppSettings::ArgRequiredElseHelp)
-        .arg(Arg::with_name("config")
-            .short("f")
+        .arg(Arg::new("config")
+            .short('f')
             .long("config")
             .value_name("CONFIG")
             .help("Path to a Hive expression, a flake.nix, or a Nix Flake URI")
-            .long_help(&CONFIG_HELP)
+            .long_help(Some(CONFIG_HELP.as_str()))
             .display_order(HELP_ORDER_FIRST)
 
             // The default value is a lie (sort of)!
@@ -111,13 +111,13 @@ pub fn build_cli(include_internal: bool) -> App<'static, 'static> {
             // is explicitly supplied by the user (occurrences_of > 0).
             .default_value("hive.nix")
             .global(true))
-        .arg(Arg::with_name("show-trace")
+        .arg(Arg::new("show-trace")
             .long("show-trace")
             .help("Show debug information for Nix commands")
             .long_help("Passes --show-trace to Nix commands")
             .global(true)
             .takes_value(false))
-        .arg(Arg::with_name("color")
+        .arg(Arg::new("color")
             .long("color")
             .help("When to colorize the output")
             .long_help(r#"When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
@@ -131,15 +131,16 @@ It's also possible to specify the preference using environment variables. See <h
             .global(true));
 
     if include_internal {
-        app = app.subcommand(SubCommand::with_name("gen-completions")
+        app = app.subcommand(App::new("gen-completions")
             .about("Generate shell auto-completion files (Internal)")
             .setting(AppSettings::Hidden)
-            .arg(Arg::with_name("shell")
+            .arg(Arg::new("shell")
                 .index(1)
+                .possible_values(Shell::possible_values())
                 .required(true)
                 .takes_value(true)));
 
-        app = app.subcommand(SubCommand::with_name("gen-help-markdown")
+        app = app.subcommand(App::new("gen-help-markdown")
             .about("Generate CLI usage guide as Markdown (Internal)")
             .setting(AppSettings::Hidden));
 
@@ -178,9 +179,6 @@ pub async fn run() {
     handle_command!(exec, matches);
     handle_command!("nix-info", nix_info, matches);
 
-    // deprecated alias
-    handle_command!("introspect", eval, matches);
-
     #[cfg(debug_assertions)]
     handle_command!("test-progress", test_progress, matches);
 
@@ -192,16 +190,18 @@ pub async fn run() {
         return gen_help_markdown();
     };
 
+    // deprecated alias
+    handle_command!("introspect", eval, matches);
+
     app.print_long_help().unwrap();
     println!();
 }
 
-fn gen_completions(args: &ArgMatches<'_>) {
+fn gen_completions(args: &ArgMatches) {
     let mut app = build_cli(false);
-    let shell: clap::Shell = args.value_of("shell").unwrap()
-        .parse().unwrap();
+    let shell = args.value_of_t::<Shell>("shell").unwrap();
 
-    app.gen_completions_to("colmena", shell, &mut std::io::stdout());
+    clap_complete::generate(shell, &mut app, "colmena", &mut std::io::stdout());
 }
 
 fn gen_help_markdown() {
@@ -226,8 +226,7 @@ fn gen_help_markdown() {
 
         let mut command = {
             let c = command
-                .setting(AppSettings::ColoredHelp)
-                .setting(AppSettings::ColorAlways);
+                .color(ColorChoice::Always);
 
             if full_command != "colmena" {
                 c.bin_name(&full_command)

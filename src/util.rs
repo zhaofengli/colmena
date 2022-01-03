@@ -81,7 +81,7 @@ impl CommandExecution {
     }
 }
 
-pub async fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
+pub async fn hive_from_args(args: &ArgMatches) -> NixResult<Hive> {
     let path = match args.occurrences_of("config") {
         0 => {
             // traverse upwards until we find hive.nix
@@ -157,9 +157,9 @@ pub async fn hive_from_args(args: &ArgMatches<'_>) -> NixResult<Hive> {
     Ok(hive)
 }
 
-pub fn register_selector_args<'a, 'b>(command: App<'a, 'b>) -> App<'a, 'b> {
+pub fn register_selector_args<'a>(command: App<'a>) -> App<'a> {
     command
-        .arg(Arg::with_name("on")
+        .arg(Arg::new("on")
             .long("on")
             .value_name("NODES")
             .help("Node selector")
