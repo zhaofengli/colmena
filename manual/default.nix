@@ -1,4 +1,4 @@
-{ lib, stdenv, nix-gitignore, mdbook, python3, writeScript
+{ lib, stdenv, nix-gitignore, mdbook, python3, callPackage, writeScript
 , deploymentOptionsMd ? null
 , metaOptionsMd ? null
 , colmena ? null
@@ -12,6 +12,12 @@
 
 let
   apiVersion = builtins.concatStringsSep "." (lib.take 2 (lib.splitString "." version));
+
+  colorizedHelp = let
+    help = callPackage ./colorized-help.nix {
+      inherit colmena;
+    };
+  in if colmena != null then help else null;
 
   redirectTemplate = lib.escapeShellArg ''
     <!doctype html>
@@ -28,7 +34,7 @@ let
   '';
 
 in stdenv.mkDerivation {
-  inherit version deploymentOptionsMd metaOptionsMd;
+  inherit version deploymentOptionsMd metaOptionsMd colorizedHelp;
 
   pname = "colmena-manual" + (if unstable then "-unstable" else "");
 
@@ -48,9 +54,8 @@ in stdenv.mkDerivation {
   '';
 
   buildPhase = ''
-    if [ -n "${toString colmena}" ]; then
-        echo "Generating CLI help text"
-        ${toString colmena}/bin/colmena gen-help-markdown >> src/reference/cli.md
+    if [[ -n "$colorizedHelp" ]]; then
+        cat "$colorizedHelp" >> src/reference/cli.md
     else
         echo "Error: No colmena executable passed to the builder" >> src/reference/cli.md
     fi

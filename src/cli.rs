@@ -140,10 +140,6 @@ It's also possible to specify the preference using environment variables. See <h
                 .required(true)
                 .takes_value(true)));
 
-        app = app.subcommand(App::new("gen-help-markdown")
-            .about("Generate CLI usage guide as Markdown (Internal)")
-            .setting(AppSettings::Hidden));
-
         // deprecated alias
         app = app.subcommand(command::eval::deprecated_alias());
 
@@ -160,7 +156,13 @@ It's also possible to specify the preference using environment variables. See <h
     register_command!(exec, app);
     register_command!(nix_info, app);
 
-    app
+    // This does _not_ take the --color flag into account (haven't
+    // parsed yet), only the CLICOLOR environment variable.
+    if clicolors_control::colors_enabled() {
+        app.color(ColorChoice::Always)
+    } else {
+        app
+    }
 }
 
 pub async fn run() {
@@ -186,10 +188,6 @@ pub async fn run() {
         return gen_completions(args);
     }
 
-    if matches.subcommand_matches("gen-help-markdown").is_some() {
-        return gen_help_markdown();
-    };
-
     // deprecated alias
     handle_command!("introspect", eval, matches);
 
@@ -202,54 +200,6 @@ fn gen_completions(args: &ArgMatches) {
     let shell = args.value_of_t::<Shell>("shell").unwrap();
 
     clap_complete::generate(shell, &mut app, "colmena", &mut std::io::stdout());
-}
-
-fn gen_help_markdown() {
-    // This is tailered only for the manual, with output injected to `reference/cli.md`.
-    // <pre><div class="hljs">
-    let mut commands = vec![
-        build_cli(false),
-        command::apply::subcommand(),
-        command::apply_local::subcommand(),
-        command::build::subcommand(),
-        command::upload_keys::subcommand(),
-        command::eval::subcommand(),
-        command::exec::subcommand(),
-        command::nix_info::subcommand(),
-    ];
-
-    for command in commands.drain(..) {
-        let full_command = match command.get_name() {
-            "Colmena" => "colmena".to_string(),
-            sub => format!("colmena {}", sub),
-        };
-
-        let mut command = {
-            let c = command
-                .color(ColorChoice::Always);
-
-            if full_command != "colmena" {
-                c.bin_name(&full_command)
-            } else {
-                c
-            }
-        };
-
-        println!("## `{}`", full_command);
-        print!("<pre><div class=\"hljs\">");
-
-        let help_message = {
-            let mut bytes = Vec::new();
-            command.write_long_help(&mut bytes).unwrap();
-            String::from_utf8(bytes).unwrap()
-        };
-
-        let help_html = ansi_to_html::convert(&help_message, true, true)
-            .expect("Could not convert terminal output to HTML");
-
-        print!("{}", help_html);
-        println!("</div></pre>");
-    }
 }
 
 fn set_color_pref(cli: &str) {

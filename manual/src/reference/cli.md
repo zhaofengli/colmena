@@ -1,4 +1,4 @@
-# Command Line Arguments
+# Command Line Options
 
 <!-- UNSTABLE_BEGIN -->
 You are currently reading **the unstable version** of the Colmena Manual, built against the tip of [the development branch](https://github.com/zhaofengli/colmena).
