@@ -18,6 +18,7 @@ env_logger = "0.9.0"
 futures = "0.3.8"
 glob = "0.3.0"
 hostname = "0.3.1"
+indicatif = "0.17.0-rc.1"
 itertools = "0.10.1"
 lazy_static = "1.4.0"
 libc = "0.2.81"
@@ -34,10 +35,6 @@ tokio-test = "0.4.0"
 users = "0.11.0"
 uuid = { version = "0.8.2", features = ["serde", "v4"] }
 validator = { version = "0.14", features = ["derive"] }
-
-# For https://github.com/mitsuhiko/indicatif/pull/325
-# Change back to 0.17.0-beta.2 when it releases
-indicatif = { git = "https://github.com/mitsuhiko/indicatif", rev = "5a38ab70b75be5fc9f4a00c4d9d58adabb817398" }
 
 [dependencies.tokio]
 version = "1.0.0"

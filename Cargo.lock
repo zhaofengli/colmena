@@ -398,13 +398,12 @@ dependencies = [
 
 [[package]]
 name = "indicatif"
-version = "0.17.0-beta.1"
-source = "git+https://github.com/mitsuhiko/indicatif?rev=5a38ab70b75be5fc9f4a00c4d9d58adabb817398#5a38ab70b75be5fc9f4a00c4d9d58adabb817398"
+version = "0.17.0-rc.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c112b1e714737c51fa137aaf6ae2cdf6960d01895e096a6feb1e0afd192c790d"
 dependencies = [
  "console",
  "number_prefix",
- "once_cell",
- "regex",
 ]
 
 [[package]]
