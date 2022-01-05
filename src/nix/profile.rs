@@ -100,7 +100,7 @@ impl TryFrom<BuildResult<Profile>> for Profile {
             });
         }
 
-        let path = paths.into_iter().next()
+        let path = paths.iter().next()
             .unwrap().to_owned();
 
         Ok(Self::from_store_path_unchecked(path))

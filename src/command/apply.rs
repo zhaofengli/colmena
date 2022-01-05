@@ -14,7 +14,7 @@ use crate::progress::SimpleProgressOutput;
 use crate::nix::{NixError, NodeFilter};
 use crate::util;
 
-pub fn register_deploy_args<'a>(command: App<'a>) -> App<'a> {
+pub fn register_deploy_args(command: App) -> App {
     command
         .arg(Arg::new("eval-node-limit")
             .long("eval-node-limit")

@@ -382,10 +382,7 @@ impl JobMonitor {
             metadata.custom_message = message;
         }
 
-        let metadata = if new_state == JobState::Waiting {
-            // Waiting state doesn't generate user-visible output
-            metadata
-        } else {
+        if new_state != JobState::Waiting {
             if let Some(sender) = &self.progress {
                 let text = if new_state == JobState::Succeeded {
                     metadata.custom_message.clone()
@@ -406,8 +403,6 @@ impl JobMonitor {
                     sender.send(message).unwrap();
                 }
             }
-
-            metadata
         };
 
         self.jobs.insert(job_id, metadata);

@@ -157,7 +157,7 @@ pub async fn hive_from_args(args: &ArgMatches) -> NixResult<Hive> {
     Ok(hive)
 }
 
-pub fn register_selector_args<'a>(command: App<'a>) -> App<'a> {
+pub fn register_selector_args(command: App) -> App {
     command
         .arg(Arg::new("on")
             .long("on")
