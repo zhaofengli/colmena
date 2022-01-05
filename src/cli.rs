@@ -224,6 +224,7 @@ fn init_logging() {
     env_logger::builder()
         .format_timestamp(None)
         .format_module_path(false)
+        .format_target(false)
         .write_style(style)
         .init();
 }
