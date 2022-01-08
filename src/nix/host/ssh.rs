@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use tokio::process::Command;
 
 use super::{CopyDirection, CopyOptions, Host, key_uploader};
-use crate::nix::{StorePath, Profile, Goal, NixResult, NixCommand, NixError, Key, SYSTEM_PROFILE};
+use crate::nix::{StorePath, Profile, Goal, NixResult, NixCommand, NixError, Key, SYSTEM_PROFILE, CURRENT_PROFILE};
 use crate::util::CommandExecution;
 use crate::job::JobHandle;
 
@@ -78,26 +78,19 @@ impl Host for Ssh {
         let command = self.ssh(command);
         self.run_command(command).await
     }
-    async fn active_derivation_known(&mut self) -> NixResult<bool> {
-        let paths = self.ssh(&["realpath", SYSTEM_PROFILE])
-            .capture_output()
-            .await;
+    async fn get_main_system_profile(&mut self) -> NixResult<StorePath> {
+        let command = format!("\"readlink -e {} || readlink -e {}\"", SYSTEM_PROFILE, CURRENT_PROFILE);
 
-        match paths {
-            Ok(paths) => {
-                if let Some(path) = paths.lines().into_iter().next() {
-                    let remote_profile: StorePath = path.to_string().try_into().unwrap();
-                    if remote_profile.exists() {
-                        return Ok(true);
-                    }
-                    return Err(NixError::ActiveProfileUnknown {
-                        store_path: path.to_string(),
-                    });
-                }
-                return Ok(false);
-            }
-            Err(e) => Err(e),
-        }
+        let paths = self.ssh(&["sh", "-c", &command])
+            .capture_output()
+            .await?;
+
+        let path = paths.lines().into_iter().next()
+            .ok_or(NixError::FailedToGetCurrentProfile)?
+            .to_string()
+            .try_into()?;
+
+        Ok(path)
     }
     fn set_job(&mut self, job: Option<JobHandle>) {
         self.job = job;

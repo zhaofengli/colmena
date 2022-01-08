@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use tokio::process::Command;
 
 use super::{CopyDirection, CopyOptions, Host, key_uploader};
-use crate::nix::{StorePath, Profile, Goal, NixError, NixResult, NixCommand, Key, SYSTEM_PROFILE};
+use crate::nix::{StorePath, Profile, Goal, NixError, NixResult, NixCommand, Key, SYSTEM_PROFILE, CURRENT_PROFILE};
 use crate::util::CommandExecution;
 use crate::job::JobHandle;
 
@@ -90,8 +90,19 @@ impl Host for Local {
 
         result
     }
-    async fn active_derivation_known(&mut self) -> NixResult<bool> {
-        Ok(true)
+
+    async fn get_main_system_profile(&mut self) -> NixResult<StorePath> {
+        let paths = Command::new("sh")
+            .args(&["-c", &format!("readlink -e {} || readlink -e {}", SYSTEM_PROFILE, CURRENT_PROFILE)])
+            .capture_output()
+            .await?;
+
+        let path = paths.lines().into_iter().next()
+            .ok_or(NixError::FailedToGetCurrentProfile)?
+            .to_string()
+            .try_into()?;
+
+        Ok(path)
     }
 
     fn set_job(&mut self, job: Option<JobHandle>) {

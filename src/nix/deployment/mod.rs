@@ -428,16 +428,18 @@ impl Deployment {
 
             if !target.config.replace_unknown_profiles {
                 job.message("Checking remote profile...".to_string())?;
-                match host.active_derivation_known().await {
-                    Ok(_) => {
-                        job.message("Remote profile known".to_string())?;
-                    }
-                    Err(e) => {
-                        if arc_self.options.force_replace_unknown_profiles {
-                            job.message("warning: remote profile is unknown, but unknown profiles are being ignored".to_string())?;
-                        } else {
-                            return Err(e);
-                        }
+
+                let profile = host.get_main_system_profile().await?;
+
+                if profile.exists() {
+                    job.message("Remote profile known".to_string())?;
+                } else {
+                    if arc_self.options.force_replace_unknown_profiles {
+                        job.message("Warning: Remote profile is unknown, but unknown profiles are being ignored".to_string())?;
+                    } else {
+                        return Err(NixError::ActiveProfileUnknown {
+                            store_path: profile,
+                        });
                     }
                 }
             }

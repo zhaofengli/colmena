@@ -44,7 +44,11 @@ pub use flake::Flake;
 pub mod node_filter;
 pub use node_filter::NodeFilter;
 
+/// Path to the main system profile.
 pub const SYSTEM_PROFILE: &str = "/nix/var/nix/profiles/system";
+
+/// Path to the system profile that's currently active.
+pub const CURRENT_PROFILE: &str = "/run/current-system";
 
 pub type NixResult<T> = Result<T, NixError>;
 
@@ -81,8 +85,11 @@ pub enum NixError {
     #[snafu(display("Invalid NixOS system profile"))]
     InvalidProfile,
 
-    #[snafu(display("Unknown active profile: {}", store_path))]
-    ActiveProfileUnknown { store_path: String },
+    #[snafu(display("Unknown active profile: {:?}", store_path))]
+    ActiveProfileUnknown { store_path: StorePath },
+
+    #[snafu(display("Could not determine current profile"))]
+    FailedToGetCurrentProfile,
 
     #[snafu(display("Current Nix version does not support Flakes"))]
     NoFlakesSupport,

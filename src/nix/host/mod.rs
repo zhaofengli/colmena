@@ -110,8 +110,12 @@ pub trait Host: Send + Sync + std::fmt::Debug {
         Err(NixError::Unsupported)
     }
 
-    /// Check if the active profile is known to the host running Colmena
-    async fn active_derivation_known(&mut self) -> NixResult<bool>;
+    /// Returns the main system profile on the host.
+    ///
+    /// This may _not_ be the system profile that's currently activated!
+    /// It will first try `/nix/var/nix/profiles/system`, falling back
+    /// to `/run/current-system` if it doesn't exist.
+    async fn get_main_system_profile(&mut self) -> NixResult<StorePath>;
 
     /// Activates a system profile on the host, if it runs NixOS.
     ///
