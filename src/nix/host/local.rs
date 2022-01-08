@@ -6,8 +6,8 @@ use async_trait::async_trait;
 use tokio::process::Command;
 
 use super::{CopyDirection, CopyOptions, Host, key_uploader};
-use crate::nix::{StorePath, Profile, Goal, NixError, NixResult, NixCommand, Key, SYSTEM_PROFILE, CURRENT_PROFILE};
-use crate::util::CommandExecution;
+use crate::nix::{StorePath, Profile, Goal, NixError, NixResult, Key, SYSTEM_PROFILE, CURRENT_PROFILE};
+use crate::util::{CommandExecution, CommandExt};
 use crate::job::JobHandle;
 
 /// The local machine running Colmena.

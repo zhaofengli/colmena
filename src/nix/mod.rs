@@ -1,20 +1,15 @@
 use std::collections::HashMap;
-use std::convert::TryFrom;
 use std::hash::Hash;
 use std::ops::Deref;
 use std::os::unix::process::ExitStatusExt;
 use std::path::Path;
-use std::process::{ExitStatus, Stdio};
+use std::process::ExitStatus;
 
-use async_trait::async_trait;
-use serde::de::{self, DeserializeOwned};
+use serde::de;
 use serde::{Deserialize, Deserializer, Serialize};
 use snafu::Snafu;
-use tokio::process::Command;
 use users::get_current_username;
 use validator::{Validate, ValidationErrors, ValidationError as ValidationErrorType};
-
-use crate::util::CommandExecution;
 
 pub mod host;
 pub use host::{Host, CopyDirection, CopyOptions};
@@ -181,14 +176,6 @@ pub struct NodeConfig {
     keys: HashMap<String, Key>,
 }
 
-#[async_trait]
-trait NixCommand {
-    async fn passthrough(&mut self) -> NixResult<()>;
-    async fn capture_output(&mut self) -> NixResult<String>;
-    async fn capture_json<T>(&mut self) -> NixResult<T> where T: DeserializeOwned;
-    async fn capture_store_path(&mut self) -> NixResult<StorePath>;
-}
-
 impl NodeName {
     /// Returns the string.
     pub fn as_str(&self) -> &str {
@@ -255,86 +242,6 @@ impl NodeConfig {
 
             host
         })
-    }
-}
-
-#[async_trait]
-impl NixCommand for Command {
-    /// Runs the command with stdout and stderr passed through to the user.
-    async fn passthrough(&mut self) -> NixResult<()> {
-        let exit = self
-            .spawn()?
-            .wait()
-            .await?;
-
-        if exit.success() {
-            Ok(())
-        } else {
-            Err(exit.into())
-        }
-    }
-
-    /// Captures output as a String.
-    async fn capture_output(&mut self) -> NixResult<String> {
-        // We want the user to see the raw errors
-        let output = self
-            .stdout(Stdio::piped())
-            .stderr(Stdio::inherit())
-            .spawn()?
-            .wait_with_output()
-            .await?;
-
-        if output.status.success() {
-            // FIXME: unwrap
-            Ok(String::from_utf8(output.stdout).unwrap())
-        } else {
-            Err(output.status.into())
-        }
-    }
-
-    /// Captures deserialized output from JSON.
-    async fn capture_json<T>(&mut self) -> NixResult<T> where T: DeserializeOwned {
-        let output = self.capture_output().await?;
-        serde_json::from_str(&output).map_err(|_| NixError::BadOutput {
-            output: output.clone()
-        })
-    }
-
-    /// Captures a single store path.
-    async fn capture_store_path(&mut self) -> NixResult<StorePath> {
-        let output = self.capture_output().await?;
-        let path = output.trim_end().to_owned();
-        StorePath::try_from(path)
-    }
-}
-
-#[async_trait]
-impl NixCommand for CommandExecution {
-    async fn passthrough(&mut self) -> NixResult<()> {
-        self.run().await
-    }
-
-    /// Captures output as a String.
-    async fn capture_output(&mut self) -> NixResult<String> {
-        self.run().await?;
-        let (stdout, _) = self.get_logs();
-
-        Ok(stdout.unwrap().to_owned())
-    }
-
-    /// Captures deserialized output from JSON.
-    async fn capture_json<T>(&mut self) -> NixResult<T> where T: DeserializeOwned {
-        let output = self.capture_output().await?;
-        serde_json::from_str(&output).map_err(|_| NixError::BadOutput {
-            output: output.clone()
-        })
-    }
-
-    /// Captures a single store path.
-    async fn capture_store_path(&mut self) -> NixResult<StorePath> {
-        let output = self.capture_output().await?;
-        let path = output.trim_end().to_owned();
-        StorePath::try_from(path)
     }
 }
 

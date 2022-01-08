@@ -7,7 +7,8 @@ use std::fmt;
 use serde::{Serialize, Deserialize};
 use tokio::process::Command;
 
-use super::{Host, NixCommand, NixResult, NixError};
+use crate::util::CommandExt;
+use super::{Host, NixResult, NixError};
 
 /// A Nix store path.
 #[derive(Debug, Clone, Serialize, Deserialize)]

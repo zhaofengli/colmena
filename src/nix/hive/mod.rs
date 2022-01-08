@@ -19,8 +19,7 @@ use super::{
     StorePath,
 };
 use super::deployment::TargetNode;
-use super::NixCommand;
-use crate::util::CommandExecution;
+use crate::util::{CommandExecution, CommandExt};
 use crate::job::JobHandle;
 
 #[cfg(test)]
