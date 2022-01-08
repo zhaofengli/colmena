@@ -2,8 +2,9 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use super::{StorePath, Profile, Goal, ColmenaResult, ColmenaError, Key};
+use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::JobHandle;
+use super::{StorePath, Profile, Goal, Key, NixOptions};
 
 mod ssh;
 pub use ssh::Ssh;
@@ -13,7 +14,7 @@ pub use local::Local;
 
 mod key_uploader;
 
-pub(crate) fn local(nix_options: Vec<String>) -> Box<dyn Host + 'static> {
+pub(crate) fn local(nix_options: NixOptions) -> Box<dyn Host + 'static> {
     Box::new(Local::new(nix_options))
 }
 

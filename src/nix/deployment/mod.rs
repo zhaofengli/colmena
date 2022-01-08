@@ -20,6 +20,7 @@ use itertools::Itertools;
 use crate::progress::Sender as ProgressSender;
 use crate::job::{JobMonitor, JobHandle, JobType, JobState};
 use crate::util;
+use super::NixOptions;
 
 use super::{
     Hive,
@@ -55,7 +56,7 @@ pub struct Deployment {
     options: Options,
 
     /// Options passed to Nix invocations.
-    nix_options: Vec<String>,
+    nix_options: NixOptions,
 
     /// Handle to send messages to the ProgressOutput.
     progress: Option<ProgressSender>,
@@ -106,7 +107,7 @@ impl Deployment {
             hive,
             goal,
             options: Options::default(),
-            nix_options: Vec::new(),
+            nix_options: NixOptions::default(),
             progress,
             nodes: targets.keys().cloned().collect(),
             targets,
@@ -133,7 +134,7 @@ impl Deployment {
             monitor.set_label_width(width);
         }
 
-        let nix_options = self.hive.nix_options().await?;
+        let nix_options = self.hive.nix_options_with_builders().await?;
         self.nix_options = nix_options;
 
         if self.goal == Goal::UploadKeys {

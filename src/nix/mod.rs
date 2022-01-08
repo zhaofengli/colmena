@@ -81,6 +81,22 @@ pub struct NodeConfig {
     keys: HashMap<String, Key>,
 }
 
+/// Nix options.
+#[derive(Debug, Clone)]
+pub struct NixOptions {
+    /// Whether to pass --show-trace.
+    show_trace: bool,
+
+    /// Designated builders.
+    ///
+    /// See <https://nixos.org/manual/nix/stable/advanced-topics/distributed-builds.html>.
+    ///
+    /// Valid examples:
+    /// - `@/path/to/machines`
+    /// - `builder@host.tld riscv64-linux /home/nix/.ssh/keys/builder.key 8 1 kvm`
+    builders: Option<String>,
+}
+
 impl NodeName {
     /// Returns the string.
     pub fn as_str(&self) -> &str {
@@ -147,6 +163,43 @@ impl NodeConfig {
 
             host
         })
+    }
+}
+
+impl Default for NixOptions {
+    fn default() -> Self {
+        Self {
+            show_trace: false,
+            builders: None,
+        }
+    }
+}
+
+impl NixOptions {
+    pub fn set_show_trace(&mut self, show_trace: bool) {
+        self.show_trace = show_trace;
+    }
+
+    pub fn set_builders(&mut self, builders: Option<String>) {
+        self.builders = builders;
+    }
+
+    pub fn to_args(&self) -> Vec<String> {
+        let mut options = Vec::new();
+
+        if let Some(builders) = &self.builders {
+            options.append(&mut vec![
+                "--option".to_string(),
+                "builders".to_string(),
+                builders.clone(),
+            ]);
+        }
+
+        if self.show_trace {
+            options.push("--show-trace".to_string());
+        }
+
+        options
     }
 }
 

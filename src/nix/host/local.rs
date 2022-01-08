@@ -6,7 +6,7 @@ use async_trait::async_trait;
 use tokio::process::Command;
 
 use crate::error::{ColmenaResult, ColmenaError};
-use crate::nix::{StorePath, Profile, Goal, Key, SYSTEM_PROFILE, CURRENT_PROFILE};
+use crate::nix::{StorePath, Profile, Goal, Key, NixOptions, SYSTEM_PROFILE, CURRENT_PROFILE};
 use crate::util::{CommandExecution, CommandExt};
 use crate::job::JobHandle;
 use super::{CopyDirection, CopyOptions, Host, key_uploader};
@@ -18,11 +18,11 @@ use super::{CopyDirection, CopyOptions, Host, key_uploader};
 #[derive(Debug)]
 pub struct Local {
     job: Option<JobHandle>,
-    nix_options: Vec<String>,
+    nix_options: NixOptions,
 }
 
 impl Local {
-    pub fn new(nix_options: Vec<String>) -> Self {
+    pub fn new(nix_options: NixOptions) -> Self {
         Self {
             job: None,
             nix_options,
@@ -39,7 +39,7 @@ impl Host for Local {
     async fn realize_remote(&mut self, derivation: &StorePath) -> ColmenaResult<Vec<StorePath>> {
         let mut command = Command::new("nix-store");
 
-        command.args(self.nix_options.clone());
+        command.args(self.nix_options.to_args());
         command
             .arg("--no-gc-warning")
             .arg("--realise")

@@ -11,7 +11,7 @@ use validator::Validate;
 
 use super::{
     Flake,
-    ColmenaResult,
+    NixOptions,
     NodeName,
     NodeConfig,
     NodeFilter,
@@ -19,6 +19,7 @@ use super::{
     StorePath,
 };
 use super::deployment::TargetNode;
+use crate::error::ColmenaResult;
 use crate::util::{CommandExecution, CommandExt};
 use crate::job::JobHandle;
 
@@ -82,8 +83,8 @@ pub struct Hive {
     /// Whether to pass --show-trace in Nix commands.
     show_trace: bool,
 
-    /// The cached --builders expression.
-    builders: RwLock<Option<Option<String>>>,
+    /// The cached machines_file expression.
+    machines_file: RwLock<Option<Option<String>>>,
 }
 
 impl Hive {
@@ -98,7 +99,7 @@ impl Hive {
             context_dir,
             eval_nix: eval_nix.into_temp_path(),
             show_trace: false,
-            builders: RwLock::new(None),
+            machines_file: RwLock::new(None),
         })
     }
 
@@ -110,11 +111,20 @@ impl Hive {
         self.show_trace = value;
     }
 
-    pub async fn nix_options(&self) -> ColmenaResult<Vec<String>> {
-        let mut options = self.builder_args().await?;
+    /// Returns Nix options to set for this Hive.
+    pub fn nix_options(&self) -> NixOptions {
+        let mut options = NixOptions::default();
+        options.set_show_trace(self.show_trace);
+        options
+    }
 
-        if self.show_trace {
-            options.push("--show-trace".to_owned());
+    /// Returns Nix options to set for this Hive, with configured remote builders.
+    pub async fn nix_options_with_builders(&self) -> ColmenaResult<NixOptions> {
+        let mut options = NixOptions::default();
+        options.set_show_trace(self.show_trace);
+
+        if let Some(machines_file) = self.machines_file().await? {
+            options.set_builders(Some(format!("@{}", machines_file)));
         }
 
         Ok(options)
@@ -266,7 +276,7 @@ impl Hive {
             .collect()
     }
 
-    /// Evaluates an expression using values from the configuration
+    /// Evaluates an expression using values from the configuration.
     pub async fn introspect(&self, expression: String, instantiate: bool) -> ColmenaResult<String> {
         if instantiate {
             let expression = format!("hive.introspect ({})", expression);
@@ -279,10 +289,10 @@ impl Hive {
         }
     }
 
-    /// Retrieve machinesFile setting for the hive.
+    /// Retrieve the machinesFile setting for the Hive.
     async fn machines_file(&self) -> ColmenaResult<Option<String>> {
-        if let Some(builders_opt) = &*self.builders.read().await {
-            return Ok(builders_opt.clone());
+        if let Some(machines_file) = &*self.machines_file.read().await {
+            return Ok(machines_file.clone());
         }
 
         let expr = "toJSON (hive.meta.machinesFile or null)";
@@ -290,24 +300,9 @@ impl Hive {
             .capture_json().await?;
 
         let parsed: Option<String> = serde_json::from_str(&s).unwrap();
-        self.builders.write().await.replace(parsed.clone());
+        self.machines_file.write().await.replace(parsed.clone());
 
         Ok(parsed)
-    }
-
-    /// Returns Nix arguments to set builders.
-    async fn builder_args(&self) -> ColmenaResult<Vec<String>> {
-        let mut options = Vec::new();
-
-        if let Some(machines_file) = self.machines_file().await? {
-            options.append(&mut vec![
-                "--option".to_owned(),
-                "builders".to_owned(),
-                format!("@{}", machines_file),
-            ]);
-        }
-
-        Ok(options)
     }
 
     fn nix_instantiate(&self, expression: &str) -> NixInstantiate {
@@ -332,7 +327,7 @@ impl<'hive> NixInstantiate<'hive> {
         }
     }
 
-    fn instantiate(self) -> Command {
+    fn instantiate(&self) -> Command {
         // FIXME: unwrap
         // Technically filenames can be arbitrary byte strings (OsStr),
         // but Nix may not like it...
@@ -365,38 +360,34 @@ impl<'hive> NixInstantiate<'hive> {
             }
         }
 
-        if self.hive.show_trace {
-            command.arg("--show-trace");
-        }
-
         command
     }
 
     fn eval(self) -> Command {
         let mut command = self.instantiate();
+        let options = self.hive.nix_options();
         command.arg("--eval").arg("--json").arg("--strict")
             // Ensures the derivations are instantiated
             // Required for system profile evaluation and IFD
-            .arg("--read-write-mode");
+            .arg("--read-write-mode")
+            .args(options.to_args());
         command
     }
 
     async fn instantiate_with_builders(self) -> ColmenaResult<Command> {
-        let hive = self.hive;
+        let options = self.hive.nix_options_with_builders().await?;
         let mut command = self.instantiate();
 
-        let builder_args = hive.builder_args().await?;
-        command.args(&builder_args);
+        command.args(options.to_args());
 
         Ok(command)
     }
 
     async fn eval_with_builders(self) -> ColmenaResult<Command> {
-        let hive = self.hive;
+        let options = self.hive.nix_options_with_builders().await?;
         let mut command = self.eval();
 
-        let builder_args = hive.builder_args().await?;
-        command.args(&builder_args);
+        command.args(options.to_args());
 
         Ok(command)
     }
