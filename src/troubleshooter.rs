@@ -7,12 +7,12 @@ use std::future::Future;
 
 use clap::ArgMatches;
 
-use crate::nix::NixError;
+use crate::error::ColmenaError;
 
 /// Runs a closure and tries to troubleshoot if it returns an error.
 pub async fn run_wrapped<'a, F, U, T>(global_args: &'a ArgMatches, local_args: &'a ArgMatches, f: U) -> T
     where U: FnOnce(&'a ArgMatches, &'a ArgMatches) -> F,
-          F: Future<Output = Result<T, NixError>>,
+          F: Future<Output = Result<T, ColmenaError>>,
 {
     match f(global_args, local_args).await {
         Ok(r) => r,
@@ -30,8 +30,8 @@ pub async fn run_wrapped<'a, F, U, T>(global_args: &'a ArgMatches, local_args: &
     }
 }
 
-fn troubleshoot(global_args: &ArgMatches, _local_args: &ArgMatches, error: &NixError) -> Result<(), NixError> {
-    if let NixError::NoFlakesSupport = error {
+fn troubleshoot(global_args: &ArgMatches, _local_args: &ArgMatches, error: &ColmenaError) -> Result<(), ColmenaError> {
+    if let ColmenaError::NoFlakesSupport = error {
         // People following the tutorial might put hive.nix directly
         // in their Colmena checkout, and encounter NoFlakesSupport
         // because Colmena always prefers flake.nix when it exists.

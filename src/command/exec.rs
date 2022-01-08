@@ -6,8 +6,9 @@ use clap::{Arg, App, AppSettings, ArgMatches};
 use futures::future::join_all;
 use tokio::sync::Semaphore;
 
-use crate::nix::{NixError, NodeFilter};
+use crate::error::ColmenaError;
 use crate::job::{JobMonitor, JobState, JobType};
+use crate::nix::NodeFilter;
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
@@ -54,7 +55,7 @@ It's recommended to use -- to separate Colmena options from the command to run. 
     util::register_selector_args(command)
 }
 
-pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), NixError> {
+pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
     let hive = util::hive_from_args(local_args).await?;
     let ssh_config = env::var("SSH_CONFIG_FILE")
         .ok().map(PathBuf::from);

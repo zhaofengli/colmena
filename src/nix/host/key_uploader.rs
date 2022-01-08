@@ -12,8 +12,9 @@ use shell_escape::unix::escape;
 use tokio::io::{AsyncWriteExt, BufReader};
 use tokio::process::Child;
 
+use crate::error::ColmenaResult;
 use crate::job::JobHandle;
-use crate::nix::{Key, NixResult};
+use crate::nix::Key;
 use crate::util::capture_stream;
 
 const SCRIPT_TEMPLATE: &str = include_str!("./key_uploader.template.sh");
@@ -30,7 +31,7 @@ pub fn generate_script<'a>(key: &'a Key, destination: &'a Path, require_ownershi
     escape(key_script.into())
 }
 
-pub async fn feed_uploader(mut uploader: Child, key: &Key, job: Option<JobHandle>) -> NixResult<()> {
+pub async fn feed_uploader(mut uploader: Child, key: &Key, job: Option<JobHandle>) -> ColmenaResult<()> {
     let mut reader = key.reader().await?;
     let mut stdin = uploader.stdin.take().unwrap();
 

@@ -5,10 +5,11 @@ use std::process::Stdio;
 use async_trait::async_trait;
 use tokio::process::Command;
 
-use super::{CopyDirection, CopyOptions, Host, key_uploader};
-use crate::nix::{StorePath, Profile, Goal, NixError, NixResult, Key, SYSTEM_PROFILE, CURRENT_PROFILE};
+use crate::error::{ColmenaResult, ColmenaError};
+use crate::nix::{StorePath, Profile, Goal, Key, SYSTEM_PROFILE, CURRENT_PROFILE};
 use crate::util::{CommandExecution, CommandExt};
 use crate::job::JobHandle;
+use super::{CopyDirection, CopyOptions, Host, key_uploader};
 
 /// The local machine running Colmena.
 ///
@@ -31,11 +32,11 @@ impl Local {
 
 #[async_trait]
 impl Host for Local {
-    async fn copy_closure(&mut self, _closure: &StorePath, _direction: CopyDirection, _options: CopyOptions) -> NixResult<()> {
+    async fn copy_closure(&mut self, _closure: &StorePath, _direction: CopyDirection, _options: CopyOptions) -> ColmenaResult<()> {
         Ok(())
     }
 
-    async fn realize_remote(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
+    async fn realize_remote(&mut self, derivation: &StorePath) -> ColmenaResult<Vec<StorePath>> {
         let mut command = Command::new("nix-store");
 
         command.args(self.nix_options.clone());
@@ -55,7 +56,7 @@ impl Host for Local {
             .map(|p| p.to_string().try_into()).collect()
     }
 
-    async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> NixResult<()> {
+    async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> ColmenaResult<()> {
         for (name, key) in keys {
             self.upload_key(name, key, require_ownership).await?;
         }
@@ -63,9 +64,9 @@ impl Host for Local {
         Ok(())
     }
 
-    async fn activate(&mut self, profile: &Profile, goal: Goal) -> NixResult<()> {
+    async fn activate(&mut self, profile: &Profile, goal: Goal) -> ColmenaResult<()> {
         if !goal.requires_activation() {
-            return Err(NixError::Unsupported);
+            return Err(ColmenaError::Unsupported);
         }
 
         if goal.should_switch_profile() {
@@ -91,14 +92,14 @@ impl Host for Local {
         result
     }
 
-    async fn get_main_system_profile(&mut self) -> NixResult<StorePath> {
+    async fn get_main_system_profile(&mut self) -> ColmenaResult<StorePath> {
         let paths = Command::new("sh")
             .args(&["-c", &format!("readlink -e {} || readlink -e {}", SYSTEM_PROFILE, CURRENT_PROFILE)])
             .capture_output()
             .await?;
 
         let path = paths.lines().into_iter().next()
-            .ok_or(NixError::FailedToGetCurrentProfile)?
+            .ok_or(ColmenaError::FailedToGetCurrentProfile)?
             .to_string()
             .try_into()?;
 
@@ -112,7 +113,7 @@ impl Host for Local {
 
 impl Local {
     /// "Uploads" a single key.
-    async fn upload_key(&mut self, name: &str, key: &Key, require_ownership: bool) -> NixResult<()> {
+    async fn upload_key(&mut self, name: &str, key: &Key, require_ownership: bool) -> ColmenaResult<()> {
         if let Some(job) = &self.job {
             job.message(format!("Deploying key {}", name))?;
         }

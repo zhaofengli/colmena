@@ -6,8 +6,8 @@ use tokio::process::Command;
 
 use super::{
     Goal,
-    NixResult,
-    NixError,
+    ColmenaResult,
+    ColmenaError,
     StorePath,
     StoreDerivation,
     BuildResult,
@@ -20,16 +20,16 @@ pub type ProfileDerivation = StoreDerivation<Profile>;
 pub struct Profile(StorePath);
 
 impl Profile {
-    pub fn from_store_path(path: StorePath) -> NixResult<Self> {
+    pub fn from_store_path(path: StorePath) -> ColmenaResult<Self> {
         if
             !path.is_dir() ||
             !path.join("bin/switch-to-configuration").exists()
         {
-            return Err(NixError::InvalidProfile);
+            return Err(ColmenaError::InvalidProfile);
         }
 
         if path.to_str().is_none() {
-            Err(NixError::InvalidProfile)
+            Err(ColmenaError::InvalidProfile)
         } else {
             Ok(Self(path))
         }
@@ -63,7 +63,7 @@ impl Profile {
     }
 
     /// Create a GC root for this profile.
-    pub async fn create_gc_root(&self, path: &Path) -> NixResult<()> {
+    pub async fn create_gc_root(&self, path: &Path) -> ColmenaResult<()> {
         let mut command = Command::new("nix-store");
         command.args(&["--no-build-output", "--indirect", "--add-root", path.to_str().unwrap()]);
         command.args(&["--realise", self.as_path().to_str().unwrap()]);
@@ -83,19 +83,19 @@ impl Profile {
 }
 
 impl TryFrom<BuildResult<Profile>> for Profile {
-    type Error = NixError;
+    type Error = ColmenaError;
 
-    fn try_from(result: BuildResult<Self>) -> NixResult<Self> {
+    fn try_from(result: BuildResult<Self>) -> ColmenaResult<Self> {
         let paths = result.paths();
 
         if paths.is_empty() {
-            return Err(NixError::BadOutput {
+            return Err(ColmenaError::BadOutput {
                 output: String::from("There is no store path"),
             });
         }
 
         if paths.len() > 1 {
-            return Err(NixError::BadOutput {
+            return Err(ColmenaError::BadOutput {
                 output: String::from("Build resulted in more than 1 store path"),
             });
         }

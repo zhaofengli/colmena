@@ -13,8 +13,8 @@ use tokio::sync::mpsc::{self,
     UnboundedSender as TokioSender,
 };
 
+use crate::error::ColmenaResult;
 use crate::job::JobId;
-use crate::nix::NixResult;
 
 pub use plain::PlainOutput;
 pub use spinner::SpinnerOutput;
@@ -33,7 +33,7 @@ pub enum SimpleProgressOutput {
 #[async_trait]
 pub trait ProgressOutput : Sized {
     /// Runs until a Message::Complete is received.
-    async fn run_until_completion(self) -> NixResult<Self>;
+    async fn run_until_completion(self) -> ColmenaResult<Self>;
 
     /// Returns a sender.
     ///
@@ -109,7 +109,7 @@ impl SimpleProgressOutput {
         }
     }
 
-    pub async fn run_until_completion(self) -> NixResult<Self> {
+    pub async fn run_until_completion(self) -> ColmenaResult<Self> {
         match self {
             Self::Plain(o) => {
                 o.run_until_completion().await

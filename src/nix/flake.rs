@@ -7,7 +7,7 @@ use std::process::Stdio;
 use serde::Deserialize;
 use tokio::process::Command;
 
-use super::{NixCheck, NixError, NixResult};
+use super::{NixCheck, ColmenaError, ColmenaResult};
 
 /// A Nix Flake.
 #[derive(Debug)]
@@ -24,7 +24,7 @@ impl Flake {
     ///
     /// This will try to retrieve the resolved URL of the local flake
     /// in the specified directory.
-    pub async fn from_dir<P: AsRef<Path>>(dir: P) -> NixResult<Self> {
+    pub async fn from_dir<P: AsRef<Path>>(dir: P) -> ColmenaResult<Self> {
         NixCheck::require_flake_support().await?;
 
         let flake = dir.as_ref().as_os_str().to_str()
@@ -39,7 +39,7 @@ impl Flake {
     }
 
     /// Creates a flake from a Flake URI.
-    pub async fn from_uri(uri: String) -> NixResult<Self> {
+    pub async fn from_uri(uri: String) -> ColmenaResult<Self> {
         NixCheck::require_flake_support().await?;
 
         Ok(Self {
@@ -69,7 +69,7 @@ struct FlakeMetadata {
 
 impl FlakeMetadata {
     /// Resolves a flake.
-    async fn resolve(flake: &str) -> NixResult<Self> {
+    async fn resolve(flake: &str) -> ColmenaResult<Self> {
         let child = Command::new("nix")
             .args(&["flake", "metadata", "--json"])
             .args(&["--experimental-features", "nix-command flakes"])
@@ -86,7 +86,7 @@ impl FlakeMetadata {
         serde_json::from_slice::<FlakeMetadata>(&output.stdout)
             .map_err(|_| {
                 let output = String::from_utf8_lossy(&output.stdout).to_string();
-                NixError::BadOutput { output }
+                ColmenaError::BadOutput { output }
             })
     }
 }

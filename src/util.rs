@@ -9,7 +9,8 @@ use serde::de::DeserializeOwned;
 use tokio::io::{AsyncRead, AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
-use super::nix::{Flake, Hive, HivePath, NixResult, NixError, StorePath};
+use super::error::{ColmenaResult, ColmenaError};
+use super::nix::{Flake, Hive, HivePath, StorePath};
 use super::nix::deployment::TargetNodeMap;
 use super::job::JobHandle;
 
@@ -26,16 +27,16 @@ pub struct CommandExecution {
 #[async_trait]
 pub trait CommandExt {
     /// Runs the command with stdout and stderr passed through to the user.
-    async fn passthrough(&mut self) -> NixResult<()>;
+    async fn passthrough(&mut self) -> ColmenaResult<()>;
 
     /// Runs the command, capturing the output as a String.
-    async fn capture_output(&mut self) -> NixResult<String>;
+    async fn capture_output(&mut self) -> ColmenaResult<String>;
 
     /// Runs the command, capturing deserialized output from JSON.
-    async fn capture_json<T>(&mut self) -> NixResult<T> where T: DeserializeOwned;
+    async fn capture_json<T>(&mut self) -> ColmenaResult<T> where T: DeserializeOwned;
 
     /// Runs the command, capturing a single store path.
-    async fn capture_store_path(&mut self) -> NixResult<StorePath>;
+    async fn capture_store_path(&mut self) -> ColmenaResult<StorePath>;
 }
 
 impl CommandExecution {
@@ -65,7 +66,7 @@ impl CommandExecution {
     }
 
     /// Runs the command.
-    pub async fn run(&mut self) -> NixResult<()> {
+    pub async fn run(&mut self) -> ColmenaResult<()> {
         self.command.stdin(Stdio::null());
         self.command.stdout(Stdio::piped());
         self.command.stderr(Stdio::piped());
@@ -103,7 +104,7 @@ impl CommandExecution {
 #[async_trait]
 impl CommandExt for Command {
     /// Runs the command with stdout and stderr passed through to the user.
-    async fn passthrough(&mut self) -> NixResult<()> {
+    async fn passthrough(&mut self) -> ColmenaResult<()> {
         let exit = self
             .spawn()?
             .wait()
@@ -117,7 +118,7 @@ impl CommandExt for Command {
     }
 
     /// Captures output as a String.
-    async fn capture_output(&mut self) -> NixResult<String> {
+    async fn capture_output(&mut self) -> ColmenaResult<String> {
         // We want the user to see the raw errors
         let output = self
             .stdout(Stdio::piped())
@@ -135,15 +136,15 @@ impl CommandExt for Command {
     }
 
     /// Captures deserialized output from JSON.
-    async fn capture_json<T>(&mut self) -> NixResult<T> where T: DeserializeOwned {
+    async fn capture_json<T>(&mut self) -> ColmenaResult<T> where T: DeserializeOwned {
         let output = self.capture_output().await?;
-        serde_json::from_str(&output).map_err(|_| NixError::BadOutput {
+        serde_json::from_str(&output).map_err(|_| ColmenaError::BadOutput {
             output: output.clone()
         })
     }
 
     /// Captures a single store path.
-    async fn capture_store_path(&mut self) -> NixResult<StorePath> {
+    async fn capture_store_path(&mut self) -> ColmenaResult<StorePath> {
         let output = self.capture_output().await?;
         let path = output.trim_end().to_owned();
         StorePath::try_from(path)
@@ -152,12 +153,12 @@ impl CommandExt for Command {
 
 #[async_trait]
 impl CommandExt for CommandExecution {
-    async fn passthrough(&mut self) -> NixResult<()> {
+    async fn passthrough(&mut self) -> ColmenaResult<()> {
         self.run().await
     }
 
     /// Captures output as a String.
-    async fn capture_output(&mut self) -> NixResult<String> {
+    async fn capture_output(&mut self) -> ColmenaResult<String> {
         self.run().await?;
         let (stdout, _) = self.get_logs();
 
@@ -165,22 +166,22 @@ impl CommandExt for CommandExecution {
     }
 
     /// Captures deserialized output from JSON.
-    async fn capture_json<T>(&mut self) -> NixResult<T> where T: DeserializeOwned {
+    async fn capture_json<T>(&mut self) -> ColmenaResult<T> where T: DeserializeOwned {
         let output = self.capture_output().await?;
-        serde_json::from_str(&output).map_err(|_| NixError::BadOutput {
+        serde_json::from_str(&output).map_err(|_| ColmenaError::BadOutput {
             output: output.clone()
         })
     }
 
     /// Captures a single store path.
-    async fn capture_store_path(&mut self) -> NixResult<StorePath> {
+    async fn capture_store_path(&mut self) -> ColmenaResult<StorePath> {
         let output = self.capture_output().await?;
         let path = output.trim_end().to_owned();
         StorePath::try_from(path)
     }
 }
 
-pub async fn hive_from_args(args: &ArgMatches) -> NixResult<Hive> {
+pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
     let path = match args.occurrences_of("config") {
         0 => {
             // traverse upwards until we find hive.nix
@@ -281,7 +282,7 @@ fn canonicalize_cli_path(path: &str) -> PathBuf {
     }
 }
 
-pub async fn capture_stream<R>(mut stream: BufReader<R>, job: Option<JobHandle>, stderr: bool) -> NixResult<String>
+pub async fn capture_stream<R>(mut stream: BufReader<R>, job: Option<JobHandle>, stderr: bool) -> ColmenaResult<String>
     where R: AsyncRead + Unpin
 {
     let mut log = String::new();

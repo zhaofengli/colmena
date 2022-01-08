@@ -13,7 +13,8 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tokio::time;
 use uuid::Uuid;
 
-use crate::nix::{NixResult, NixError, NodeName};
+use crate::error::{ColmenaResult, ColmenaError};
+use crate::nix::NodeName;
 use crate::progress::{Sender as ProgressSender, Message as ProgressMessage, Line, LineStyle};
 
 pub type Sender = UnboundedSender<Event>;
@@ -192,7 +193,7 @@ pub enum EventPayload {
 
     /// The job failed.
     ///
-    /// We can't pass the NixError because the wrapper needs to
+    /// We can't pass the ColmenaError because the wrapper needs to
     /// be able to return it as-is.
     Failure(String),
 
@@ -277,7 +278,7 @@ impl JobMonitor {
     }
 
     /// Starts the monitor.
-    pub async fn run_until_completion(mut self) -> NixResult<Self> {
+    pub async fn run_until_completion(mut self) -> ColmenaResult<Self> {
         if let Some(width) = self.label_width {
             if let Some(sender) = &self.progress {
                 sender.send(ProgressMessage::HintLabelWidth(width)).unwrap();
@@ -465,7 +466,7 @@ impl JobMonitor {
     }
 
     /// Shows human-readable summary and performs cleanup.
-    async fn finish(mut self) -> NixResult<Self> {
+    async fn finish(mut self) -> ColmenaResult<Self> {
         if let Some(sender) = self.progress.take() {
             sender.send(ProgressMessage::Complete).unwrap();
         }
@@ -500,7 +501,7 @@ impl JobHandleInner {
     /// Creates a new job with a distinct ID.
     ///
     /// This sends out a Creation message with the metadata.
-    pub fn create_job(&self, job_type: JobType, nodes: Vec<NodeName>) -> NixResult<JobHandle> {
+    pub fn create_job(&self, job_type: JobType, nodes: Vec<NodeName>) -> ColmenaResult<JobHandle> {
         let job_id = JobId::new();
         let creation = JobCreation {
             friendly_name: None,
@@ -509,7 +510,7 @@ impl JobHandleInner {
         };
 
         if job_type == JobType::Meta {
-            return Err(NixError::Unknown { message: "Cannot create a meta job!".to_string() });
+            return Err(ColmenaError::Unknown { message: "Cannot create a meta job!".to_string() });
         }
 
         let new_handle = Arc::new(Self {
@@ -525,9 +526,9 @@ impl JobHandleInner {
     /// Runs a closure, automatically updating the job monitor based on the result.
     ///
     /// This immediately transitions the state to Running.
-    pub async fn run<F, U, T>(self: Arc<Self>, f: U) -> NixResult<T>
+    pub async fn run<F, U, T>(self: Arc<Self>, f: U) -> ColmenaResult<T>
         where U: FnOnce(Arc<Self>) -> F,
-              F: Future<Output = NixResult<T>>,
+              F: Future<Output = ColmenaResult<T>>,
     {
         self.run_internal(f, true).await
     }
@@ -535,52 +536,52 @@ impl JobHandleInner {
     /// Runs a closure, automatically updating the job monitor based on the result.
     ///
     /// This does not immediately transition the state to Running.
-    pub async fn run_waiting<F, U, T>(self: Arc<Self>, f: U) -> NixResult<T>
+    pub async fn run_waiting<F, U, T>(self: Arc<Self>, f: U) -> ColmenaResult<T>
         where U: FnOnce(Arc<Self>) -> F,
-              F: Future<Output = NixResult<T>>,
+              F: Future<Output = ColmenaResult<T>>,
     {
         self.run_internal(f, false).await
     }
 
     /// Sends a line of child stdout to the job monitor.
-    pub fn stdout(&self, output: String) -> NixResult<()> {
+    pub fn stdout(&self, output: String) -> ColmenaResult<()> {
         self.send_payload(EventPayload::ChildStdout(output))
     }
 
     /// Sends a line of child stderr to the job monitor.
-    pub fn stderr(&self, output: String) -> NixResult<()> {
+    pub fn stderr(&self, output: String) -> ColmenaResult<()> {
         self.send_payload(EventPayload::ChildStderr(output))
     }
 
     /// Sends a human-readable message to the job monitor.
-    pub fn message(&self, message: String) -> NixResult<()> {
+    pub fn message(&self, message: String) -> ColmenaResult<()> {
         self.send_payload(EventPayload::Message(message))
     }
 
     /// Transitions to a new job state.
-    pub fn state(&self, new_state: JobState) -> NixResult<()> {
+    pub fn state(&self, new_state: JobState) -> ColmenaResult<()> {
         self.send_payload(EventPayload::NewState(new_state))
     }
 
     /// Marks the job as successful, with a custom message.
-    pub fn success_with_message(&self, message: String) -> NixResult<()> {
+    pub fn success_with_message(&self, message: String) -> ColmenaResult<()> {
         self.send_payload(EventPayload::SuccessWithMessage(message))
     }
 
     /// Marks the job as noop.
-    pub fn noop(&self, message: String) -> NixResult<()> {
+    pub fn noop(&self, message: String) -> ColmenaResult<()> {
         self.send_payload(EventPayload::Noop(message))
     }
 
     /// Marks the job as failed.
-    pub fn failure(&self, error: &NixError) -> NixResult<()> {
+    pub fn failure(&self, error: &ColmenaError) -> ColmenaResult<()> {
         self.send_payload(EventPayload::Failure(error.to_string()))
     }
 
     /// Runs a closure, automatically updating the job monitor based on the result.
-    async fn run_internal<F, U, T>(self: Arc<Self>, f: U, report_running: bool) -> NixResult<T>
+    async fn run_internal<F, U, T>(self: Arc<Self>, f: U, report_running: bool) -> ColmenaResult<T>
         where U: FnOnce(Arc<Self>) -> F,
-              F: Future<Output = NixResult<T>>,
+              F: Future<Output = ColmenaResult<T>>,
     {
         if report_running {
             // Tell monitor we are starting
@@ -603,7 +604,7 @@ impl JobHandleInner {
     }
 
     /// Sends an event to the job monitor.
-    fn send_payload(&self, payload: EventPayload) -> NixResult<()> {
+    fn send_payload(&self, payload: EventPayload) -> ColmenaResult<()> {
         if payload.privileged() {
             panic!("Tried to send privileged payload with JobHandle");
         }
@@ -611,7 +612,7 @@ impl JobHandleInner {
         let event = Event::new(self.job_id, payload);
 
         self.sender.send(event)
-            .map_err(|e| NixError::unknown(Box::new(e)))?;
+            .map_err(|e| ColmenaError::unknown(Box::new(e)))?;
 
         Ok(())
     }
@@ -619,9 +620,9 @@ impl JobHandleInner {
 
 impl MetaJobHandle {
     /// Runs a closure, automatically updating the job monitor based on the result.
-    pub async fn run<F, U, T>(self, f: U) -> NixResult<T>
+    pub async fn run<F, U, T>(self, f: U) -> ColmenaResult<T>
         where U: FnOnce(JobHandle) -> F,
-              F: Future<Output = NixResult<T>>,
+              F: Future<Output = ColmenaResult<T>>,
     {
         let normal_handle = Arc::new(JobHandleInner {
             job_id: self.job_id,
@@ -645,11 +646,11 @@ impl MetaJobHandle {
     }
 
     /// Sends an event to the job monitor.
-    fn send_payload(&self, payload: EventPayload) -> NixResult<()> {
+    fn send_payload(&self, payload: EventPayload) -> ColmenaResult<()> {
         let event = Event::new(self.job_id, payload);
 
         self.sender.send(event)
-            .map_err(|e| NixError::unknown(Box::new(e)))?;
+            .map_err(|e| ColmenaError::unknown(Box::new(e)))?;
 
         Ok(())
     }
@@ -874,7 +875,7 @@ mod tests {
                     Ok(())
                 }).await?;
 
-                Err(NixError::Unsupported) as NixResult<()>
+                Err(ColmenaError::Unsupported) as ColmenaResult<()>
             });
 
             // Run until completion
@@ -884,7 +885,7 @@ mod tests {
             );
 
             match ret {
-                Err(NixError::Unsupported) => (),
+                Err(ColmenaError::Unsupported) => (),
                 _ => {
                     panic!("Wrapper must return error as-is");
                 }

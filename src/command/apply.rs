@@ -3,6 +3,7 @@ use std::path::PathBuf;
 
 use clap::{Arg, App, ArgMatches, ArgSettings};
 
+use crate::error::ColmenaError;
 use crate::nix::deployment::{
     Deployment,
     Goal,
@@ -11,7 +12,7 @@ use crate::nix::deployment::{
     ParallelismLimit,
 };
 use crate::progress::SimpleProgressOutput;
-use crate::nix::{NixError, NodeFilter};
+use crate::nix::NodeFilter;
 use crate::util;
 
 pub fn register_deploy_args(command: App) -> App {
@@ -126,7 +127,7 @@ pub fn subcommand() -> App<'static> {
     util::register_selector_args(command)
 }
 
-pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), NixError> {
+pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
     let hive = util::hive_from_args(local_args).await?;
 
     let ssh_config = env::var("SSH_CONFIG_FILE")

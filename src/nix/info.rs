@@ -5,7 +5,7 @@ use log::Level;
 use regex::Regex;
 use tokio::process::Command;
 
-use super::{NixError, NixResult};
+use super::{ColmenaError, ColmenaResult};
 
 struct NixVersion {
     major: usize,
@@ -89,12 +89,12 @@ impl NixCheck {
         }
     }
 
-    pub async fn require_flake_support() -> NixResult<()> {
+    pub async fn require_flake_support() -> ColmenaResult<()> {
         let check = Self::detect().await;
 
         if !check.flakes_supported() {
             check.print_flakes_info(true);
-            Err(NixError::NoFlakesSupport)
+            Err(ColmenaError::NoFlakesSupport)
         } else {
             Ok(())
         }

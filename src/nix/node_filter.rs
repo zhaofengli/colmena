@@ -6,7 +6,7 @@ use std::iter::{Iterator, FromIterator};
 
 use glob::Pattern as GlobPattern;
 
-use super::{NixError, NixResult, NodeName, NodeConfig};
+use super::{ColmenaError, ColmenaResult, NodeName, NodeConfig};
 
 /// A node filter containing a list of rules.
 pub struct NodeFilter {
@@ -27,7 +27,7 @@ enum Rule {
 
 impl NodeFilter {
     /// Creates a new filter using an expression passed using `--on`.
-    pub fn new<S: AsRef<str>>(filter: S) -> NixResult<Self> {
+    pub fn new<S: AsRef<str>>(filter: S) -> ColmenaResult<Self> {
         let filter = filter.as_ref();
         let trimmed = filter.trim();
 
@@ -43,7 +43,7 @@ impl NodeFilter {
             let pattern = pattern.trim();
 
             if pattern.is_empty() {
-                return Err(NixError::EmptyFilterRule);
+                return Err(ColmenaError::EmptyFilterRule);
             }
 
             if let Some(tag_pattern) = pattern.strip_prefix('@') {
@@ -51,7 +51,7 @@ impl NodeFilter {
             } else {
                 Ok(Rule::MatchName(GlobPattern::new(pattern).unwrap()))
             }
-        }).collect::<Vec<NixResult<Rule>>>();
+        }).collect::<Vec<ColmenaResult<Rule>>>();
 
         let rules = Result::from_iter(rules)?;
 
@@ -100,8 +100,8 @@ impl NodeFilter {
     }
 
     /// Runs the filter against a set of node names and returns the matched ones.
-    pub fn filter_node_names(&self, nodes: &[NodeName]) -> NixResult<HashSet<NodeName>> {
-        nodes.iter().filter_map(|name| -> Option<NixResult<NodeName>> {
+    pub fn filter_node_names(&self, nodes: &[NodeName]) -> ColmenaResult<HashSet<NodeName>> {
+        nodes.iter().filter_map(|name| -> Option<ColmenaResult<NodeName>> {
             for rule in self.rules.iter() {
                 match rule {
                     Rule::MatchName(pat) => {
@@ -110,7 +110,7 @@ impl NodeFilter {
                         }
                     }
                     _ => {
-                        return Some(Err(NixError::Unknown {
+                        return Some(Err(ColmenaError::Unknown {
                             message: format!("Not enough information to run rule {:?} - We only have node names", rule),
                         }));
                     }

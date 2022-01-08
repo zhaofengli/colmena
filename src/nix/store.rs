@@ -7,8 +7,9 @@ use std::fmt;
 use serde::{Serialize, Deserialize};
 use tokio::process::Command;
 
+use crate::error::{ColmenaError, ColmenaResult};
 use crate::util::CommandExt;
-use super::{Host, NixResult, NixError};
+use super::Host;
 
 /// A Nix store path.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -43,7 +44,7 @@ impl StorePath {
     }
 
     /// Returns the immediate dependencies of the store path.
-    pub async fn references(&self) -> NixResult<Vec<StorePath>> {
+    pub async fn references(&self) -> ColmenaResult<Vec<StorePath>> {
         let references = Command::new("nix-store")
             .args(&["--query", "--references"])
             .arg(&self.0)
@@ -55,11 +56,11 @@ impl StorePath {
     }
 
     /// Converts the store path into a store derivation.
-    pub fn into_derivation<T: TryFrom<BuildResult<T>>>(self) -> NixResult<StoreDerivation<T>> {
+    pub fn into_derivation<T: TryFrom<BuildResult<T>>>(self) -> ColmenaResult<StoreDerivation<T>> {
         if self.is_derivation() {
             Ok(StoreDerivation::<T>::from_store_path_unchecked(self))
         } else {
-            Err(NixError::NotADerivation { store_path: self })
+            Err(ColmenaError::NotADerivation { store_path: self })
         }
     }
 }
@@ -73,13 +74,13 @@ impl Deref for StorePath {
 }
 
 impl TryFrom<String> for StorePath {
-    type Error = NixError;
+    type Error = ColmenaError;
 
-    fn try_from(s: String) -> NixResult<Self> {
+    fn try_from(s: String) -> ColmenaResult<Self> {
         if s.starts_with("/nix/store/") {
             Ok(Self(s.into()))
         } else {
-            Err(NixError::InvalidStorePath)
+            Err(ColmenaError::InvalidStorePath)
         }
     }
 }
@@ -113,9 +114,9 @@ impl<T: TryFrom<BuildResult<T>>> StoreDerivation<T> {
     }
 }
 
-impl<T: TryFrom<BuildResult<T>, Error=NixError>> StoreDerivation<T> {
+impl<T: TryFrom<BuildResult<T>, Error=ColmenaError>> StoreDerivation<T> {
     /// Builds the store derivation on a host, resulting in a T.
-    pub async fn realize(&self, host: &mut Box<dyn Host>) -> NixResult<T> {
+    pub async fn realize(&self, host: &mut Box<dyn Host>) -> ColmenaResult<T> {
         let paths: Vec<StorePath> = host.realize(&self.path).await?;
 
         let result = BuildResult {
@@ -126,7 +127,7 @@ impl<T: TryFrom<BuildResult<T>, Error=NixError>> StoreDerivation<T> {
     }
 
     /// Builds the store derivation on a host without copying the results back.
-    pub async fn realize_remote(&self, host: &mut Box<dyn Host>) -> NixResult<T> {
+    pub async fn realize_remote(&self, host: &mut Box<dyn Host>) -> ColmenaResult<T> {
         let paths: Vec<StorePath> = host.realize_remote(&self.path).await?;
 
         let result = BuildResult {
@@ -143,7 +144,7 @@ impl<T: TryFrom<BuildResult<T>>> fmt::Display for StoreDerivation<T> {
     }
 }
 
-impl<T: TryFrom<BuildResult<T>, Error=NixError>> BuildResult<T> {
+impl<T: TryFrom<BuildResult<T>, Error=ColmenaError>> BuildResult<T> {
     pub fn paths(&self) -> &[StorePath] {
         self.results.as_slice()
     }

@@ -2,8 +2,8 @@ use std::path::PathBuf;
 
 use clap::{Arg, App, AppSettings, ArgMatches};
 
+use crate::error::ColmenaError;
 use crate::util;
-use crate::nix::NixError;
 
 pub fn subcommand() -> App<'static> {
     subcommand_gen("eval")
@@ -41,7 +41,7 @@ For example, to retrieve the configuration of one node, you may write something 
             .takes_value(false))
 }
 
-pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), NixError> {
+pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
     if let Some("introspect") = global_args.subcommand_name() {
         log::warn!("`colmena introspect` has been renamed to `colmena eval`. Please update your scripts.");
     }

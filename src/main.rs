@@ -1,5 +1,6 @@
 #![deny(unused_must_use)]
 
+mod error;
 mod nix;
 mod cli;
 mod command;

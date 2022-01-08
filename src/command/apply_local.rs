@@ -5,13 +5,14 @@ use clap::{Arg, App, ArgMatches};
 use tokio::fs;
 use tokio::process::Command;
 
+use crate::error::ColmenaError;
 use crate::nix::deployment::{
     Deployment,
     Goal,
     TargetNode,
     Options,
 };
-use crate::nix::{NixError, NodeName, host};
+use crate::nix::{NodeName, host};
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
@@ -57,7 +58,7 @@ By default, Colmena will deploy keys set in `deployment.keys` before activating 
             .takes_value(false))
 }
 
-pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), NixError> {
+pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
     // Sanity check: Are we running NixOS?
     if let Ok(os_release) = fs::read_to_string("/etc/os-release").await {
         if !os_release.contains("ID=nixos\n") {

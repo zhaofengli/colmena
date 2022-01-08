@@ -3,7 +3,7 @@
 use async_trait::async_trait;
 use console::Style as ConsoleStyle;
 
-use crate::nix::NixResult;
+use crate::error::ColmenaResult;
 use super::{
     DEFAULT_LABEL_WIDTH,
     ProgressOutput,
@@ -81,7 +81,7 @@ impl PlainOutput {
 
 #[async_trait]
 impl ProgressOutput for PlainOutput {
-    async fn run_until_completion(mut self) -> NixResult<Self> {
+    async fn run_until_completion(mut self) -> ColmenaResult<Self> {
         loop {
             let message = self.receiver.recv().await;
 

@@ -26,8 +26,8 @@ use super::{
     Host,
     NodeName,
     NodeConfig,
-    NixError,
-    NixResult,
+    ColmenaError,
+    ColmenaResult,
     Profile,
     ProfileDerivation,
     CopyDirection,
@@ -120,9 +120,9 @@ impl Deployment {
     ///
     /// If a ProgressSender is supplied, then this should be run in parallel
     /// with its `run_until_completion()` future.
-    pub async fn execute(mut self) -> NixResult<()> {
+    pub async fn execute(mut self) -> ColmenaResult<()> {
         if self.executed {
-            return Err(NixError::DeploymentAlreadyExecuted);
+            return Err(ColmenaError::DeploymentAlreadyExecuted);
         }
 
         self.executed = true;
@@ -148,7 +148,7 @@ impl Deployment {
                 }
 
                 join_all(futures).await
-                    .into_iter().collect::<NixResult<Vec<()>>>()?;
+                    .into_iter().collect::<ColmenaResult<Vec<()>>>()?;
 
                 Ok(())
             });
@@ -173,7 +173,7 @@ impl Deployment {
                 }
 
                 join_all(futures).await
-                    .into_iter().collect::<NixResult<Vec<()>>>()?;
+                    .into_iter().collect::<ColmenaResult<Vec<()>>>()?;
 
                 Ok(())
             });
@@ -219,7 +219,7 @@ impl Deployment {
     }
 
     /// Executes the deployment against a portion of nodes.
-    async fn execute_chunk(self: &DeploymentHandle, parent: JobHandle, mut chunk: TargetNodeMap) -> NixResult<()> {
+    async fn execute_chunk(self: &DeploymentHandle, parent: JobHandle, mut chunk: TargetNodeMap) -> ColmenaResult<()> {
         if self.goal == Goal::UploadKeys {
             unreachable!(); // some logic is screwed up
         }
@@ -256,14 +256,14 @@ impl Deployment {
         }
 
         join_all(futures).await
-            .into_iter().collect::<NixResult<Vec<()>>>()?;
+            .into_iter().collect::<ColmenaResult<Vec<()>>>()?;
 
         Ok(())
     }
 
     /// Evaluates a set of nodes, returning their corresponding store derivations.
     async fn evaluate_nodes(self: &DeploymentHandle, parent: JobHandle, nodes: Vec<NodeName>)
-        -> NixResult<HashMap<NodeName, ProfileDerivation>>
+        -> ColmenaResult<HashMap<NodeName, ProfileDerivation>>
     {
         let job = parent.create_job(JobType::Evaluate, nodes.clone())?;
 
@@ -280,12 +280,12 @@ impl Deployment {
     }
 
     /// Only uploads keys to a node.
-    async fn upload_keys_to_node(self: &DeploymentHandle, parent: JobHandle, mut target: TargetNode) -> NixResult<()> {
+    async fn upload_keys_to_node(self: &DeploymentHandle, parent: JobHandle, mut target: TargetNode) -> ColmenaResult<()> {
         let nodes = vec![target.name.clone()];
         let job = parent.create_job(JobType::UploadKeys, nodes)?;
         job.run(|_| async move {
             if target.host.is_none() {
-                return Err(NixError::Unsupported);
+                return Err(ColmenaError::Unsupported);
             }
 
             let host = target.host.as_mut().unwrap();
@@ -297,7 +297,7 @@ impl Deployment {
 
     /// Builds a system profile directly on the node itself.
     async fn build_on_node(self: &DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile_drv: ProfileDerivation)
-        -> NixResult<(TargetNode, Profile)>
+        -> ColmenaResult<(TargetNode, Profile)>
     {
         let nodes = vec![target.name.clone()];
 
@@ -306,7 +306,7 @@ impl Deployment {
         let build_job = parent.create_job(JobType::Build, nodes.clone())?;
         let (target, profile) = build_job.run(|job| async move {
             if target.host.is_none() {
-                return Err(NixError::Unsupported);
+                return Err(ColmenaError::Unsupported);
             }
 
             let mut host = target.host.as_mut().unwrap();
@@ -331,7 +331,7 @@ impl Deployment {
 
     /// Builds and pushes a system profile on a node.
     async fn build_and_push_node(self: &DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile_drv: ProfileDerivation)
-        -> NixResult<(TargetNode, Profile)>
+        -> ColmenaResult<(TargetNode, Profile)>
     {
         let nodes = vec![target.name.clone()];
 
@@ -361,7 +361,7 @@ impl Deployment {
         let arc_self = self.clone();
         let target = push_job.run(|job| async move {
             if target.host.is_none() {
-                return Err(NixError::Unsupported);
+                return Err(ColmenaError::Unsupported);
             }
 
             let host = target.host.as_mut().unwrap();
@@ -383,7 +383,7 @@ impl Deployment {
     ///
     /// This will also upload keys to the node.
     async fn activate_node(self: DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile: Profile)
-        -> NixResult<()>
+        -> ColmenaResult<()>
     {
         let nodes = vec![target.name.clone()];
         let target_name = target.name.clone();
@@ -437,7 +437,7 @@ impl Deployment {
                     if arc_self.options.force_replace_unknown_profiles {
                         job.message("Warning: Remote profile is unknown, but unknown profiles are being ignored".to_string())?;
                     } else {
-                        return Err(NixError::ActiveProfileUnknown {
+                        return Err(ColmenaError::ActiveProfileUnknown {
                             store_path: profile,
                         });
                     }

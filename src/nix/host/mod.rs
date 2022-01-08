@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
-use super::{StorePath, Profile, Goal, NixResult, NixError, Key};
+use super::{StorePath, Profile, Goal, ColmenaResult, ColmenaError, Key};
 use crate::job::JobHandle;
 
 mod ssh;
@@ -65,20 +65,20 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     /// Sends or receives the specified closure to the host
     ///
     /// The StorePath and its dependent paths will then exist on this host.
-    async fn copy_closure(&mut self, closure: &StorePath, direction: CopyDirection, options: CopyOptions) -> NixResult<()>;
+    async fn copy_closure(&mut self, closure: &StorePath, direction: CopyDirection, options: CopyOptions) -> ColmenaResult<()>;
 
     /// Realizes the specified derivation on the host
     ///
     /// The derivation must already exist on the host.
     /// After realization, paths in the Vec<StorePath> will then
     /// exist on the host.
-    async fn realize_remote(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>>;
+    async fn realize_remote(&mut self, derivation: &StorePath) -> ColmenaResult<Vec<StorePath>>;
 
     /// Provides a JobHandle to use during operations.
     fn set_job(&mut self, bar: Option<JobHandle>);
 
     /// Realizes the specified local derivation on the host then retrieves the outputs.
-    async fn realize(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
+    async fn realize(&mut self, derivation: &StorePath) -> ColmenaResult<Vec<StorePath>> {
         let options = CopyOptions::default()
             .include_outputs(true);
 
@@ -90,7 +90,7 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     }
 
     /// Pushes and optionally activates a profile to the host.
-    async fn deploy(&mut self, profile: &Profile, goal: Goal, copy_options: CopyOptions) -> NixResult<()> {
+    async fn deploy(&mut self, profile: &Profile, goal: Goal, copy_options: CopyOptions) -> ColmenaResult<()> {
         self.copy_closure(profile.as_store_path(), CopyDirection::ToRemote, copy_options).await?;
 
         if goal.requires_activation() {
@@ -106,8 +106,8 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     /// will not be applied if the specified user/group does not
     /// exist.
     #[allow(unused_variables)] 
-    async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> NixResult<()> {
-        Err(NixError::Unsupported)
+    async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> ColmenaResult<()> {
+        Err(ColmenaError::Unsupported)
     }
 
     /// Returns the main system profile on the host.
@@ -115,19 +115,19 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     /// This may _not_ be the system profile that's currently activated!
     /// It will first try `/nix/var/nix/profiles/system`, falling back
     /// to `/run/current-system` if it doesn't exist.
-    async fn get_main_system_profile(&mut self) -> NixResult<StorePath>;
+    async fn get_main_system_profile(&mut self) -> ColmenaResult<StorePath>;
 
     /// Activates a system profile on the host, if it runs NixOS.
     ///
     /// The profile must already exist on the host. You should probably use deploy instead.
     #[allow(unused_variables)]
-    async fn activate(&mut self, profile: &Profile, goal: Goal) -> NixResult<()> {
-        Err(NixError::Unsupported)
+    async fn activate(&mut self, profile: &Profile, goal: Goal) -> ColmenaResult<()> {
+        Err(ColmenaError::Unsupported)
     }
 
     /// Runs an arbitrary command on the host.
     #[allow(unused_variables)] 
-    async fn run_command(&mut self, command: &[&str]) -> NixResult<()> {
-        Err(NixError::Unsupported)
+    async fn run_command(&mut self, command: &[&str]) -> ColmenaResult<()> {
+        Err(ColmenaError::Unsupported)
     }
 }

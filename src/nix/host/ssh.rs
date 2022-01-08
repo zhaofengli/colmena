@@ -6,10 +6,11 @@ use std::process::Stdio;
 use async_trait::async_trait;
 use tokio::process::Command;
 
-use super::{CopyDirection, CopyOptions, Host, key_uploader};
-use crate::nix::{StorePath, Profile, Goal, NixResult, NixError, Key, SYSTEM_PROFILE, CURRENT_PROFILE};
+use crate::error::{ColmenaResult, ColmenaError};
+use crate::nix::{StorePath, Profile, Goal, Key, SYSTEM_PROFILE, CURRENT_PROFILE};
 use crate::util::{CommandExecution, CommandExt};
 use crate::job::JobHandle;
+use super::{CopyDirection, CopyOptions, Host, key_uploader};
 
 /// A remote machine connected over SSH.
 #[derive(Debug)]
@@ -35,11 +36,11 @@ pub struct Ssh {
 
 #[async_trait]
 impl Host for Ssh {
-    async fn copy_closure(&mut self, closure: &StorePath, direction: CopyDirection, options: CopyOptions) -> NixResult<()> {
+    async fn copy_closure(&mut self, closure: &StorePath, direction: CopyDirection, options: CopyOptions) -> ColmenaResult<()> {
         let command = self.nix_copy_closure(closure, direction, options);
         self.run_command(command).await
     }
-    async fn realize_remote(&mut self, derivation: &StorePath) -> NixResult<Vec<StorePath>> {
+    async fn realize_remote(&mut self, derivation: &StorePath) -> ColmenaResult<Vec<StorePath>> {
         let command = self.ssh(&["nix-store", "--no-gc-warning", "--realise", derivation.as_path().to_str().unwrap()]);
 
         let mut execution = CommandExecution::new(command);
@@ -51,16 +52,16 @@ impl Host for Ssh {
 
         paths.lines().map(|p| p.to_string().try_into()).collect()
     }
-    async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> NixResult<()> {
+    async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> ColmenaResult<()> {
         for (name, key) in keys {
             self.upload_key(name, key, require_ownership).await?;
         }
 
         Ok(())
     }
-    async fn activate(&mut self, profile: &Profile, goal: Goal) -> NixResult<()> {
+    async fn activate(&mut self, profile: &Profile, goal: Goal) -> ColmenaResult<()> {
         if !goal.requires_activation() {
-            return Err(NixError::Unsupported);
+            return Err(ColmenaError::Unsupported);
         }
 
         if goal.should_switch_profile() {
@@ -74,11 +75,11 @@ impl Host for Ssh {
         let command = self.ssh(&v);
         self.run_command(command).await
     }
-    async fn run_command(&mut self, command: &[&str]) -> NixResult<()> {
+    async fn run_command(&mut self, command: &[&str]) -> ColmenaResult<()> {
         let command = self.ssh(command);
         self.run_command(command).await
     }
-    async fn get_main_system_profile(&mut self) -> NixResult<StorePath> {
+    async fn get_main_system_profile(&mut self) -> ColmenaResult<StorePath> {
         let command = format!("\"readlink -e {} || readlink -e {}\"", SYSTEM_PROFILE, CURRENT_PROFILE);
 
         let paths = self.ssh(&["sh", "-c", &command])
@@ -86,7 +87,7 @@ impl Host for Ssh {
             .await?;
 
         let path = paths.lines().into_iter().next()
-            .ok_or(NixError::FailedToGetCurrentProfile)?
+            .ok_or(ColmenaError::FailedToGetCurrentProfile)?
             .to_string()
             .try_into()?;
 
@@ -150,7 +151,7 @@ impl Ssh {
         cmd
     }
 
-    async fn run_command(&mut self, command: Command) -> NixResult<()> {
+    async fn run_command(&mut self, command: Command) -> ColmenaResult<()> {
         let mut execution = CommandExecution::new(command);
         execution.set_job(self.job.clone());
 
@@ -216,7 +217,7 @@ impl Ssh {
     }
 
     /// Uploads a single key.
-    async fn upload_key(&mut self, name: &str, key: &Key, require_ownership: bool) -> NixResult<()> {
+    async fn upload_key(&mut self, name: &str, key: &Key, require_ownership: bool) -> ColmenaResult<()> {
         if let Some(job) = &self.job {
             job.message(format!("Uploading key {}", name))?;
         }

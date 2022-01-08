@@ -3,8 +3,9 @@ use std::time::Duration;
 use clap::{App, AppSettings, ArgMatches};
 use tokio::time;
 
+use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::{JobMonitor, JobType};
-use crate::nix::{NixError, NixResult, NodeName};
+use crate::nix::NodeName;
 use crate::progress::{ProgressOutput, spinner::SpinnerOutput};
 
 macro_rules! node {
@@ -19,7 +20,7 @@ pub fn subcommand() -> App<'static> {
         .setting(AppSettings::Hidden)
 }
 
-pub async fn run(_global_args: &ArgMatches, _local_args: &ArgMatches) -> Result<(), NixError> {
+pub async fn run(_global_args: &ArgMatches, _local_args: &ArgMatches) -> Result<(), ColmenaError> {
     let mut output = SpinnerOutput::new();
     let (monitor, meta) = JobMonitor::new(output.get_sender());
 
@@ -52,7 +53,7 @@ pub async fn run(_global_args: &ArgMatches, _local_args: &ArgMatches) -> Result<
 
         let (_, _) = tokio::join!(eval, build);
 
-        Err(NixError::Unsupported) as NixResult<()>
+        Err(ColmenaError::Unsupported) as ColmenaResult<()>
     });
 
     let (monitor, output, ret) = tokio::join!(

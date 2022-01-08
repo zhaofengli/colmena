@@ -6,8 +6,8 @@ use std::time::Instant;
 use async_trait::async_trait;
 use indicatif::{MultiProgress, ProgressStyle, ProgressBar};
 
+use crate::error::ColmenaResult;
 use crate::job::JobId;
-use crate::nix::NixResult;
 use super::{
     DEFAULT_LABEL_WIDTH,
     ProgressOutput,
@@ -171,7 +171,7 @@ impl SpinnerOutput {
 
 #[async_trait]
 impl ProgressOutput for SpinnerOutput {
-    async fn run_until_completion(mut self) -> NixResult<Self> {
+    async fn run_until_completion(mut self) -> ColmenaResult<Self> {
         let meta_bar = self.multi.add(self.meta_bar.clone());
         meta_bar.enable_steady_tick(100);
 
