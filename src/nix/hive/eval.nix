@@ -316,7 +316,7 @@ let
     else {};
 
   # The final hive will always have the meta key instead of network.
-  hive = let 
+  hive = let
     userMeta = (lib.modules.evalModules {
       modules = [ metaOptions uncheckedUserMeta ];
     }).config;

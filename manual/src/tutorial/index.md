@@ -76,7 +76,7 @@ Here is a sample `hive.nix` with two nodes, with some common configurations appl
     # If you share a hive with others, or use multiple machines,
     # and are not careful to always commit/push/pull changes
     # you can accidentaly overwrite a remote profile so in those
-    # scenarios you might want to change this default to false. 
+    # scenarios you might want to change this default to false.
     # deployment.replaceUnknownProfiles = true;
   };
 

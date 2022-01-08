@@ -400,7 +400,7 @@ impl<'hive> NixInstantiate<'hive> {
 /// to generate Nix expressions directly or escaping a JSON string to strip
 /// off Nix interpolation.
 struct SerializedNixExpresssion {
-    json_file: TempPath, 
+    json_file: TempPath,
 }
 
 impl SerializedNixExpresssion {

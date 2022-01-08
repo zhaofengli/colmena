@@ -1,0 +1,22 @@
+# EditorConfig configuration for Colmena
+
+# Top-most EditorConfig file
+root = true
+
+# Unix-style newlines with a newline ending every file, utf-8 charset
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+charset = utf-8
+
+# Rust
+[*.rs]
+indent_style = space
+indent_size = 2
+
+# Vendored
+[manual/theme/highlight.js]
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
