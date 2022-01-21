@@ -39,6 +39,41 @@ pub enum HivePath {
     Legacy(PathBuf),
 }
 
+#[derive(Debug)]
+pub struct Hive {
+    /// Path to the hive.
+    path: HivePath,
+
+    /// Path to the context directory.
+    ///
+    /// Normally this is directory containing the "hive.nix"
+    /// or "flake.nix".
+    context_dir: Option<PathBuf>,
+
+    /// Path to temporary file containing eval.nix.
+    eval_nix: TempPath,
+
+    /// Whether to pass --show-trace in Nix commands.
+    show_trace: bool,
+
+    /// The cached machines_file expression.
+    machines_file: RwLock<Option<Option<String>>>,
+}
+
+struct NixInstantiate<'hive> {
+    hive: &'hive Hive,
+    expression: String,
+}
+
+/// A serialized Nix expression.
+///
+/// Very hacky so should be avoided as much as possible. But I suppose it's
+/// more robust than attempting to generate Nix expressions directly or
+/// escaping a JSON string to strip off Nix interpolation.
+struct SerializedNixExpression {
+    json_file: TempPath,
+}
+
 impl HivePath {
     pub async fn from_path<P: AsRef<Path>>(path: P) -> ColmenaResult<Self> {
         let path = path.as_ref();
@@ -64,27 +99,6 @@ impl HivePath {
             }
         }
     }
-}
-
-#[derive(Debug)]
-pub struct Hive {
-    /// Path to the hive.
-    path: HivePath,
-
-    /// Path to the context directory.
-    ///
-    /// Normally this is directory containing the "hive.nix"
-    /// or "flake.nix".
-    context_dir: Option<PathBuf>,
-
-    /// Path to temporary file containing eval.nix.
-    eval_nix: TempPath,
-
-    /// Whether to pass --show-trace in Nix commands.
-    show_trace: bool,
-
-    /// The cached machines_file expression.
-    machines_file: RwLock<Option<Option<String>>>,
 }
 
 impl Hive {
@@ -235,7 +249,7 @@ impl Hive {
 
     /// Retrieve deployment info for a list of nodes.
     pub async fn deployment_info_selected(&self, nodes: &[NodeName]) -> ColmenaResult<HashMap<NodeName, NodeConfig>> {
-        let nodes_expr = SerializedNixExpresssion::new(nodes)?;
+        let nodes_expr = SerializedNixExpression::new(nodes)?;
 
         let configs: HashMap<NodeName, NodeConfig> = self.nix_instantiate(&format!("hive.deploymentConfigSelected {}", nodes_expr.expression()))
             .eval_with_builders().await?
@@ -257,7 +271,7 @@ impl Hive {
     /// to split up the evaluation process into chunks and run them
     /// concurrently with other processes (e.g., build and apply).
     pub async fn eval_selected(&self, nodes: &[NodeName], job: Option<JobHandle>) -> ColmenaResult<HashMap<NodeName, ProfileDerivation>> {
-        let nodes_expr = SerializedNixExpresssion::new(nodes)?;
+        let nodes_expr = SerializedNixExpression::new(nodes)?;
 
         let expr = format!("hive.evalSelectedDrvPaths {}", nodes_expr.expression());
 
@@ -305,6 +319,31 @@ impl Hive {
         Ok(parsed)
     }
 
+    /// Returns the base expression from which the evaluated Hive can be used.
+    fn get_base_expression(&self) -> String {
+        match self.path() {
+            HivePath::Legacy(path) => {
+                format!(
+                    "with builtins; let eval = import {}; hive = eval {{ rawHive = import {}; }}; in ",
+                    self.eval_nix.to_str().unwrap(),
+                    path.to_str().unwrap(),
+                )
+            }
+            HivePath::Flake(flake) => {
+                format!(
+                    "with builtins; let eval = import {}; hive = eval {{ flakeUri = \"{}\"; }}; in ",
+                    self.eval_nix.to_str().unwrap(),
+                    flake.uri(),
+                )
+            }
+        }
+    }
+
+    /// Returns whether this Hive is a flake.
+    fn is_flake(&self) -> bool {
+        matches!(self.path(), HivePath::Flake(_))
+    }
+
     fn nix_instantiate(&self, expression: &str) -> NixInstantiate {
         NixInstantiate::new(self, expression.to_owned())
     }
@@ -312,11 +351,6 @@ impl Hive {
     fn path(&self) -> &HivePath {
         &self.path
     }
-}
-
-struct NixInstantiate<'hive> {
-    hive: &'hive Hive,
-    expression: String,
 }
 
 impl<'hive> NixInstantiate<'hive> {
@@ -328,37 +362,19 @@ impl<'hive> NixInstantiate<'hive> {
     }
 
     fn instantiate(&self) -> Command {
-        // FIXME: unwrap
-        // Technically filenames can be arbitrary byte strings (OsStr),
-        // but Nix may not like it...
-
         let mut command = Command::new("nix-instantiate");
 
-        match self.hive.path() {
-            HivePath::Legacy(path) => {
-                command
-                    .arg("--no-gc-warning")
-                    .arg("-E")
-                    .arg(format!(
-                        "with builtins; let eval = import {}; hive = eval {{ rawHive = import {}; }}; in {}",
-                        self.hive.eval_nix.to_str().unwrap(),
-                        path.to_str().unwrap(),
-                        self.expression,
-                    ));
-            }
-            HivePath::Flake(flake) => {
-                command
-                    .args(&["--experimental-features", "flakes"])
-                    .arg("--no-gc-warning")
-                    .arg("-E")
-                    .arg(format!(
-                        "with builtins; let eval = import {}; hive = eval {{ flakeUri = \"{}\"; }}; in {}",
-                        self.hive.eval_nix.to_str().unwrap(),
-                        flake.uri(),
-                        self.expression,
-                    ));
-            }
+        if self.hive.is_flake() {
+            command.args(&["--experimental-features", "flakes"]);
         }
+
+        let mut full_expression = self.hive.get_base_expression();
+        full_expression += &self.expression;
+
+        command
+            .arg("--no-gc-warning")
+            .arg("-E")
+            .arg(&full_expression);
 
         command
     }
@@ -393,17 +409,7 @@ impl<'hive> NixInstantiate<'hive> {
     }
 }
 
-/// A serialized Nix expression.
-///
-/// Very hacky and involves an Import From Derivation, so should be
-/// avoided as much as possible. But I suppose it's more robust than attempting
-/// to generate Nix expressions directly or escaping a JSON string to strip
-/// off Nix interpolation.
-struct SerializedNixExpresssion {
-    json_file: TempPath,
-}
-
-impl SerializedNixExpresssion {
+impl SerializedNixExpression {
     pub fn new<T>(data: T) -> ColmenaResult<Self> where T: Serialize {
         let mut tmp = NamedTempFile::new()?;
         let json = serde_json::to_vec(&data).expect("Could not serialize data");
