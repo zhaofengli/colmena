@@ -19,7 +19,7 @@
     # We still maintain the expression in a Nixpkgs-acceptable form
     defaultPackage = self.packages.${system}.colmena;
     packages = rec {
-      colmena = import ./default.nix { inherit pkgs; };
+      colmena = pkgs.callPackage ./package.nix { };
 
       # Full user manual
       manual = let
@@ -59,9 +59,7 @@
     };
   }) // {
     overlay = final: prev: {
-      colmena = import ./default.nix {
-        pkgs = final;
-      };
+      colmena = final.callPackage ./package.nix { };
     };
   };
 }
