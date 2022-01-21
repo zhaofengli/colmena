@@ -510,8 +510,8 @@ let
   evalAll = evalSelected nodeNames;
   evalSelected = names: let
     selected = lib.filterAttrs (name: _: elem name names) toplevel;
-    drvs = lib.mapAttrs (k: v: v.drvPath) selected;
-  in drvs;
+  in selected;
+  evalSelectedDrvPaths = names: lib.mapAttrs (k: v: v.drvPath) (evalSelected names);
 
   introspect = function: function {
     inherit pkgs lib nodes;
@@ -520,7 +520,7 @@ in {
   inherit
     nodes toplevel
     deploymentConfig deploymentConfigSelected
-    evalAll evalSelected introspect;
+    evalAll evalSelected evalSelectedDrvPaths introspect;
 
   meta = hive.meta;
 

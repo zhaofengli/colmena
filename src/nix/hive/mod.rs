@@ -259,7 +259,7 @@ impl Hive {
     pub async fn eval_selected(&self, nodes: &[NodeName], job: Option<JobHandle>) -> ColmenaResult<HashMap<NodeName, ProfileDerivation>> {
         let nodes_expr = SerializedNixExpresssion::new(nodes)?;
 
-        let expr = format!("hive.evalSelected {}", nodes_expr.expression());
+        let expr = format!("hive.evalSelectedDrvPaths {}", nodes_expr.expression());
 
         let command = self.nix_instantiate(&expr)
             .eval_with_builders().await?;
