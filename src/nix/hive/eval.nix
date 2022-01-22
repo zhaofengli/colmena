@@ -524,6 +524,8 @@ in {
 
   meta = hive.meta;
 
+  nixosModules = { inherit deploymentOptions; };
+
   docs = {
     deploymentOptions = pkgs: let
       eval = pkgs.lib.evalModules {
