@@ -16,6 +16,9 @@
 
   outputs = { self, nixpkgs, utils, nix-eval-jobs, ... }: let
     supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+    evalNix = import ./src/nix/hive/eval.nix {
+      hermetic = true;
+    };
   in utils.lib.eachSystem supportedSystems (system: let
     pkgs = import nixpkgs {
       inherit system;
@@ -30,9 +33,6 @@
       # Full user manual
       manual = let
         colmena = self.packages.${system}.colmena;
-        evalNix = import ./src/nix/hive/eval.nix {
-          hermetic = true;
-        };
         deploymentOptionsMd = (pkgs.nixosOptionsDoc {
           options = evalNix.docs.deploymentOptions pkgs;
         }).optionsCommonMark;
@@ -75,5 +75,6 @@
     overlay = final: prev: {
       colmena = final.callPackage ./package.nix { };
     };
+    inherit (evalNix) nixosModules;
   };
 }
