@@ -65,7 +65,7 @@
     };
   }) // {
     # For use in integration tests
-    _evalJobsOverlay = 
+    _evalJobsOverlay =
       (final: prev: {
         nix-eval-jobs = (final.callPackage nix-eval-jobs.outPath {}).overrideAttrs (old: {
           version = "0.0.3-colmena";
