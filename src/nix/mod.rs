@@ -97,6 +97,17 @@ pub struct NixOptions {
     builders: Option<String>,
 }
 
+/// A Nix expression.
+pub trait NixExpression : Send + Sync {
+    /// Returns the full Nix expression to be evaluated.
+    fn expression(&self) -> String;
+
+    /// Returns whether this expression requires the use of flakes.
+    fn requires_flakes(&self) -> bool {
+        false
+    }
+}
+
 impl NodeName {
     /// Returns the string.
     pub fn as_str(&self) -> &str {
@@ -200,6 +211,12 @@ impl NixOptions {
         }
 
         options
+    }
+}
+
+impl NixExpression for String {
+    fn expression(&self) -> String {
+        self.clone()
     }
 }
 
