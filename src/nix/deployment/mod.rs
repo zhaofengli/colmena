@@ -61,9 +61,6 @@ pub struct Deployment {
     /// Handle to send messages to the ProgressOutput.
     progress: Option<ProgressSender>,
 
-    /// Names of the target nodes.
-    nodes: Vec<NodeName>,
-
     /// Handles to the deployment targets.
     targets: HashMap<NodeName, TargetNode>,
 
@@ -109,7 +106,6 @@ impl Deployment {
             options: Options::default(),
             nix_options: NixOptions::default(),
             progress,
-            nodes: targets.keys().cloned().collect(),
             targets,
             parallelism_limit: ParallelismLimit::default(),
             evaluation_node_limit: EvaluationNodeLimit::default(),

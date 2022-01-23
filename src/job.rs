@@ -133,9 +133,6 @@ struct JobMetadata {
     /// Type of the job.
     job_type: JobType,
 
-    /// Custom human-readable name of the job.
-    friendly_name: Option<String>,
-
     /// List of associated nodes.
     ///
     /// Some jobs may be related to multiple nodes (e.g., building
@@ -151,12 +148,6 @@ struct JobMetadata {
     /// For jobs in the Succeeded state, this might contain a custom
     /// message.
     custom_message: Option<String>,
-
-    /// Last human-readable message from the job.
-    ///
-    /// This is so we can quickly repaint without needing to filter
-    /// through the event logs.
-    last_message: Option<String>,
 }
 
 /// Message to create a new job.
@@ -164,9 +155,6 @@ struct JobMetadata {
 pub struct JobCreation {
     /// Type of the job.
     job_type: JobType,
-
-    /// Custom human-readable name of the job.
-    friendly_name: Option<String>,
 
     /// List of associated nodes.
     nodes: Vec<NodeName>,
@@ -255,10 +243,8 @@ impl JobMonitor {
         let metadata = JobMetadata {
             job_id: meta_job_id,
             job_type: JobType::Meta,
-            friendly_name: None,
             nodes: Vec::new(),
             state: JobState::Running,
-            last_message: None,
             custom_message: None,
         };
 
@@ -300,10 +286,8 @@ impl JobMonitor {
                     let metadata = JobMetadata {
                         job_id: message.job_id,
                         job_type: creation.job_type,
-                        friendly_name: creation.friendly_name.clone(),
                         nodes: creation.nodes.clone(),
                         state: JobState::Waiting,
-                        last_message: None,
                         custom_message: None,
                     };
 
@@ -504,7 +488,6 @@ impl JobHandleInner {
     pub fn create_job(&self, job_type: JobType, nodes: Vec<NodeName>) -> ColmenaResult<JobHandle> {
         let job_id = JobId::new();
         let creation = JobCreation {
-            friendly_name: None,
             job_type,
             nodes,
         };

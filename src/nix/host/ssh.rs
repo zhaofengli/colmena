@@ -30,7 +30,6 @@ pub struct Ssh {
     /// Command to elevate privileges with.
     privilege_escalation_command: Vec<String>,
 
-    friendly_name: String,
     job: Option<JobHandle>,
 }
 
@@ -100,13 +99,11 @@ impl Host for Ssh {
 
 impl Ssh {
     pub fn new(user: String, host: String) -> Self {
-        let friendly_name = host.clone();
         Self {
             user,
             host,
             port: None,
             ssh_config: None,
-            friendly_name,
             privilege_escalation_command: Vec::new(),
             job: None,
         }
