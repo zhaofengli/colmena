@@ -5,20 +5,25 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     utils.url = "github:numtide/flake-utils";
 
+    # not yet upstreamed
+    nix-eval-jobs.url = "github:zhaofengli/nix-eval-jobs/colmena";
+
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
     };
   };
 
-  outputs = { self, nixpkgs, utils, ... }: let
+  outputs = { self, nixpkgs, utils, nix-eval-jobs, ... }: let
     supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
     evalNix = import ./src/nix/hive/eval.nix {
       hermetic = true;
     };
   in utils.lib.eachSystem supportedSystems (system: let
-    pkgs = import nixpkgs { inherit system; };
-
+    pkgs = import nixpkgs {
+      inherit system;
+      overlays = [ self._evalJobsOverlay ];
+    };
   in rec {
     # We still maintain the expression in a Nixpkgs-acceptable form
     defaultPackage = self.packages.${system}.colmena;
@@ -59,6 +64,14 @@
       '';
     };
   }) // {
+    # For use in integration tests
+    _evalJobsOverlay =
+      (final: prev: {
+        nix-eval-jobs = (final.callPackage nix-eval-jobs.outPath {}).overrideAttrs (old: {
+          version = "0.0.3-colmena";
+        });
+      });
+
     overlay = final: prev: {
       colmena = final.callPackage ./package.nix { };
     };

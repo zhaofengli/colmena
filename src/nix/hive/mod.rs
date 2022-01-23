@@ -15,6 +15,7 @@ use super::{
     NodeName,
     NodeConfig,
     NodeFilter,
+    NixExpression,
     ProfileDerivation,
     StorePath,
 };
@@ -72,6 +73,12 @@ struct NixInstantiate<'hive> {
 /// escaping a JSON string to strip off Nix interpolation.
 struct SerializedNixExpression {
     json_file: TempPath,
+}
+
+/// An expression to evaluate the system profiles of selected nodes.
+struct EvalSelectedExpression<'hive> {
+    hive: &'hive Hive,
+    nodes_expr: SerializedNixExpression,
 }
 
 impl HivePath {
@@ -290,6 +297,16 @@ impl Hive {
             .collect()
     }
 
+    /// Returns the expression to evaluate selected nodes.
+    pub fn eval_selected_expr(&self, nodes: &[NodeName]) -> ColmenaResult<impl NixExpression + '_> {
+        let nodes_expr = SerializedNixExpression::new(nodes)?;
+
+        Ok(EvalSelectedExpression {
+            hive: self,
+            nodes_expr,
+        })
+    }
+
     /// Evaluates an expression using values from the configuration.
     pub async fn introspect(&self, expression: String, instantiate: bool) -> ColmenaResult<String> {
         if instantiate {
@@ -419,8 +436,24 @@ impl SerializedNixExpression {
             json_file: tmp.into_temp_path(),
         })
     }
+}
 
-    pub fn expression(&self) -> String {
+impl NixExpression for SerializedNixExpression {
+    fn expression(&self) -> String {
         format!("(builtins.fromJSON (builtins.readFile {}))", self.json_file.to_str().unwrap())
+    }
+}
+
+impl<'hive> NixExpression for EvalSelectedExpression<'hive> {
+    fn expression(&self) -> String {
+        format!(
+            "{} hive.evalSelected {}",
+            self.hive.get_base_expression(),
+            self.nodes_expr.expression(),
+        )
+    }
+
+    fn requires_flakes(&self) -> bool {
+        self.hive.is_flake()
     }
 }

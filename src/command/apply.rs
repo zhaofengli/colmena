@@ -9,6 +9,7 @@ use crate::nix::deployment::{
     Goal,
     Options,
     EvaluationNodeLimit,
+    Evaluator,
     ParallelismLimit,
 };
 use crate::progress::SimpleProgressOutput;
@@ -110,6 +111,14 @@ To temporarily disable remote build on all nodes, use `--no-build-on-target`.
             .long_help(r#"If `deployment.replaceUnknownProfiles` is set for a target, using this switch
 will treat deployment.replaceUnknownProfiles as though it was set true and perform unknown profile replacement."#)
             .takes_value(false))
+        .arg(Arg::new("evaluator")
+            .long("evaluator")
+            .help("The evaluator to use (experimental)")
+            .long_help(r#"If set to `chunked` (default), evaluation of nodes will happen in batches. If set to `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes will be evaluated in parallel.
+
+This is an experimental feature."#)
+            .default_value("chunked")
+            .possible_values(Evaluator::possible_values()))
 }
 
 pub fn subcommand() -> App<'static> {
@@ -156,6 +165,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         options.set_gzip(!local_args.is_present("no-gzip"));
         options.set_upload_keys(!local_args.is_present("no-keys"));
         options.set_force_replace_unknown_profiles(local_args.is_present("force-replace-unknown-profiles"));
+        options.set_evaluator(local_args.value_of_t("evaluator").unwrap());
 
         if local_args.is_present("keep-result") {
             options.set_create_gc_roots(true);

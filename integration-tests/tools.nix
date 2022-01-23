@@ -45,7 +45,7 @@ let
       nix.binaryCaches = lib.mkForce [];
 
       virtualisation = {
-        memorySize = 2048;
+        memorySize = 3072;
         writableStore = true;
         additionalPaths = [
           "${pkgs.path}"
