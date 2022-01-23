@@ -186,6 +186,9 @@ impl ProgressOutput for SpinnerOutput {
 
             match message {
                 Message::Complete => {
+                    // To work around https://github.com/console-rs/indicatif/issues/342
+                    println!();
+
                     return Ok(self);
                 }
                 Message::Print(line) => {
