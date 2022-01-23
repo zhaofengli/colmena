@@ -7,7 +7,7 @@ deployer.succeed(f"sed -i 's|@poison@|{poison}|g' /tmp/bundle/hive.nix")
 targets = [alpha, beta, gamma]
 
 logs = deployer.succeed("cd /tmp/bundle &&" \
-    f"run-copy-stderr {colmena} apply --eval-node-limit 4 --on @target --keep-result")
+    f"run-copy-stderr {colmena} apply --evaluator {evaluator} --eval-node-limit 4 --on @target --keep-result")
 
 with subtest("Check that evaluation messages were logged correctly"):
     assert "must appear during evaluation" in logs
@@ -73,7 +73,7 @@ with subtest("Check that we can correctly deploy to remaining nodes despite fail
 
     deployer.succeed("sed -i s/FIRST/SECOND/g /tmp/bundle/hive.nix")
     deployer.fail("cd /tmp/bundle &&" \
-        f"{colmena} apply --eval-node-limit 4 --on @target")
+        f"{colmena} apply --evaluator {evaluator} --eval-node-limit 4 --on @target")
 
     alpha.succeed("grep SECOND /etc/deployment")
     beta.succeed("grep FIRST /etc/deployment")
