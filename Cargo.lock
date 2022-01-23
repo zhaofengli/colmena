@@ -124,6 +124,7 @@ dependencies = [
 name = "colmena"
 version = "0.3.0-pre"
 dependencies = [
+ "async-stream",
  "async-trait",
  "atty",
  "clap",
@@ -149,6 +150,7 @@ dependencies = [
  "sys-info",
  "tempfile",
  "tokio",
+ "tokio-stream",
  "tokio-test",
  "users",
  "uuid",

@@ -8,7 +8,7 @@ pub mod limits;
 pub use limits::{EvaluationNodeLimit, ParallelismLimit};
 
 pub mod options;
-pub use options::Options;
+pub use options::{Options, Evaluator};
 
 use std::collections::HashMap;
 use std::mem;
@@ -16,6 +16,7 @@ use std::sync::Arc;
 
 use futures::future::join_all;
 use itertools::Itertools;
+use tokio_stream::StreamExt;
 
 use crate::progress::Sender as ProgressSender;
 use crate::job::{JobMonitor, JobHandle, JobType, JobState};
@@ -34,6 +35,11 @@ use super::{
     CopyDirection,
     CopyOptions,
     key::{Key, UploadAt as UploadKeyAt},
+    evaluator::{
+        DrvSetEvaluator,
+        NixEvalJobs,
+        EvalError,
+    },
 };
 use super::host;
 
@@ -163,7 +169,15 @@ impl Deployment {
             let targets = mem::replace(&mut self.targets, HashMap::new());
             let deployment = DeploymentHandle::new(self);
             let meta_future = meta.run(|meta| async move {
-                deployment.execute_chunked(meta.clone(), targets).await?;
+                match deployment.options.evaluator {
+                    Evaluator::Chunked => {
+                        deployment.execute_chunked(meta.clone(), targets).await?;
+                    }
+                    Evaluator::Streaming => {
+                        log::warn!("Streaming evaluation is an experimental feature");
+                        deployment.execute_streaming(meta.clone(), targets).await?;
+                    }
+                }
 
                 Ok(())
             });
@@ -211,6 +225,99 @@ impl Deployment {
 
         join_all(futures).await
             .into_iter()
+            .collect::<ColmenaResult<Vec<()>>>()?;
+
+        Ok(())
+    }
+
+    /// Executes the deployment on selected nodes using a streaming evaluator.
+    async fn execute_streaming(self: &DeploymentHandle, parent: JobHandle, mut targets: TargetNodeMap)
+        -> ColmenaResult<()>
+    {
+        if self.goal == Goal::UploadKeys {
+            unreachable!(); // some logic is screwed up
+        }
+
+        let nodes: Vec<NodeName> = targets.keys().cloned().collect();
+        let expr = self.hive.eval_selected_expr(&nodes)?;
+
+        let job = parent.create_job(JobType::Evaluate, nodes.clone())?;
+
+        let futures = job.run(|job| async move {
+            let mut evaluator = NixEvalJobs::default();
+            evaluator.set_job(job.clone());
+
+            // FIXME: nix-eval-jobs currently does not support IFD with builders
+            let options = self.hive.nix_options();
+            let mut stream = evaluator.evaluate(&expr, options).await?;
+
+            let mut futures: Vec<tokio::task::JoinHandle<ColmenaResult<()>>> = Vec::new();
+
+            while let Some(item) = stream.next().await {
+                match item {
+                    Ok(attr) => {
+                        let node_name = NodeName::new(attr.attribute().to_owned())?;
+                        let profile_drv: ProfileDerivation = attr.into_derivation()?;
+
+                        // FIXME: Consolidate
+                        let mut target = targets.remove(&node_name).unwrap();
+
+                        if let Some(force_build_on_target) = self.options.force_build_on_target {
+                            target.config.set_build_on_target(force_build_on_target);
+                        }
+
+                        let job_handle = job.clone();
+                        let arc_self = self.clone();
+                        futures.push(tokio::spawn(async move {
+                            let (target, profile) = {
+                                if target.config.build_on_target() {
+                                    arc_self.build_on_node(job_handle.clone(), target, profile_drv.clone()).await?
+                                } else {
+                                    arc_self.build_and_push_node(job_handle.clone(), target, profile_drv.clone()).await?
+                                }
+                            };
+
+                            if arc_self.goal.requires_activation() {
+                                arc_self.activate_node(job_handle, target, profile).await
+                            } else {
+                                Ok(())
+                            }
+                        }));
+                    }
+                    Err(e) => {
+                        match e {
+                            EvalError::Global(e) => {
+                                // Global error - Abort immediately
+                                return Err(e);
+                            }
+                            EvalError::Attribute(e) => {
+                                // Attribute-level error
+                                //
+                                // Here the eventual non-zero exit code of the evaluator
+                                // will translate into an `EvalError::Global`, causing
+                                // the entire future to resolve to an Err.
+
+                                let node_name = NodeName::new(e.attribute().to_string()).unwrap();
+                                let nodes = vec![ node_name ];
+                                let job = parent.create_job(JobType::Evaluate, nodes)?;
+
+                                job.state(JobState::Running)?;
+                                for line in e.error().lines() {
+                                    job.stderr(line.to_string())?;
+                                }
+                                job.state(JobState::Failed)?;
+                            }
+                        }
+                    }
+                }
+            }
+
+            Ok(futures)
+        }).await?;
+
+        join_all(futures).await
+            .into_iter()
+            .map(|r| r.unwrap()) // panic on JoinError (future panicked)
             .collect::<ColmenaResult<Vec<()>>>()?;
 
         Ok(())

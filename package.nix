@@ -1,4 +1,4 @@
-{ lib, stdenv, rustPlatform, installShellFiles }:
+{ lib, stdenv, rustPlatform, installShellFiles, nix-eval-jobs ? null }:
 
 rustPlatform.buildRustPackage rec {
   pname = "colmena";
@@ -9,9 +9,13 @@ rustPlatform.buildRustPackage rec {
     src = lib.cleanSource ./.;
   };
 
-  cargoSha256 = "sha256-UUDKAY5zOm/okdRN9Bh+1OgPJFnd1Gw5VMd/+/P46jQ=";
+  cargoSha256 = "sha256-glLQwj9K6efC2cXoOx7oVMOfrFDhFTgm1C+Pghn5hGo=";
 
   nativeBuildInputs = [ installShellFiles ];
+
+  propagatedBuildInputs = lib.optional (nix-eval-jobs != null) nix-eval-jobs;
+
+  NIX_EVAL_JOBS = lib.optionalString (nix-eval-jobs != null) "${nix-eval-jobs}/bin/nix-eval-jobs";
 
   postInstall = lib.optionalString (stdenv.hostPlatform == stdenv.buildPlatform) ''
     installShellCompletion --cmd colmena \

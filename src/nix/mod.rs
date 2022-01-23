@@ -38,6 +38,8 @@ pub use flake::Flake;
 pub mod node_filter;
 pub use node_filter::NodeFilter;
 
+pub mod evaluator;
+
 /// Path to the main system profile.
 pub const SYSTEM_PROFILE: &str = "/nix/var/nix/profiles/system";
 
@@ -47,7 +49,7 @@ pub const CURRENT_PROFILE: &str = "/run/current-system";
 /// A node's attribute name.
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 #[serde(transparent)]
-pub struct NodeName(
+pub struct NodeName (
     #[serde(deserialize_with = "NodeName::deserialize")]
     String
 );
