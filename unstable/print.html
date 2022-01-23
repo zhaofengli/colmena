@@ -2069,6 +2069,16 @@ Apply configurations on remote machines
             
             [default: auto]
 
+        <span class="ansi32">--evaluator</span> <span class="ansi32">&lt;evaluator&gt;</span>
+            If set to `chunked` (default), evaluation of nodes will happen in batches. If set to
+            `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes
+            will be evaluated in parallel.
+            
+            This is an experimental feature.
+            
+            [default: chunked]
+            [possible values: chunked, streaming]
+
         <span class="ansi32">--force-replace-unknown-profiles</span>
             If `deployment.replaceUnknownProfiles` is set for a target, using this switch
             will treat deployment.replaceUnknownProfiles as though it was set true and perform
@@ -2239,6 +2249,16 @@ This subcommand behaves as if you invoked `apply` with the `build` goal.
             
             [default: auto]
 
+        <span class="ansi32">--evaluator</span> <span class="ansi32">&lt;evaluator&gt;</span>
+            If set to `chunked` (default), evaluation of nodes will happen in batches. If set to
+            `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes
+            will be evaluated in parallel.
+            
+            This is an experimental feature.
+            
+            [default: chunked]
+            [possible values: chunked, streaming]
+
         <span class="ansi32">--force-replace-unknown-profiles</span>
             If `deployment.replaceUnknownProfiles` is set for a target, using this switch
             will treat deployment.replaceUnknownProfiles as though it was set true and perform
@@ -2344,6 +2364,16 @@ This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
             
             
             [default: auto]
+
+        <span class="ansi32">--evaluator</span> <span class="ansi32">&lt;evaluator&gt;</span>
+            If set to `chunked` (default), evaluation of nodes will happen in batches. If set to
+            `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes
+            will be evaluated in parallel.
+            
+            This is an experimental feature.
+            
+            [default: chunked]
+            [possible values: chunked, streaming]
 
         <span class="ansi32">--force-replace-unknown-profiles</span>
             If `deployment.replaceUnknownProfiles` is set for a target, using this switch
