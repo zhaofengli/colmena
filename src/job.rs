@@ -109,7 +109,7 @@ pub struct JobHandleInner {
     job_id: JobId,
 
     /// Handle to the mpsc channel.
-    sender: Sender,
+    sender: Option<Sender>,
 }
 
 /// A handle to the meta job.
@@ -482,6 +482,14 @@ impl JobState {
 }
 
 impl JobHandleInner {
+    /// Creates a JobHandle that isn't connected to a JobMonitor.
+    pub fn null() -> Self {
+        Self {
+            job_id: JobId::new(),
+            sender: None,
+        }
+    }
+
     /// Creates a new job with a distinct ID.
     ///
     /// This sends out a Creation message with the metadata.
@@ -594,8 +602,12 @@ impl JobHandleInner {
 
         let event = Event::new(self.job_id, payload);
 
-        self.sender.send(event)
-            .map_err(|e| ColmenaError::unknown(Box::new(e)))?;
+        if let Some(sender) = &self.sender {
+            sender.send(event)
+                .map_err(|e| ColmenaError::unknown(Box::new(e)))?;
+        } else {
+            log::debug!("Sending event: {:?}", event);
+        }
 
         Ok(())
     }
@@ -609,7 +621,7 @@ impl MetaJobHandle {
     {
         let normal_handle = Arc::new(JobHandleInner {
             job_id: self.job_id,
-            sender: self.sender.clone(),
+            sender: Some(self.sender.clone()),
         });
 
         match f(normal_handle).await {
@@ -785,6 +797,11 @@ impl Display for JobStats {
 
         Ok(())
     }
+}
+
+/// Returns a JobHandle that is not connected to a JobMonitor.
+pub fn null_job_handle() -> JobHandle {
+    Arc::new(JobHandleInner::null())
 }
 
 /// Returns a textual description of a list of nodes.
