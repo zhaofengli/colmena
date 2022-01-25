@@ -428,7 +428,7 @@ let
       deploymentOptions
       hive.defaults
       config
-    ] ++ (import (npkgs.path + "/nixos/modules/module-list.nix"));
+    ];
     specialArgs = hive.meta.specialArgs // {
       inherit name nodes;
       modulesPath = npkgs.path + "/nixos/modules";
