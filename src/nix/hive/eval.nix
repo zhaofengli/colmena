@@ -472,7 +472,6 @@ let
     specialArgs = hive.meta.specialArgs // {
       inherit name;
       nodes = uncheckedNodes;
-      modulesPath = npkgs.path + "/nixos/modules";
     };
   };
 
