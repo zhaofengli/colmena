@@ -468,7 +468,7 @@ let
       keyChownModule
       deploymentOptions
       hive.defaults
-    ] ++ configs ++ (import (npkgs.path + "/nixos/modules/module-list.nix"));
+    ] ++ configs;
     specialArgs = hive.meta.specialArgs // {
       inherit name;
       nodes = uncheckedNodes;
