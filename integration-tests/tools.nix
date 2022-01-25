@@ -55,6 +55,8 @@ let
         ];
       };
 
+      documentation.nixos.enable = lib.mkForce true;
+
       services.openssh.enable = true;
       users.users.root.openssh.authorizedKeys.keys = [
         sshKeys.snakeOilPublicKey
@@ -76,6 +78,8 @@ let
     # Kept as minimal as possible.
     targetConfig = { lib, ... }: {
       nix.binaryCaches = lib.mkForce [];
+
+      documentation.nixos.enable = lib.mkForce true;
 
       services.openssh.enable = true;
       users.users.root.openssh.authorizedKeys.keys = [
