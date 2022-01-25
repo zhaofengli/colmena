@@ -30,7 +30,7 @@ serde = { version = "1.0.118", features = ["derive"] }
 serde_json = "1.0"
 shell-escape = "0.1.5"
 sys-info = "0.9.0"
-snafu = "0.6.10"
+snafu = "0.7.0"
 tempfile = "3.1.0"
 tokio-stream = "0.1.8"
 users = "0.11.0"
