@@ -84,7 +84,7 @@ pub struct NodeConfig {
 }
 
 /// Nix options.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct NixOptions {
     /// Whether to pass --show-trace.
     show_trace: bool,
@@ -176,15 +176,6 @@ impl NodeConfig {
 
             host
         })
-    }
-}
-
-impl Default for NixOptions {
-    fn default() -> Self {
-        Self {
-            show_trace: false,
-            builders: None,
-        }
     }
 }
 

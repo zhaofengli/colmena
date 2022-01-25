@@ -166,7 +166,7 @@ impl Deployment {
             Ok(())
         } else {
             // Do the whole eval-build-deploy flow
-            let targets = mem::replace(&mut self.targets, HashMap::new());
+            let targets = mem::take(&mut self.targets);
             let deployment = DeploymentHandle::new(self);
             let meta_future = meta.run(|meta| async move {
                 match deployment.options.evaluator {
@@ -414,7 +414,7 @@ impl Deployment {
                 return Err(ColmenaError::Unsupported);
             }
 
-            let mut host = target.host.as_mut().unwrap();
+            let host = target.host.as_mut().unwrap();
             host.set_job(Some(job.clone()));
 
             host.copy_closure(
@@ -423,7 +423,7 @@ impl Deployment {
                 CopyOptions::default().include_outputs(true),
                 ).await?;
 
-            let profile = profile_drv.realize_remote(&mut host).await?;
+            let profile = profile_drv.realize_remote(host).await?;
 
             job.success_with_message(format!("Built {:?} on target node", profile.as_path()))?;
             Ok((target, profile))
@@ -538,14 +538,12 @@ impl Deployment {
 
                 if profile.exists() {
                     job.message("Remote profile known".to_string())?;
+                } else if arc_self.options.force_replace_unknown_profiles {
+                    job.message("Warning: Remote profile is unknown, but unknown profiles are being ignored".to_string())?;
                 } else {
-                    if arc_self.options.force_replace_unknown_profiles {
-                        job.message("Warning: Remote profile is unknown, but unknown profiles are being ignored".to_string())?;
-                    } else {
-                        return Err(ColmenaError::ActiveProfileUnknown {
-                            store_path: profile,
-                        });
-                    }
+                    return Err(ColmenaError::ActiveProfileUnknown {
+                        store_path: profile,
+                    });
                 }
             }
 
