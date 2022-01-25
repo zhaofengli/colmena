@@ -37,7 +37,8 @@ pub struct NixEvalJobs {
 #[serde(untagged)]
 enum EvalLine {
     Derivation(EvalLineDerivation),
-    Error(EvalLineAttributeError),
+    AttributeError(EvalLineAttributeError),
+    GlobalError(EvalLineGlobalError),
 }
 
 /// An output from nix-eval-jobs.
@@ -52,7 +53,7 @@ struct EvalLineDerivation {
     drv_path: StorePath,
 }
 
-/// An error from nix-eval-jobs.
+/// An attribute-level error from nix-eval-jobs.
 ///
 /// This is nix-eval-jobs's version of `AttributeError`.
 #[derive(Deserialize)]
@@ -60,7 +61,12 @@ struct EvalLineAttributeError {
     #[serde(rename = "attr")]
     attribute: String,
 
-    #[serde(rename = "error")]
+    error: String,
+}
+
+/// A global error from nix-eval-jobs.
+#[derive(Deserialize)]
+struct EvalLineGlobalError {
     error: String,
 }
 
@@ -188,11 +194,20 @@ impl From<EvalLineAttributeError> for AttributeError {
     }
 }
 
+impl From<EvalLineGlobalError> for ColmenaError {
+    fn from(ele: EvalLineGlobalError) -> Self {
+        ColmenaError::Unknown {
+            message: ele.error,
+        }
+    }
+}
+
 impl From<EvalLine> for EvalResult {
     fn from(el: EvalLine) -> Self {
         match el {
             EvalLine::Derivation(eld) => Ok(eld.into()),
-            EvalLine::Error(ele) => Err(EvalError::Attribute(ele.into())),
+            EvalLine::AttributeError(ele) => Err(EvalError::Attribute(ele.into())),
+            EvalLine::GlobalError(ele) => Err(EvalError::Global(ele.into())),
         }
     }
 }
@@ -273,6 +288,41 @@ mod tests {
                             }
                             _ => {
                                 panic!("Expected an attribute error, got {:?}", e);
+                            }
+                        }
+                    }
+                }
+                count += 1;
+            }
+
+            assert_eq!(2, count);
+        });
+    }
+
+    #[test]
+    fn test_json_global_error() {
+        let evaluator = NixEvalJobs::default();
+        let expr = r#"with import <nixpkgs> {}; { a = pkgs.hello; b = pkgs.writeText "x" (import /sys/nonexistentfile); }"#.to_string();
+
+        block_on(async move {
+            let mut stream = evaluator.evaluate(&expr, NixOptions::default()).await.unwrap();
+            let mut count = 0;
+
+            while let Some(value) = stream.next().await {
+                eprintln!("Got {:?}", value);
+
+                match value {
+                    Ok(v) => {
+                        assert_eq!("a", v.attribute);
+                    }
+                    Err(e) => {
+                        match e {
+                            EvalError::Global(e) => {
+                                let message = format!("{}", e);
+                                assert!(message.find("No such file or directory").is_some());
+                            }
+                            _ => {
+                                panic!("Expected a global error, got {:?}", e);
                             }
                         }
                     }
