@@ -220,7 +220,7 @@ impl Ssh {
         }
 
         let path = key.path();
-        let key_script = key_uploader::generate_script(key, &path, require_ownership);
+        let key_script = key_uploader::generate_script(key, path, require_ownership);
 
         let mut command = self.ssh(&["sh", "-c", &key_script]);
 

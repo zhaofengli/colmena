@@ -119,7 +119,7 @@ impl Local {
         }
 
         let path = key.path();
-        let key_script = format!("'{}'", key_uploader::generate_script(key, &path, require_ownership));
+        let key_script = format!("'{}'", key_uploader::generate_script(key, path, require_ownership));
 
         let mut command = Command::new("sh");
 

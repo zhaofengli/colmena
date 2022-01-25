@@ -91,6 +91,8 @@ pub enum UploadAt {
 pub struct Key {
     name: String,
 
+    path: PathBuf,
+
     #[serde(flatten)]
     source: KeySource,
 
@@ -146,7 +148,7 @@ impl Key {
         }
     }
 
-    pub fn path(&self) -> PathBuf { self.dest_dir.join(&self.name) }
+    pub fn path(&self) -> &Path { &self.path }
     pub fn user(&self) -> &str { &self.user }
     pub fn group(&self) -> &str { &self.group }
     pub fn permissions(&self) -> &str { &self.permissions }

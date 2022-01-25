@@ -212,7 +212,7 @@ let
     };
   };
 
-  keyType = { lib, name, ... }: let
+  keyType = { lib, name, config, ... }: let
     inherit (lib) types;
   in {
     options = {
@@ -255,7 +255,15 @@ let
           Destination directory on the host.
         '';
         default = "/run/keys";
-        type = types.str;
+        type = types.path;
+      };
+      path = lib.mkOption {
+        description = ''
+          Full path to the destination.
+        '';
+        default = "${config.destDir}/${config.name}";
+        type = types.path;
+        internal = true;
       };
       user = lib.mkOption {
         description = ''
