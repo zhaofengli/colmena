@@ -10,7 +10,7 @@ in {
   inherit (pkgs) lib stdenv rustPlatform;
 in rustPlatform.buildRustPackage rec {
   pname = "colmena";
-  version = "0.2.0";
+  version = "0.2.1";
 
   # We guarantee CLI and Nix API stability for the same minor version
   apiVersion = builtins.concatStringsSep "." (lib.take 2 (lib.splitString "." version));
@@ -20,7 +20,7 @@ in rustPlatform.buildRustPackage rec {
     src = lib.cleanSource ./.;
   };
 
-  cargoSha256 = "sha256-ZNSg3hXWKHNQ9yHJS1qW3tFYwzU4ZDa1N0yvoGLmWns=";
+  cargoSha256 = "sha256-wMC2GAVVxkwrgJtOIJL0P+Uxh+ouW4VwLDrXJlD10AA=";
 
   postInstall = lib.optionalString (stdenv.hostPlatform == stdenv.buildPlatform) ''
     mkdir completions
