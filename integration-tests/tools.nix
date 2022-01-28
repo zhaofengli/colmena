@@ -55,8 +55,6 @@ let
         ];
       };
 
-      documentation.nixos.enable = lib.mkForce true;
-
       services.openssh.enable = true;
       users.users.root.openssh.authorizedKeys.keys = [
         sshKeys.snakeOilPublicKey
@@ -79,7 +77,7 @@ let
     targetConfig = { lib, ... }: {
       nix.binaryCaches = lib.mkForce [];
 
-      documentation.nixos.enable = lib.mkForce true;
+      documentation.nixos.enable = lib.mkOverride 60 true;
 
       services.openssh.enable = true;
       users.users.root.openssh.authorizedKeys.keys = [
@@ -105,7 +103,7 @@ let
       (modulesPath + "/testing/test-instrumentation.nix")
     ];
 
-    documentation.nixos.enable = false;
+    documentation.nixos.enable = lib.mkOverride 55 false;
     boot.loader.grub.enable = false;
     system.nixos.revision = lib.mkForce "constant-nixos-revision";
 

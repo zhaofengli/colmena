@@ -79,6 +79,8 @@ in {
 
     environment.systemPackages = [ testPkg ];
 
+    documentation.nixos.enable = lib.mkForce true;
+
     system.activationScripts.colmena-test.text = ''
       echo "must appear during activation"
     '';
