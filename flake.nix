@@ -2,7 +2,9 @@
   description = "A simple, stateless NixOS deployment tool modeled after NixOps.";
 
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    stable.url = "github:NixOS/nixpkgs/nixos-21.11";
+
     utils.url = "github:numtide/flake-utils";
 
     # not yet upstreamed

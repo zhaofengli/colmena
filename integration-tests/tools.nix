@@ -174,7 +174,7 @@ let
     } // test // {
       testScript = fullScript;
     };
-  in pkgs.nixosTest combined;
+  in lib.makeOverridable pkgs.nixosTest combined;
 in {
   inherit pkgs nodes colmena colmenaExec
     getStandaloneConfigFor inputClosureOf makeTest;

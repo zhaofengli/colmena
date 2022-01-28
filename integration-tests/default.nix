@@ -7,4 +7,10 @@
   flakes = import ./flakes {};
   flakes-streaming = import ./flakes { evaluator = "streaming"; };
   parallel = import ./parallel {};
+
+  apply-stable = let
+    test = import ./apply { pkgs = import ./nixpkgs-stable.nix; };
+  in test.override (old: {
+    name = "apply-stable";
+  });
 }
