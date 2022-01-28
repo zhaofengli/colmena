@@ -132,7 +132,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
     let options = {
         let mut options = Options::default();
-        options.set_upload_keys(!local_args.is_present("no-upload-keys"));
+        options.set_upload_keys(!local_args.is_present("no-keys"));
         options
     };
 
