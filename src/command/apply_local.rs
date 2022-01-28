@@ -121,7 +121,7 @@ pub async fn run(_global_args: &ArgMatches<'_>, local_args: &ArgMatches<'_>) -> 
 
     let mut deployment = Deployment::new(hive, targets, goal);
     let mut options = DeploymentOptions::default();
-    options.set_upload_keys(!local_args.is_present("no-upload-keys"));
+    options.set_upload_keys(!local_args.is_present("no-keys"));
     options.set_progress_bar(!local_args.is_present("verbose"));
     deployment.set_options(options);
 
