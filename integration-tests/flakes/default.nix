@@ -14,6 +14,8 @@ in tools.makeTest {
   testScript = ''
     import re
 
+    deployer.succeed("sed -i \"s @nixpkgs@ $(readlink /nixpkgs) g\" /tmp/bundle/flake.nix")
+
     with subtest("Lock flake dependencies"):
         # --impure required for path:/nixpkgs which is a symlink to a store path
         deployer.succeed("cd /tmp/bundle && nix --experimental-features \"nix-command flakes\" flake lock --impure")
