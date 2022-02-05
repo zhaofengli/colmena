@@ -38,6 +38,7 @@ uuid = { version = "0.8.2", features = ["serde", "v4"] }
 validator = { version = "0.14", features = ["derive"] }
 
 [dev-dependencies]
+ntest = "0.7.3"
 tokio-test = "0.4.0"
 
 [dependencies.tokio]
