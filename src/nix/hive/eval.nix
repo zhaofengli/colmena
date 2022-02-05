@@ -98,6 +98,8 @@ let
   in {
     options = {
       deployment = {
+        nixpkgs = lib.mkOption {
+        };
         targetHost = lib.mkOption {
           description = ''
             The target SSH node for deployment.
@@ -389,11 +391,7 @@ let
   reservedNames = [ "defaults" "network" "meta" ];
 
   evalNode = name: configs: let
-    npkgs =
-      if hasAttr name hive.meta.nodeNixpkgs
-      then mkNixpkgs "meta.nodeNixpkgs.${name}" hive.meta.nodeNixpkgs.${name}
-      else pkgs;
-    evalConfig = import (npkgs.path + "/nixos/lib/eval-config.nix");
+    evalConfig = import (pkgs.path + "/nixos/lib/eval-config.nix");
     assertionModule = { config, ... }: {
       assertions = lib.mapAttrsToList (key: opts: let
         nonNulls = l: filter (x: x != null) l;
@@ -404,6 +402,8 @@ let
           in "Exactly one of `${prefix}.text`, `${prefix}.keyCommand` and `${prefix}.keyFile` must be set.";
         }) config.deployment.keys;
     };
+
+    npkgs = hive.${name}.deployment.nixpkgs;
 
     # Here we need to merge the configurations in meta.nixpkgs
     # and in machine config.
@@ -512,7 +512,7 @@ let
   deploymentConfig = lib.mapAttrs (name: eval: eval.config.deployment) nodes;
 
   deploymentConfigSelected = names:
-    listToAttrs (map (name: { inherit name; value = nodes.${name}.config.deployment; }) names);
+    listToAttrs (map (name: { inherit name; value = builtins.removeAttrs nodes.${name}.config.deployment ["nixpkgs"]; }) names);
 
   evalAll = evalSelected nodeNames;
   evalSelected = names: let
