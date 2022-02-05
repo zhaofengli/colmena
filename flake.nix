@@ -9,6 +9,7 @@
 
     # not yet upstreamed
     nix-eval-jobs.url = "github:zhaofengli/nix-eval-jobs/colmena";
+    nix-eval-jobs.inputs.nixpkgs.follows = "nixpkgs";
 
     flake-compat = {
       url = "github:edolstra/flake-compat";
