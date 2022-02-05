@@ -152,8 +152,9 @@
                         <!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="multi-architecture-deployments"><a class="header" href="#multi-architecture-deployments">Multi-Architecture Deployments</a></h1>
 <p>You can deploy to hosts running different architectures with a single configuration.
-This requires you to either <a href="https://nixos.org/manual/nix/stable/advanced-topics/distributed-builds.html">set up remote builders</a> running the foreign architecture(s), or <a href="https://nixos.wiki/wiki/NixOS_on_ARM#Compiling_through_QEMU">set up binfmt emulation</a> on the host running Colmena.</p>
-<h2 id="binfmt-emulation"><a class="header" href="#binfmt-emulation"><code>binfmt</code> Emulation</a></h2>
+There are two ways to achieve this:</p>
+<h2 id="using-binfmt-emulation"><a class="header" href="#using-binfmt-emulation">Using <code>binfmt</code> Emulation</a></h2>
+<p>On Linux hosts, you can run builds through transparent binary emulation using <a href="https://nixos.wiki/wiki/NixOS_on_ARM#Compiling_through_QEMU">QEMU and binfmt-misc</a>.</p>
 <p>This following example sets up binfmt, allowing an X86-64 host (<code>laptop</code>) to build derivations for an AArch64 host (<code>rpi</code>) through QEMU:</p>
 <pre><code class="language-nix">{
   # The NixOS machine you are running Colmena on (x86_64-linux)
@@ -178,6 +179,9 @@ This requires you to either <a href="https://nixos.org/manual/nix/stable/advance
 For more information on what is required on the local system, see <a href="../features/apply-local.html">Local Deployment</a>.</p>
 <p>After the new configuration is activated, binfmt emulation will be set up on the local machine.
 You can then deploy to the <code>rpi</code> node with <code>colmena apply --on rpi</code>.</p>
+<h2 id="building-remotely"><a class="header" href="#building-remotely">Building Remotely</a></h2>
+<p>If the remote nodes are powerful enough, you may also want to execute builds on them directly.
+See <a href="../features/remote-builds.html">Remote Builds</a> for more details.</p>
 
                     </main>
 
