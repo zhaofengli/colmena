@@ -7,17 +7,13 @@
 
     utils.url = "github:numtide/flake-utils";
 
-    # not yet upstreamed
-    nix-eval-jobs.url = "github:zhaofengli/nix-eval-jobs/colmena";
-    nix-eval-jobs.inputs.nixpkgs.follows = "nixpkgs";
-
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
     };
   };
 
-  outputs = { self, nixpkgs, utils, nix-eval-jobs, ... }: let
+  outputs = { self, nixpkgs, utils, ... }: let
     supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
     evalNix = import ./src/nix/hive/eval.nix {
       hermetic = true;
@@ -70,8 +66,14 @@
     # For use in integration tests
     _evalJobsOverlay =
       (final: prev: {
-        nix-eval-jobs = (final.callPackage nix-eval-jobs.outPath {}).overrideAttrs (old: {
-          version = "0.0.3-colmena";
+        nix-eval-jobs = prev.nix-eval-jobs.overrideAttrs (old: {
+          version = old.version + "-colmena";
+          patches = (old.patches or []) ++ [
+            (final.fetchpatch {
+              url = "https://github.com/nix-community/nix-eval-jobs/commit/1e0f309fefc9b2d597f8475a74c82ce29c189152.patch";
+              sha256 = "sha256-246t3SGRA/9JsV2XPcI4Exp+TxmyYBoldQ43Wr5CcsM=";
+            })
+          ];
         });
       });
 

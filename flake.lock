@@ -16,43 +16,6 @@
         "type": "github"
       }
     },
-    "flake-utils": {
-      "locked": {
-        "lastModified": 1642700792,
-        "narHash": "sha256-XqHrk7hFb+zBvRg6Ghl+AZDq03ov6OshJLiSWOoX5es=",
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "rev": "846b2ae0fc4cc943637d3d1def4454213e203cba",
-        "type": "github"
-      },
-      "original": {
-        "owner": "numtide",
-        "repo": "flake-utils",
-        "type": "github"
-      }
-    },
-    "nix-eval-jobs": {
-      "inputs": {
-        "flake-utils": "flake-utils",
-        "nixpkgs": [
-          "nixpkgs"
-        ]
-      },
-      "locked": {
-        "lastModified": 1644041308,
-        "narHash": "sha256-LlQ0z+0T4VayBOkePLgVsrl5RVNFVuK42Il5lAuniN0=",
-        "owner": "zhaofengli",
-        "repo": "nix-eval-jobs",
-        "rev": "21c724a8cea60e1e5fe83980c843060b1fbf899e",
-        "type": "github"
-      },
-      "original": {
-        "owner": "zhaofengli",
-        "ref": "colmena",
-        "repo": "nix-eval-jobs",
-        "type": "github"
-      }
-    },
     "nixpkgs": {
       "locked": {
         "lastModified": 1643805626,
@@ -72,7 +35,6 @@
     "root": {
       "inputs": {
         "flake-compat": "flake-compat",
-        "nix-eval-jobs": "nix-eval-jobs",
         "nixpkgs": "nixpkgs",
         "stable": "stable",
         "utils": "utils"
