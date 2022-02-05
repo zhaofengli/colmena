@@ -18,6 +18,8 @@ jobs:
           #  url: https://releases.nixos.org/nix/nix-2.5.1/install
           - name: 2.6.0
             url: https://releases.nixos.org/nix/nix-2.6.0/install
+          #- name: 2.7.0pre
+          #  url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.7.0pre20220127_558c4ee/install
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2.3.5
@@ -61,6 +63,8 @@ jobs:
             url: https://releases.nixos.org/nix/nix-2.5.1/install
           - name: 2.6.0
             url: https://releases.nixos.org/nix/nix-2.6.0/install
+          - name: 2.7.0pre
+            url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.7.0pre20220127_558c4ee/install
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2.3.5
