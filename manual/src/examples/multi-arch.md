@@ -1,9 +1,11 @@
 # Multi-Architecture Deployments
 
 You can deploy to hosts running different architectures with a single configuration.
-This requires you to either [set up remote builders](https://nixos.org/manual/nix/stable/advanced-topics/distributed-builds.html) running the foreign architecture(s), or [set up binfmt emulation](https://nixos.wiki/wiki/NixOS_on_ARM#Compiling_through_QEMU) on the host running Colmena.
+There are two ways to achieve this:
 
-## `binfmt` Emulation
+## Using `binfmt` Emulation
+
+On Linux hosts, you can run builds through transparent binary emulation using [QEMU and binfmt-misc](https://nixos.wiki/wiki/NixOS_on_ARM#Compiling_through_QEMU).
 
 This following example sets up binfmt, allowing an X86-64 host (`laptop`) to build derivations for an AArch64 host (`rpi`) through QEMU:
 
@@ -34,3 +36,8 @@ For more information on what is required on the local system, see [Local Deploym
 
 After the new configuration is activated, binfmt emulation will be set up on the local machine.
 You can then deploy to the `rpi` node with `colmena apply --on rpi`.
+
+## Building Remotely
+
+If the remote nodes are powerful enough, you may also want to execute builds on them directly.
+See [Remote Builds](../features/remote-builds.md) for more details.
