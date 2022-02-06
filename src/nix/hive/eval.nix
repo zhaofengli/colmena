@@ -21,7 +21,7 @@ let
     options = {
       name = lib.mkOption {
         description = ''
-          Name of the configuration.
+          The name of the configuration.
         '';
         type = types.str;
         default = "hive";
@@ -35,7 +35,7 @@ let
       };
       nixpkgs = lib.mkOption {
         description = ''
-          Pinned Nixpkgs. Accepts one of the following:
+          The pinned Nixpkgs package set. Accepts one of the following:
 
           - A path to a Nixpkgs checkout
           - The Nixpkgs lambda (e.g., import <nixpkgs>)
@@ -48,7 +48,7 @@ let
       };
       nodeNixpkgs = lib.mkOption {
         description = ''
-          Node-specific Nixpkgs overrides.
+          Node-specific Nixpkgs pins.
         '';
         type = types.attrsOf types.unspecified;
         default = {};

@@ -39,5 +39,5 @@ You can then deploy to the `rpi` node with `colmena apply --on rpi`.
 
 ## Building Remotely
 
-If the remote nodes are powerful enough, you may also want to execute builds on them directly.
+If the remote nodes are powerful enough, you may also execute builds on them directly.
 See [Remote Builds](../features/remote-builds.md) for more details.

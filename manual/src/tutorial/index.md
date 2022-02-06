@@ -16,13 +16,14 @@ If you are interested in trying out the bleeding-edge version of Colmena, Read [
 <!-- STABLE_END -->
 
 <!-- UNSTABLE_BEGIN -->
-<!-- To install the latest stable version, read [the corresponding Manual](https://zhaofengli.github.io/colmena/stable) for instructions. -->
 
 To install the latest development version to the user profile, use the following command:
 
 ```bash
 nix-env -if https://github.com/zhaofengli/colmena/tarball/main
 ```
+
+To install the latest stable version, read [the corresponding Manual](https://zhaofengli.github.io/colmena/stable) for instructions.
 
 ### Unstable Binary Cache
 
