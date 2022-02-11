@@ -30,6 +30,7 @@ pub const NIX_EVAL_JOBS: Option<&str> = option_env!("NIX_EVAL_JOBS");
 pub struct NixEvalJobs {
     executable: PathBuf,
     job: JobHandle,
+    workers: usize,
 }
 
 /// A line in the eval output.
@@ -82,7 +83,7 @@ impl DrvSetEvaluator for NixEvalJobs {
         let mut command = Command::new(&self.executable);
         command
             .arg("--impure")
-            .args(&["--workers", "10"]) // FIXME: Configurable
+            .arg("--workers").arg(self.workers.to_string())
             .arg(&expr_file);
 
         command.args(options.to_args());
@@ -160,6 +161,10 @@ impl DrvSetEvaluator for NixEvalJobs {
         }))
     }
 
+    fn set_eval_limit(&mut self, limit: usize) {
+        self.workers = limit;
+    }
+
     fn set_job(&mut self, job: JobHandle) {
         self.job = job;
     }
@@ -172,6 +177,7 @@ impl Default for NixEvalJobs {
         Self {
             executable: PathBuf::from(binary),
             job: null_job_handle(),
+            workers: 10,
         }
     }
 }
