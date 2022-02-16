@@ -28,3 +28,8 @@ For example, to deploy DNS-01 credentials for use with `security.acme`:
 
 Take note that if you use the default path (`/run/keys`), the secret files are only stored in-memory and will not survive reboots.
 To upload your secrets without performing a full deployment, use `colmena upload-keys`.
+
+## Key Services
+
+For each secret file deployed using `deployment.keys`, a systemd service with the name of `${name}-key.service` is created (`acme-credentials.secret-key.service` for the example above).
+This unit is only active when the corresponding file is present, allowing you to set up dependencies for services requiring secret files to function.

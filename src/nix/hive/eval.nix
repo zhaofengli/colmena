@@ -467,6 +467,47 @@ let
     in {
       system.activationScripts.colmena-chown-keys = lib.mkIf (length commands != 0) script;
     };
+
+    # Create "${name}-key" services for NixOps compatibility
+    #
+    # This is built as part of the system profile.
+    # We must be careful not to access `text` / `keyCommand` / `keyFile` here
+    #
+    # Sadly, path units don't automatically deactivate the bound units when
+    # the key files are deleted, so we use inotifywait in the services' scripts.
+    #
+    # <https://github.com/systemd/systemd/issues/3642>
+    keyServiceModule = { pkgs, lib, config, ... }: {
+      systemd.paths = lib.mapAttrs' (name: val: {
+        name = "${name}-key";
+        value = {
+          wantedBy = [ "paths.target" ];
+          pathConfig = {
+            PathExists = val.path;
+          };
+        };
+      }) config.deployment.keys;
+
+      systemd.services = lib.mapAttrs' (name: val: {
+        name = "${name}-key";
+        value = {
+          bindsTo = [ "${name}-key.path" ];
+          serviceConfig = {
+            Restart = "on-failure";
+          };
+          path = [ pkgs.inotifyTools ];
+          script = ''
+            if [[ ! -e "${val.path}" ]]; then
+              >&2 echo "${val.path} does not exist"
+              exit 0
+            fi
+
+            inotifywait -qq -e delete_self "${val.path}"
+            >&2 echo "${val.path} disappeared"
+          '';
+        };
+      }) config.deployment.keys;
+    };
   in evalConfig {
     inherit (npkgs) system;
 
@@ -474,6 +515,7 @@ let
       assertionModule
       nixpkgsModule
       keyChownModule
+      keyServiceModule
       deploymentOptions
       hive.defaults
     ] ++ configs;
