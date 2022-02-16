@@ -57,7 +57,7 @@
 
     devShell = pkgs.mkShell {
       inputsFrom = [ defaultPackage ];
-      packages = with pkgs; [ clippy mdbook python3 editorconfig-checker rust-analyzer ];
+      packages = with pkgs; [ clippy mdbook python3 editorconfig-checker rust-analyzer cargo-outdated ];
       shellHook = ''
         export NIX_PATH=nixpkgs=${pkgs.path}
       '';
