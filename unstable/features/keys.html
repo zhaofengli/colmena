@@ -175,6 +175,9 @@ It implements a subset of the <code>deployment.keys</code> options supported by 
 </code></pre>
 <p>Take note that if you use the default path (<code>/run/keys</code>), the secret files are only stored in-memory and will not survive reboots.
 To upload your secrets without performing a full deployment, use <code>colmena upload-keys</code>.</p>
+<h2 id="key-services"><a class="header" href="#key-services">Key Services</a></h2>
+<p>For each secret file deployed using <code>deployment.keys</code>, a systemd service with the name of <code>${name}-key.service</code> is created (<code>acme-credentials.secret-key.service</code> for the example above).
+This unit is only active when the corresponding file is present, allowing you to set up dependencies for services requiring secret files to function.</p>
 
                     </main>
 
