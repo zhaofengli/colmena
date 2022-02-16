@@ -521,7 +521,8 @@ let
   evalSelectedDrvPaths = names: lib.mapAttrs (k: v: v.drvPath) (evalSelected names);
 
   introspect = function: function {
-    inherit pkgs lib nodes;
+    inherit pkgs lib;
+    nodes = uncheckedNodes;
   };
 in {
   inherit
