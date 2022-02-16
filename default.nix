@@ -1,3 +1,3 @@
 let
   flake = import ./flake-compat.nix;
-in flake.defaultNix
+in flake.defaultNix.default
