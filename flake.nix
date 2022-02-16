@@ -69,9 +69,16 @@
         nix-eval-jobs = prev.nix-eval-jobs.overrideAttrs (old: {
           version = old.version + "-colmena";
           patches = (old.patches or []) ++ [
+            # Add --show-trace
             (final.fetchpatch {
               url = "https://github.com/nix-community/nix-eval-jobs/commit/1e0f309fefc9b2d597f8475a74c82ce29c189152.patch";
               sha256 = "sha256-246t3SGRA/9JsV2XPcI4Exp+TxmyYBoldQ43Wr5CcsM=";
+            })
+
+            # Fix buffering when piped
+            (final.fetchpatch {
+              url = "https://github.com/zhaofengli/nix-eval-jobs/commit/6d61193286aedd4e514fd8f375b2000b95fff4fb.patch";
+              sha256 = "sha256-yOuUwKHSS7Bt3q3nClirVk7DzJhxNFFZ8JnYjrPRJVc=";
             })
           ];
         });
