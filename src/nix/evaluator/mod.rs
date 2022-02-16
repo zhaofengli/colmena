@@ -60,6 +60,10 @@ pub trait DrvSetEvaluator {
     /// Evaluates an attribute set of derivation, returning results as they come in.
     async fn evaluate(&self, expression: &dyn NixExpression, options: NixOptions) -> ColmenaResult<Pin<Box<dyn Stream<Item = EvalResult>>>>;
 
+    /// Sets the maximum number of attributes to evaluate at the same time.
+    #[allow(unused_variables)]
+    fn set_eval_limit(&mut self, limit: usize) {}
+
     /// Provides a JobHandle to use during operations.
     #[allow(unused_variables)]
     fn set_job(&mut self, job: JobHandle) {}
