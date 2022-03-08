@@ -2,7 +2,7 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use clap::{Arg, App, AppSettings, ArgMatches};
+use clap::{Arg, Command as ClapCommand, ArgMatches};
 use futures::future::join_all;
 use tokio::sync::Semaphore;
 
@@ -12,10 +12,10 @@ use crate::nix::NodeFilter;
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
-pub fn subcommand() -> App<'static> {
-    let command = App::new("exec")
+pub fn subcommand() -> ClapCommand<'static> {
+    let command = ClapCommand::new("exec")
         .about("Run a command on remote machines")
-        .setting(AppSettings::TrailingVarArg)
+        .trailing_var_arg(true)
         .arg(Arg::new("parallel")
             .short('p')
             .long("parallel")

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::process::Stdio;
 
 use async_trait::async_trait;
-use clap::{App, Arg, ArgMatches};
+use clap::{Command as ClapCommand, Arg, ArgMatches};
 use futures::future::join3;
 use serde::de::DeserializeOwned;
 use tokio::io::{AsyncRead, AsyncBufReadExt, BufReader};
@@ -257,7 +257,7 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
     Ok(hive)
 }
 
-pub fn register_selector_args(command: App) -> App {
+pub fn register_selector_args(command: ClapCommand) -> ClapCommand {
     command
         .arg(Arg::new("on")
             .long("on")

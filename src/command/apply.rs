@@ -1,7 +1,7 @@
 use std::env;
 use std::path::PathBuf;
 
-use clap::{Arg, App, ArgMatches, ArgSettings};
+use clap::{Arg, Command as ClapCommand, ArgMatches};
 
 use crate::error::ColmenaError;
 use crate::nix::deployment::{
@@ -16,7 +16,7 @@ use crate::progress::SimpleProgressOutput;
 use crate::nix::NodeFilter;
 use crate::util;
 
-pub fn register_deploy_args(command: App) -> App {
+pub fn register_deploy_args(command: ClapCommand) -> ClapCommand {
     command
         .arg(Arg::new("eval-node-limit")
             .long("eval-node-limit")
@@ -103,7 +103,7 @@ To temporarily disable remote build on all nodes, use `--no-build-on-target`.
             .takes_value(false))
         .arg(Arg::new("no-build-on-target")
             .long("no-build-on-target")
-            .setting(ArgSettings::Hidden)
+            .hide(true)
             .takes_value(false))
         .arg(Arg::new("force-replace-unknown-profiles")
             .long("force-replace-unknown-profiles")
@@ -121,8 +121,8 @@ This is an experimental feature."#)
             .possible_values(Evaluator::possible_values()))
 }
 
-pub fn subcommand() -> App<'static> {
-    let command = App::new("apply")
+pub fn subcommand() -> ClapCommand<'static> {
+    let command = ClapCommand::new("apply")
         .about("Apply configurations on remote machines")
         .arg(Arg::new("goal")
             .help("Deployment goal")

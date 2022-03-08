@@ -1,21 +1,21 @@
 use std::path::PathBuf;
 
-use clap::{Arg, App, AppSettings, ArgMatches};
+use clap::{Arg, Command as ClapCommand, ArgMatches};
 
 use crate::error::ColmenaError;
 use crate::util;
 
-pub fn subcommand() -> App<'static> {
+pub fn subcommand() -> ClapCommand<'static> {
     subcommand_gen("eval")
 }
 
-pub fn deprecated_alias() -> App<'static> {
+pub fn deprecated_alias() -> ClapCommand<'static> {
     subcommand_gen("introspect")
-        .setting(AppSettings::Hidden)
+        .hide(true)
 }
 
-fn subcommand_gen(name: &str) -> App<'static> {
-    App::new(name)
+fn subcommand_gen(name: &str) -> ClapCommand<'static> {
+    ClapCommand::new(name)
         .about("Evaluate an expression using the complete configuration")
         .long_about(r#"Evaluate an expression using the complete configuration
 

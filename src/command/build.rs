@@ -1,12 +1,12 @@
-use clap::{Arg, App};
+use clap::{Arg, Command as ClapCommand};
 
 use crate::util;
 
 use super::apply;
 pub use super::apply::run;
 
-pub fn subcommand() -> App<'static> {
-    let command = App::new("build")
+pub fn subcommand() -> ClapCommand<'static> {
+    let command = ClapCommand::new("build")
         .about("Build configurations but not push to remote machines")
         .long_about(r#"Build configurations but not push to remote machines
 

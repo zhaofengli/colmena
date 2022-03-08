@@ -1,12 +1,12 @@
-use clap::{Arg, App};
+use clap::{Arg, Command as ClapCommand};
 
 use crate::util;
 
 use super::apply;
 pub use super::apply::run;
 
-pub fn subcommand() -> App<'static> {
-    let command = App::new("upload-keys")
+pub fn subcommand() -> ClapCommand<'static> {
+    let command = ClapCommand::new("upload-keys")
         .about("Upload keys to remote hosts")
         .long_about(r#"Upload keys to remote hosts
 

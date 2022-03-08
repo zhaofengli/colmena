@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use clap::{App, AppSettings, ArgMatches};
+use clap::{Command as ClapCommand, ArgMatches};
 use tokio::time;
 
 use crate::error::{ColmenaError, ColmenaResult};
@@ -14,10 +14,10 @@ macro_rules! node {
     }
 }
 
-pub fn subcommand() -> App<'static> {
-    App::new("test-progress")
+pub fn subcommand() -> ClapCommand<'static> {
+    ClapCommand::new("test-progress")
         .about("Run progress spinner tests")
-        .setting(AppSettings::Hidden)
+        .hide(true)
 }
 
 pub async fn run(_global_args: &ArgMatches, _local_args: &ArgMatches) -> Result<(), ColmenaError> {

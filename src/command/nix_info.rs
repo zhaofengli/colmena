@@ -1,11 +1,11 @@
-use clap::{App, ArgMatches};
+use clap::{Command as ClapCommand, ArgMatches};
 
 use crate::error::ColmenaError;
 use crate::nix::NixCheck;
 use crate::nix::evaluator::nix_eval_jobs::get_pinned_nix_eval_jobs;
 
-pub fn subcommand() -> App<'static> {
-    App::new("nix-info")
+pub fn subcommand() -> ClapCommand<'static> {
+    ClapCommand::new("nix-info")
         .about("Show information about the current Nix installation")
 }
 

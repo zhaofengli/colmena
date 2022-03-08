@@ -2,7 +2,7 @@ use std::env;
 use regex::Regex;
 use std::collections::HashMap;
 
-use clap::{Arg, App, ArgMatches};
+use clap::{Arg, Command as ClapCommand, ArgMatches};
 use tokio::fs;
 use tokio::process::Command;
 
@@ -17,8 +17,8 @@ use crate::nix::{NodeName, host};
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
-pub fn subcommand() -> App<'static> {
-    App::new("apply-local")
+pub fn subcommand() -> ClapCommand<'static> {
+    ClapCommand::new("apply-local")
         .about("Apply configurations on the local machine")
         .arg(Arg::new("goal")
             .help("Deployment goal")

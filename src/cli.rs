@@ -2,7 +2,7 @@
 
 use std::env;
 
-use clap::{App, AppSettings, Arg, ArgMatches, ColorChoice};
+use clap::{Command as ClapCommand, Arg, ArgMatches, ColorChoice};
 use clap_complete::Shell;
 use const_format::concatcp;
 use env_logger::fmt::WriteStyle;
@@ -86,15 +86,15 @@ macro_rules! handle_command {
     };
 }
 
-pub fn build_cli(include_internal: bool) -> App<'static> {
+pub fn build_cli(include_internal: bool) -> ClapCommand<'static> {
     let version = env!("CARGO_PKG_VERSION");
-    let mut app = App::new("Colmena")
+    let mut app = ClapCommand::new("Colmena")
         .bin_name("colmena")
         .version(version)
         .author("Zhaofeng Li <hello@zhaofeng.li>")
         .about("NixOS deployment tool")
         .long_about(LONG_ABOUT.as_str())
-        .setting(AppSettings::ArgRequiredElseHelp)
+        .arg_required_else_help(true)
         .arg(Arg::new("config")
             .short('f')
             .long("config")
@@ -131,9 +131,9 @@ It's also possible to specify the preference using environment variables. See <h
             .global(true));
 
     if include_internal {
-        app = app.subcommand(App::new("gen-completions")
+        app = app.subcommand(ClapCommand::new("gen-completions")
             .about("Generate shell auto-completion files (Internal)")
-            .setting(AppSettings::Hidden)
+            .hide(true)
             .arg(Arg::new("shell")
                 .index(1)
                 .possible_values(Shell::possible_values())

@@ -1,7 +1,7 @@
 //! Progress spinner output.
 
 use std::collections::HashMap;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
 use indicatif::{MultiProgress, ProgressStyle, ProgressBar};
@@ -95,7 +95,7 @@ impl SpinnerOutput {
             .with_style(self.get_spinner_style(style));
 
         let bar = self.multi.add(bar);
-        bar.enable_steady_tick(100);
+        bar.enable_steady_tick(Duration::from_millis(100));
         bar
     }
 
@@ -173,7 +173,7 @@ impl SpinnerOutput {
 impl ProgressOutput for SpinnerOutput {
     async fn run_until_completion(mut self) -> ColmenaResult<Self> {
         let meta_bar = self.multi.add(self.meta_bar.clone());
-        meta_bar.enable_steady_tick(100);
+        meta_bar.enable_steady_tick(Duration::from_millis(100));
 
         loop {
             let message = self.receiver.recv().await;
@@ -234,11 +234,13 @@ fn get_spinner_style(label_width: usize, style: LineStyle) -> ProgressStyle {
             ProgressStyle::default_spinner()
             .tick_chars("🕛🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚✅")
             .template(&template)
+            .unwrap()
         }
         LineStyle::Failure => {
             ProgressStyle::default_spinner()
             .tick_chars("❌❌")
             .template(&template)
+            .unwrap()
         }
     }
 }
