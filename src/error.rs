@@ -19,11 +19,11 @@ pub enum ColmenaError {
     #[snafu(display("Nix returned invalid response: {}", output))]
     BadOutput { output: String },
 
-    #[snafu(display("Nix exited with error code: {}", exit_code))]
-    NixFailure { exit_code: i32 },
+    #[snafu(display("Child process exited with error code: {}", exit_code))]
+    ChildFailure { exit_code: i32 },
 
-    #[snafu(display("Nix was killed by signal {}", signal))]
-    NixKilled { signal: i32 },
+    #[snafu(display("Child process was killed by signal {}", signal))]
+    ChildKilled { signal: i32 },
 
     #[snafu(display("This operation is not supported"))]
     Unsupported,
@@ -89,8 +89,8 @@ impl From<ValidationErrors> for ColmenaError {
 impl From<ExitStatus> for ColmenaError {
     fn from(status: ExitStatus) -> Self {
         match status.code() {
-            Some(exit_code) => Self::NixFailure { exit_code },
-            None => Self::NixKilled { signal: status.signal().unwrap() },
+            Some(exit_code) => Self::ChildFailure { exit_code },
+            None => Self::ChildKilled { signal: status.signal().unwrap() },
         }
     }
 }

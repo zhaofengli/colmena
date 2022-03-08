@@ -41,7 +41,7 @@ impl ParallelismLimit {
 /// evaluated at the same time. This can be a problem if you
 /// are deploying to a large number of nodes at the same time,
 /// where `nix-instantiate` may consume too much RAM and get
-/// killed by the OS (`NixKilled` error).
+/// killed by the OS (`ChildKilled` error).
 ///
 /// Evaluating each node on its own is not an efficient solution,
 /// with total CPU time and memory consumption vastly exceeding the
