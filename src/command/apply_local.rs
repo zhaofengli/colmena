@@ -1,4 +1,5 @@
 use std::env;
+use regex::Regex;
 use std::collections::HashMap;
 
 use clap::{Arg, App, ArgMatches};
@@ -61,7 +62,8 @@ By default, Colmena will deploy keys set in `deployment.keys` before activating 
 pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
     // Sanity check: Are we running NixOS?
     if let Ok(os_release) = fs::read_to_string("/etc/os-release").await {
-        if !os_release.contains("ID=nixos\n") {
+        let re = Regex::new(r#"ID="?nixos"?"#).unwrap();
+        if !re.is_match(&os_release) {
             log::error!("\"apply-local\" only works on NixOS machines.");
             quit::with_code(5);
         }
