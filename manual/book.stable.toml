@@ -10,6 +10,9 @@ site-url = "/colmena/@apiVersion@/"
 git-repository-url = "https://github.com/zhaofengli/colmena"
 edit-url-template = "https://github.com/zhaofengli/colmena/edit/main/manual/{path}"
 
+[output.linkcheck]
+follow-web-links = false
+
 [preprocessor.colmena]
 command = "python3 preprocess.py"
 renderer = [ "html", "epub" ]

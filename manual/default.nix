@@ -1,4 +1,4 @@
-{ lib, stdenv, nix-gitignore, mdbook, python3, callPackage, writeScript
+{ lib, stdenv, nix-gitignore, mdbook, mdbook-linkcheck, python3, callPackage, writeScript
 , deploymentOptionsMd ? null
 , metaOptionsMd ? null
 , colmena ? null
@@ -40,7 +40,7 @@ in stdenv.mkDerivation {
 
   src = nix-gitignore.gitignoreSource [] ./.;
 
-  nativeBuildInputs = [ mdbook python3 ];
+  nativeBuildInputs = [ mdbook mdbook-linkcheck python3 ];
 
   outputs = [ "out" "redirectFarm" ];
 
