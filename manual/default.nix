@@ -72,7 +72,8 @@ in stdenv.mkDerivation {
         echo "No meta options text passed the the builder" >> src/reference/meta.md
     fi
 
-    mdbook build -d $out
+    mdbook build -d ./build
+    cp -r ./build/html $out
 
     # Build the redirect farm
     # GitHub Pages doesn't play well with directory symlinks. Default
