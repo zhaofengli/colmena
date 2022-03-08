@@ -2,14 +2,14 @@
 
 rustPlatform.buildRustPackage rec {
   pname = "colmena";
-  version = "0.2.1";
+  version = "0.2.2";
 
   src = lib.cleanSourceWith {
     filter = name: type: !(type == "directory" && builtins.elem (baseNameOf name) [ "target" "manual" "integration-tests" ]);
     src = lib.cleanSource ./.;
   };
 
-  cargoSha256 = "sha256-wMC2GAVVxkwrgJtOIJL0P+Uxh+ouW4VwLDrXJlD10AA=";
+  cargoSha256 = "sha256-NVvPh0+53YIm5Kb/lNyXb7M3bbADBVdsTaPptyb37lw=";
 
   nativeBuildInputs = [ installShellFiles ];
 
