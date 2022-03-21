@@ -15,7 +15,7 @@ use tokio_test::block_on;
 macro_rules! node {
     ($n:expr) => {
         NodeName::new($n.to_string()).unwrap()
-    }
+    };
 }
 
 fn set_eq<T>(a: &[T], b: &[T]) -> bool
@@ -92,7 +92,8 @@ impl Deref for TempHive {
 
 #[test]
 fn test_parse_simple() {
-    let hive = TempHive::new(r#"
+    let hive = TempHive::new(
+        r#"
       {
         defaults = { pkgs, ... }: {
           environment.systemPackages = with pkgs; [
@@ -123,7 +124,8 @@ fn test_parse_simple() {
           time.timeZone = "America/Los_Angeles";
         };
       }
-    "#);
+    "#,
+    );
     let nodes = block_on(hive.deployment_info()).unwrap();
 
     assert!(set_eq(
@@ -135,7 +137,11 @@ fn test_parse_simple() {
     let host_a = &nodes[&node!("host-a")];
     assert!(set_eq(
         &["common-tag", "a-tag"],
-        &host_a.tags.iter().map(String::as_str).collect::<Vec<&str>>(),
+        &host_a
+            .tags
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<&str>>(),
     ));
     assert_eq!(Some("host-a"), host_a.target_host.as_deref());
     assert_eq!(None, host_a.target_port);
@@ -145,7 +151,11 @@ fn test_parse_simple() {
     let host_b = &nodes[&node!("host-b")];
     assert!(set_eq(
         &["common-tag"],
-        &host_b.tags.iter().map(String::as_str).collect::<Vec<&str>>(),
+        &host_b
+            .tags
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<&str>>(),
     ));
     assert_eq!(Some("somehost.tld"), host_b.target_host.as_deref());
     assert_eq!(Some(1234), host_b.target_port);
@@ -171,7 +181,8 @@ fn test_parse_flake() {
 
 #[test]
 fn test_parse_node_references() {
-    TempHive::valid(r#"
+    TempHive::valid(
+        r#"
       with builtins;
       {
         host-a = { name, nodes, ... }:
@@ -186,23 +197,27 @@ fn test_parse_node_references() {
           assert nodes.host-a.config.time.timeZone == "America/Los_Angeles";
         {};
       }
-    "#);
+    "#,
+    );
 }
 
 #[test]
 fn test_parse_unknown_option() {
-    TempHive::invalid(r#"
+    TempHive::invalid(
+        r#"
       {
         bad = {
           deployment.noSuchOption = "not kidding";
         };
       }
-    "#);
+    "#,
+    );
 }
 
 #[test]
 fn test_config_list() {
-    TempHive::valid(r#"
+    TempHive::valid(
+        r#"
       with builtins;
       {
         host-a = [
@@ -219,12 +234,14 @@ fn test_config_list() {
           assert elem "some-tag" nodes.host-a.config.deployment.tags;
         {};
       }
-    "#);
+    "#,
+    );
 }
 
 #[test]
 fn test_parse_key_text() {
-    TempHive::valid(r#"
+    TempHive::valid(
+        r#"
       {
         test = {
           deployment.keys.topSecret = {
@@ -232,12 +249,14 @@ fn test_parse_key_text() {
           };
         };
       }
-    "#);
+    "#,
+    );
 }
 
 #[test]
 fn test_parse_key_command_good() {
-    TempHive::valid(r#"
+    TempHive::valid(
+        r#"
       {
         test = {
           deployment.keys.elohim = {
@@ -245,12 +264,14 @@ fn test_parse_key_command_good() {
           };
         };
       }
-    "#);
+    "#,
+    );
 }
 
 #[test]
 fn test_parse_key_command_bad() {
-    TempHive::invalid(r#"
+    TempHive::invalid(
+        r#"
       {
         test = {
           deployment.keys.elohim = {
@@ -258,12 +279,14 @@ fn test_parse_key_command_bad() {
           };
         };
       }
-    "#);
+    "#,
+    );
 }
 
 #[test]
 fn test_parse_key_file() {
-    TempHive::valid(r#"
+    TempHive::valid(
+        r#"
       {
         test = {
           deployment.keys.l337hax0rwow = {
@@ -271,27 +294,32 @@ fn test_parse_key_file() {
           };
         };
       }
-    "#);
+    "#,
+    );
 }
 
 #[test]
 fn test_eval_non_existent_pkg() {
     // Sanity check
-    TempHive::eval_failure(r#"
+    TempHive::eval_failure(
+        r#"
       {
         test = { pkgs, ... }: {
           boot.isContainer = true;
           environment.systemPackages = with pkgs; [ thisPackageDoesNotExist ];
         };
       }
-    "#, vec![ node!("test") ]);
+    "#,
+        vec![node!("test")],
+    );
 }
 
 // Nixpkgs config tests
 
 #[test]
 fn test_nixpkgs_system() {
-    TempHive::valid(r#"
+    TempHive::valid(
+        r#"
       {
         meta = {
           nixpkgs = import <nixpkgs> {
@@ -302,9 +330,11 @@ fn test_nixpkgs_system() {
           boot.isContainer = assert pkgs.system == "armv5tel-linux"; true;
         };
       }
-    "#);
+    "#,
+    );
 
-    TempHive::valid(r#"
+    TempHive::valid(
+        r#"
       {
         meta = {
           nixpkgs = import <nixpkgs> {
@@ -316,13 +346,15 @@ fn test_nixpkgs_system() {
           boot.isContainer = assert pkgs.system == "armv5tel-linux"; true;
         };
       }
-    "#);
+    "#,
+    );
 }
 
 #[test]
 fn test_nixpkgs_overlay_meta_nixpkgs() {
     // Only set overlays in meta.nixpkgs
-    TempHive::eval_success(r#"
+    TempHive::eval_success(
+        r#"
       {
         meta = {
           nixpkgs = import <nixpkgs> {
@@ -336,13 +368,16 @@ fn test_nixpkgs_overlay_meta_nixpkgs() {
           environment.systemPackages = with pkgs; [ my-coreutils ];
         };
       }
-    "#, vec![ node!("test") ]);
+    "#,
+        vec![node!("test")],
+    );
 }
 
 #[test]
 fn test_nixpkgs_overlay_node_config() {
     // Only set overlays in node config
-    TempHive::eval_success(r#"
+    TempHive::eval_success(
+        r#"
       {
         test = { pkgs, ... }: {
           boot.isContainer = true;
@@ -352,13 +387,16 @@ fn test_nixpkgs_overlay_node_config() {
           environment.systemPackages = with pkgs; [ my-coreutils ];
         };
       }
-    "#, vec![ node!("test") ]);
+    "#,
+        vec![node!("test")],
+    );
 }
 
 #[test]
 fn test_nixpkgs_overlay_both() {
     // Set overlays both in meta.nixpkgs and in node config
-    TempHive::eval_success(r#"
+    TempHive::eval_success(
+        r#"
       {
         meta = {
           nixpkgs = import <nixpkgs> {
@@ -375,13 +413,16 @@ fn test_nixpkgs_overlay_both() {
           environment.systemPackages = with pkgs; [ meta-coreutils node-busybox ];
         };
       }
-    "#, vec![ node!("test") ]);
+    "#,
+        vec![node!("test")],
+    );
 }
 
 #[test]
 fn test_nixpkgs_config_meta_nixpkgs() {
     // Set config in meta.nixpkgs
-    TempHive::eval_success(r#"
+    TempHive::eval_success(
+        r#"
       {
         meta = {
           nixpkgs = import <nixpkgs> {
@@ -394,13 +435,16 @@ fn test_nixpkgs_config_meta_nixpkgs() {
           boot.isContainer = assert pkgs.config.allowUnfree; true;
         };
       }
-    "#, vec![ node!("test") ]);
+    "#,
+        vec![node!("test")],
+    );
 }
 
 #[test]
 fn test_nixpkgs_config_node_config() {
     // Set config in node config
-    TempHive::eval_success(r#"
+    TempHive::eval_success(
+        r#"
       {
         test = { pkgs, ... }: {
           nixpkgs.config = {
@@ -409,7 +453,9 @@ fn test_nixpkgs_config_node_config() {
           boot.isContainer = assert pkgs.config.allowUnfree; true;
         };
       }
-    "#, vec![ node!("test") ]);
+    "#,
+        vec![node!("test")],
+    );
 }
 
 #[test]
@@ -438,7 +484,7 @@ fn test_nixpkgs_config_override() {
             .replace("META_VAL", "true")
             .replace("NODE_VAL", "false")
             .replace("EXPECTED_VAL", "false"),
-        vec![ node!("test") ]
+        vec![node!("test")],
     );
 
     TempHive::eval_success(
@@ -446,13 +492,14 @@ fn test_nixpkgs_config_override() {
             .replace("META_VAL", "false")
             .replace("NODE_VAL", "true")
             .replace("EXPECTED_VAL", "true"),
-        vec![ node!("test") ]
+        vec![node!("test")],
     );
 }
 
 #[test]
 fn test_meta_special_args() {
-    TempHive::valid(r#"
+    TempHive::valid(
+        r#"
       {
         meta.specialArgs = {
           undine = "assimilated";
@@ -464,12 +511,14 @@ fn test_meta_special_args() {
           boot.isContainer = true;
         };
       }
-    "#);
+    "#,
+    );
 }
 
 #[test]
 fn test_hive_autocall() {
-    TempHive::valid(r#"
+    TempHive::valid(
+        r#"
       {
         argument ? "with default value"
       }: {
@@ -477,9 +526,11 @@ fn test_hive_autocall() {
           boot.isContainer = true;
         };
       }
-    "#);
+    "#,
+    );
 
-    TempHive::valid(r#"
+    TempHive::valid(
+        r#"
       {
         some = "value";
         __functor = self: { argument ? "with default value" }: {
@@ -488,9 +539,11 @@ fn test_hive_autocall() {
           };
         };
       }
-    "#);
+    "#,
+    );
 
-    TempHive::invalid(r#"
+    TempHive::invalid(
+        r#"
       {
         thisWontWork
       }: {
@@ -498,5 +551,6 @@ fn test_hive_autocall() {
           boot.isContainer = true;
         };
       }
-    "#);
+    "#,
+    );
 }

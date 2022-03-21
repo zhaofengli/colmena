@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{Arg, Command as ClapCommand, ArgMatches};
+use clap::{Arg, ArgMatches, Command as ClapCommand};
 
 use crate::error::ColmenaError;
 use crate::util;
@@ -10,8 +10,7 @@ pub fn subcommand() -> ClapCommand<'static> {
 }
 
 pub fn deprecated_alias() -> ClapCommand<'static> {
-    subcommand_gen("introspect")
-        .hide(true)
+    subcommand_gen("introspect").hide(true)
 }
 
 fn subcommand_gen(name: &str) -> ClapCommand<'static> {
@@ -43,7 +42,9 @@ For example, to retrieve the configuration of one node, you may write something 
 
 pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
     if let Some("introspect") = global_args.subcommand_name() {
-        log::warn!("`colmena introspect` has been renamed to `colmena eval`. Please update your scripts.");
+        log::warn!(
+            "`colmena introspect` has been renamed to `colmena eval`. Please update your scripts."
+        );
     }
 
     let hive = util::hive_from_args(local_args).await?;
@@ -57,7 +58,13 @@ pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<()
         local_args.value_of("expression").unwrap().to_string()
     } else {
         let path: PathBuf = local_args.value_of("expression_file").unwrap().into();
-        format!("import {}", path.canonicalize().expect("Could not generate absolute path to expression file.").to_str().unwrap())
+        format!(
+            "import {}",
+            path.canonicalize()
+                .expect("Could not generate absolute path to expression file.")
+                .to_str()
+                .unwrap()
+        )
     };
 
     let instantiate = local_args.is_present("instantiate");

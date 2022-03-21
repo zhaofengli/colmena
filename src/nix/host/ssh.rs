@@ -6,11 +6,11 @@ use std::process::Stdio;
 use async_trait::async_trait;
 use tokio::process::Command;
 
-use crate::error::{ColmenaResult, ColmenaError};
-use crate::nix::{StorePath, Profile, Goal, Key, SYSTEM_PROFILE, CURRENT_PROFILE};
-use crate::util::{CommandExecution, CommandExt};
+use super::{key_uploader, CopyDirection, CopyOptions, Host};
+use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::JobHandle;
-use super::{CopyDirection, CopyOptions, Host, key_uploader};
+use crate::nix::{Goal, Key, Profile, StorePath, CURRENT_PROFILE, SYSTEM_PROFILE};
+use crate::util::{CommandExecution, CommandExt};
 
 /// A remote machine connected over SSH.
 #[derive(Debug)]
@@ -35,23 +35,35 @@ pub struct Ssh {
 
 #[async_trait]
 impl Host for Ssh {
-    async fn copy_closure(&mut self, closure: &StorePath, direction: CopyDirection, options: CopyOptions) -> ColmenaResult<()> {
+    async fn copy_closure(
+        &mut self,
+        closure: &StorePath,
+        direction: CopyDirection,
+        options: CopyOptions,
+    ) -> ColmenaResult<()> {
         let command = self.nix_copy_closure(closure, direction, options);
         self.run_command(command).await
     }
     async fn realize_remote(&mut self, derivation: &StorePath) -> ColmenaResult<Vec<StorePath>> {
-        let command = self.ssh(&["nix-store", "--no-gc-warning", "--realise", derivation.as_path().to_str().unwrap()]);
+        let command = self.ssh(&[
+            "nix-store",
+            "--no-gc-warning",
+            "--realise",
+            derivation.as_path().to_str().unwrap(),
+        ]);
 
         let mut execution = CommandExecution::new(command);
         execution.set_job(self.job.clone());
 
-        let paths = execution
-            .capture_output()
-            .await?;
+        let paths = execution.capture_output().await?;
 
         paths.lines().map(|p| p.to_string().try_into()).collect()
     }
-    async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> ColmenaResult<()> {
+    async fn upload_keys(
+        &mut self,
+        keys: &HashMap<String, Key>,
+        require_ownership: bool,
+    ) -> ColmenaResult<()> {
         for (name, key) in keys {
             self.upload_key(name, key, require_ownership).await?;
         }
@@ -79,13 +91,17 @@ impl Host for Ssh {
         self.run_command(command).await
     }
     async fn get_main_system_profile(&mut self) -> ColmenaResult<StorePath> {
-        let command = format!("\"readlink -e {} || readlink -e {}\"", SYSTEM_PROFILE, CURRENT_PROFILE);
+        let command = format!(
+            "\"readlink -e {} || readlink -e {}\"",
+            SYSTEM_PROFILE, CURRENT_PROFILE
+        );
 
-        let paths = self.ssh(&["sh", "-c", &command])
-            .capture_output()
-            .await?;
+        let paths = self.ssh(&["sh", "-c", &command]).capture_output().await?;
 
-        let path = paths.lines().into_iter().next()
+        let path = paths
+            .lines()
+            .into_iter()
+            .next()
             .ok_or(ColmenaError::FailedToGetCurrentProfile)?
             .to_string()
             .try_into()?;
@@ -137,8 +153,7 @@ impl Ssh {
 
         let mut cmd = Command::new("ssh");
 
-        cmd
-            .arg(self.ssh_target())
+        cmd.arg(self.ssh_target())
             .args(&options)
             .arg("--")
             .args(privilege_escalation_command)
@@ -161,7 +176,12 @@ impl Ssh {
         format!("{}@{}", self.user, self.host)
     }
 
-    fn nix_copy_closure(&self, path: &StorePath, direction: CopyDirection, options: CopyOptions) -> Command {
+    fn nix_copy_closure(
+        &self,
+        path: &StorePath,
+        direction: CopyDirection,
+        options: CopyOptions,
+    ) -> Command {
         let ssh_options = self.ssh_options();
         let ssh_options_str = ssh_options.join(" ");
 
@@ -198,7 +218,9 @@ impl Ssh {
         // TODO: Allow configuation of SSH parameters
 
         let mut options: Vec<String> = ["-o", "StrictHostKeyChecking=accept-new", "-T"]
-            .iter().map(|s| s.to_string()).collect();
+            .iter()
+            .map(|s| s.to_string())
+            .collect();
 
         if let Some(port) = self.port {
             options.push("-p".to_string());
@@ -214,7 +236,12 @@ impl Ssh {
     }
 
     /// Uploads a single key.
-    async fn upload_key(&mut self, name: &str, key: &Key, require_ownership: bool) -> ColmenaResult<()> {
+    async fn upload_key(
+        &mut self,
+        name: &str,
+        key: &Key,
+        require_ownership: bool,
+    ) -> ColmenaResult<()> {
         if let Some(job) = &self.job {
             job.message(format!("Uploading key {}", name))?;
         }

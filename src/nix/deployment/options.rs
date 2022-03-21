@@ -108,6 +108,6 @@ impl FromStr for Evaluator {
 
 impl Evaluator {
     pub fn possible_values() -> &'static [&'static str] {
-        &[ "chunked", "streaming" ]
+        &["chunked", "streaming"]
     }
 }

@@ -7,7 +7,7 @@ use std::process::Stdio;
 use serde::Deserialize;
 use tokio::process::Command;
 
-use super::{NixCheck, ColmenaError, ColmenaResult};
+use super::{ColmenaError, ColmenaResult, NixCheck};
 
 /// A Nix Flake.
 #[derive(Debug)]
@@ -27,7 +27,10 @@ impl Flake {
     pub async fn from_dir<P: AsRef<Path>>(dir: P) -> ColmenaResult<Self> {
         NixCheck::require_flake_support().await?;
 
-        let flake = dir.as_ref().as_os_str().to_str()
+        let flake = dir
+            .as_ref()
+            .as_os_str()
+            .to_str()
             .expect("Flake directory path contains non-UTF-8 characters");
 
         let info = FlakeMetadata::resolve(flake).await?;
@@ -83,10 +86,9 @@ impl FlakeMetadata {
             return Err(output.status.into());
         }
 
-        serde_json::from_slice::<FlakeMetadata>(&output.stdout)
-            .map_err(|_| {
-                let output = String::from_utf8_lossy(&output.stdout).to_string();
-                ColmenaError::BadOutput { output }
-            })
+        serde_json::from_slice::<FlakeMetadata>(&output.stdout).map_err(|_| {
+            let output = String::from_utf8_lossy(&output.stdout).to_string();
+            ColmenaError::BadOutput { output }
+        })
     }
 }

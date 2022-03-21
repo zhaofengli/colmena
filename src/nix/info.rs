@@ -20,7 +20,11 @@ impl NixVersion {
             let major = caps.name("major").unwrap().as_str().parse().unwrap();
             let minor = caps.name("minor").unwrap().as_str().parse().unwrap();
 
-            Self { major, minor, string }
+            Self {
+                major,
+                minor,
+                string,
+            }
         } else {
             Self {
                 major: 0,
@@ -61,20 +65,23 @@ impl NixCheck {
     pub async fn detect() -> Self {
         let version_cmd = Command::new("nix-instantiate")
             .arg("--version")
-            .output().await;
+            .output()
+            .await;
 
         if version_cmd.is_err() {
             return Self::NO_NIX;
         }
 
-        let version = NixVersion::parse(String::from_utf8_lossy(&version_cmd.unwrap().stdout).to_string());
+        let version =
+            NixVersion::parse(String::from_utf8_lossy(&version_cmd.unwrap().stdout).to_string());
         let flakes_supported = version.has_flakes();
 
         let flake_cmd = Command::new("nix-instantiate")
             .args(&["--eval", "-E", "builtins.getFlake"])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .status().await;
+            .status()
+            .await;
 
         if flake_cmd.is_err() {
             return Self::NO_NIX;
@@ -121,16 +128,18 @@ impl NixCheck {
             log::warn!("Colmena will automatically enable Flakes for its operations, but you should enable it in your Nix configuration:");
             log::warn!("    experimental-features = nix-command flakes");
         } else {
-            let level = if required {
-                Level::Error
-            } else {
-                Level::Warn
-            };
-            log::log!(level, "The Nix version you are using does not support Flakes.");
+            let level = if required { Level::Error } else { Level::Warn };
+            log::log!(
+                level,
+                "The Nix version you are using does not support Flakes."
+            );
             log::log!(level, "If you are using a Nixpkgs version before 21.11, please install nixUnstable for a version that includes Flakes support.");
 
             if required {
-                log::log!(level, "Cannot continue since Flakes support is required for this operation.");
+                log::log!(
+                    level,
+                    "Cannot continue since Flakes support is required for this operation."
+                );
             }
         }
     }

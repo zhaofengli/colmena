@@ -13,9 +13,9 @@ use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tokio::time;
 use uuid::Uuid;
 
-use crate::error::{ColmenaResult, ColmenaError};
+use crate::error::{ColmenaError, ColmenaResult};
 use crate::nix::NodeName;
-use crate::progress::{Sender as ProgressSender, Message as ProgressMessage, Line, LineStyle};
+use crate::progress::{Line, LineStyle, Message as ProgressMessage, Sender as ProgressSender};
 
 pub type Sender = UnboundedSender<Event>;
 pub type Receiver = UnboundedReceiver<Event>;
@@ -308,7 +308,12 @@ impl JobMonitor {
                 }
                 EventPayload::SuccessWithMessage(custom_message) => {
                     let custom_message = Some(custom_message.clone());
-                    self.update_job_state(message.job_id, JobState::Succeeded, custom_message, false);
+                    self.update_job_state(
+                        message.job_id,
+                        JobState::Succeeded,
+                        custom_message,
+                        false,
+                    );
 
                     if message.job_id != self.meta_job_id {
                         self.print_job_stats();
@@ -316,7 +321,12 @@ impl JobMonitor {
                 }
                 EventPayload::Noop(custom_message) => {
                     let custom_message = Some(custom_message.clone());
-                    self.update_job_state(message.job_id, JobState::Succeeded, custom_message, true);
+                    self.update_job_state(
+                        message.job_id,
+                        JobState::Succeeded,
+                        custom_message,
+                        true,
+                    );
 
                     if message.job_id != self.meta_job_id {
                         self.print_job_stats();
@@ -330,7 +340,9 @@ impl JobMonitor {
                         self.print_job_stats();
                     }
                 }
-                EventPayload::ChildStdout(m) | EventPayload::ChildStderr(m) | EventPayload::Message(m) => {
+                EventPayload::ChildStdout(m)
+                | EventPayload::ChildStderr(m)
+                | EventPayload::Message(m) => {
                     if let Some(sender) = &self.progress {
                         let metadata = &self.jobs[&message.job_id];
                         let line = metadata.get_line(m.clone());
@@ -345,7 +357,8 @@ impl JobMonitor {
     }
 
     /// Updates the state of a job.
-    fn update_job_state(&mut self,
+    fn update_job_state(
+        &mut self,
         job_id: JobId,
         new_state: JobState,
         message: Option<String>,
@@ -370,7 +383,9 @@ impl JobMonitor {
         if new_state != JobState::Waiting {
             if let Some(sender) = &self.progress {
                 let text = if new_state == JobState::Succeeded {
-                    metadata.custom_message.clone()
+                    metadata
+                        .custom_message
+                        .clone()
                         .or_else(|| metadata.describe_state_transition())
                 } else {
                     metadata.describe_state_transition()
@@ -398,8 +413,7 @@ impl JobMonitor {
         if let Some(sender) = &self.progress {
             let stats = self.get_job_stats();
             let text = format!("{}", stats);
-            let line = self.jobs[&self.meta_job_id].get_line(text)
-                .noisy();
+            let line = self.jobs[&self.meta_job_id].get_line(text).noisy();
             let message = ProgressMessage::PrintMeta(line);
             sender.send(message).unwrap();
         }
@@ -460,10 +474,23 @@ impl JobMonitor {
 
         for job in self.jobs.values() {
             if job.state == JobState::Failed {
-                let logs: Vec<&Event> = self.events.iter().filter(|e| e.job_id == job.job_id).collect();
-                let last_logs: Vec<&Event> = logs.into_iter().rev().take(LOG_CONTEXT_LINES).rev().collect();
+                let logs: Vec<&Event> = self
+                    .events
+                    .iter()
+                    .filter(|e| e.job_id == job.job_id)
+                    .collect();
+                let last_logs: Vec<&Event> = logs
+                    .into_iter()
+                    .rev()
+                    .take(LOG_CONTEXT_LINES)
+                    .rev()
+                    .collect();
 
-                log::error!("{} - Last {} lines of logs:", job.get_failure_summary(), last_logs.len());
+                log::error!(
+                    "{} - Last {} lines of logs:",
+                    job.get_failure_summary(),
+                    last_logs.len()
+                );
                 for event in last_logs {
                     log::error!("{}", event.payload);
                 }
@@ -495,13 +522,12 @@ impl JobHandleInner {
     /// This sends out a Creation message with the metadata.
     pub fn create_job(&self, job_type: JobType, nodes: Vec<NodeName>) -> ColmenaResult<JobHandle> {
         let job_id = JobId::new();
-        let creation = JobCreation {
-            job_type,
-            nodes,
-        };
+        let creation = JobCreation { job_type, nodes };
 
         if job_type == JobType::Meta {
-            return Err(ColmenaError::Unknown { message: "Cannot create a meta job!".to_string() });
+            return Err(ColmenaError::Unknown {
+                message: "Cannot create a meta job!".to_string(),
+            });
         }
 
         let new_handle = Arc::new(Self {
@@ -518,8 +544,9 @@ impl JobHandleInner {
     ///
     /// This immediately transitions the state to Running.
     pub async fn run<F, U, T>(self: Arc<Self>, f: U) -> ColmenaResult<T>
-        where U: FnOnce(Arc<Self>) -> F,
-              F: Future<Output = ColmenaResult<T>>,
+    where
+        U: FnOnce(Arc<Self>) -> F,
+        F: Future<Output = ColmenaResult<T>>,
     {
         self.run_internal(f, true).await
     }
@@ -528,8 +555,9 @@ impl JobHandleInner {
     ///
     /// This does not immediately transition the state to Running.
     pub async fn run_waiting<F, U, T>(self: Arc<Self>, f: U) -> ColmenaResult<T>
-        where U: FnOnce(Arc<Self>) -> F,
-              F: Future<Output = ColmenaResult<T>>,
+    where
+        U: FnOnce(Arc<Self>) -> F,
+        F: Future<Output = ColmenaResult<T>>,
     {
         self.run_internal(f, false).await
     }
@@ -571,8 +599,9 @@ impl JobHandleInner {
 
     /// Runs a closure, automatically updating the job monitor based on the result.
     async fn run_internal<F, U, T>(self: Arc<Self>, f: U, report_running: bool) -> ColmenaResult<T>
-        where U: FnOnce(Arc<Self>) -> F,
-              F: Future<Output = ColmenaResult<T>>,
+    where
+        U: FnOnce(Arc<Self>) -> F,
+        F: Future<Output = ColmenaResult<T>>,
     {
         if report_running {
             // Tell monitor we are starting
@@ -603,7 +632,8 @@ impl JobHandleInner {
         let event = Event::new(self.job_id, payload);
 
         if let Some(sender) = &self.sender {
-            sender.send(event)
+            sender
+                .send(event)
                 .map_err(|e| ColmenaError::unknown(Box::new(e)))?;
         } else {
             log::debug!("Sending event: {:?}", event);
@@ -616,8 +646,9 @@ impl JobHandleInner {
 impl MetaJobHandle {
     /// Runs a closure, automatically updating the job monitor based on the result.
     pub async fn run<F, U, T>(self, f: U) -> ColmenaResult<T>
-        where U: FnOnce(JobHandle) -> F,
-              F: Future<Output = ColmenaResult<T>>,
+    where
+        U: FnOnce(JobHandle) -> F,
+        F: Future<Output = ColmenaResult<T>>,
     {
         let normal_handle = Arc::new(JobHandleInner {
             job_id: self.job_id,
@@ -644,7 +675,8 @@ impl MetaJobHandle {
     fn send_payload(&self, payload: EventPayload) -> ColmenaResult<()> {
         let event = Event::new(self.job_id, payload);
 
-        self.sender.send(event)
+        self.sender
+            .send(event)
             .map_err(|e| ColmenaError::unknown(Box::new(e)))?;
 
         Ok(())
@@ -682,11 +714,10 @@ impl JobMetadata {
             return None;
         }
 
-        let node_list = describe_node_list(&self.nodes)
-            .unwrap_or_else(|| "some node(s)".to_string());
+        let node_list =
+            describe_node_list(&self.nodes).unwrap_or_else(|| "some node(s)".to_string());
 
-        let message = self.custom_message.as_deref()
-            .unwrap_or("No message");
+        let message = self.custom_message.as_deref().unwrap_or("No message");
 
         Some(match (self.job_type, self.state) {
             (JobType::Meta, JobState::Succeeded) => "All done!".to_string(),
@@ -718,8 +749,8 @@ impl JobMetadata {
 
     /// Returns a human-readable string describing a failed job for use in the summary.
     fn get_failure_summary(&self) -> String {
-        let node_list = describe_node_list(&self.nodes)
-            .unwrap_or_else(|| "some node(s)".to_string());
+        let node_list =
+            describe_node_list(&self.nodes).unwrap_or_else(|| "some node(s)".to_string());
 
         match self.job_type {
             JobType::Evaluate => format!("Failed to evaluate {}", node_list),
@@ -749,15 +780,15 @@ impl EventPayload {
 impl Display for EventPayload {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            EventPayload::ChildStdout(o)        => write!(f, "  stdout) {}", o)?,
-            EventPayload::ChildStderr(o)        => write!(f, "  stderr) {}", o)?,
-            EventPayload::Message(m)            => write!(f, " message) {}", m)?,
-            EventPayload::Creation(_)           => write!(f, " created)")?,
-            EventPayload::NewState(s)           => write!(f, "   state) {:?}", s)?,
+            EventPayload::ChildStdout(o) => write!(f, "  stdout) {}", o)?,
+            EventPayload::ChildStderr(o) => write!(f, "  stderr) {}", o)?,
+            EventPayload::Message(m) => write!(f, " message) {}", m)?,
+            EventPayload::Creation(_) => write!(f, " created)")?,
+            EventPayload::NewState(s) => write!(f, "   state) {:?}", s)?,
             EventPayload::SuccessWithMessage(m) => write!(f, " success) {}", m)?,
-            EventPayload::Noop(m)               => write!(f, "    noop) {}", m)?,
-            EventPayload::Failure(e)            => write!(f, " failure) {}", e)?,
-            EventPayload::ShutdownMonitor       => write!(f, "shutdown)")?,
+            EventPayload::Noop(m) => write!(f, "    noop) {}", m)?,
+            EventPayload::Failure(e) => write!(f, " failure) {}", e)?,
+            EventPayload::ShutdownMonitor => write!(f, "shutdown)")?,
         }
 
         Ok(())
@@ -857,7 +888,7 @@ mod tests {
     macro_rules! node {
         ($n:expr) => {
             NodeName::new($n.to_string()).unwrap()
-        }
+        };
     }
 
     #[test]
@@ -868,21 +899,20 @@ mod tests {
             let meta = meta.run(|job: JobHandle| async move {
                 job.message("hello world".to_string())?;
 
-                let eval_job = job.create_job(JobType::Evaluate, vec![ node!("alpha") ])?;
-                eval_job.run(|job| async move {
-                    job.stdout("child stdout".to_string())?;
+                let eval_job = job.create_job(JobType::Evaluate, vec![node!("alpha")])?;
+                eval_job
+                    .run(|job| async move {
+                        job.stdout("child stdout".to_string())?;
 
-                    Ok(())
-                }).await?;
+                        Ok(())
+                    })
+                    .await?;
 
                 Err(ColmenaError::Unsupported) as ColmenaResult<()>
             });
 
             // Run until completion
-            let (ret, monitor) = tokio::join!(
-                meta,
-                monitor.run_until_completion(),
-            );
+            let (ret, monitor) = tokio::join!(meta, monitor.run_until_completion(),);
 
             match ret {
                 Err(ColmenaError::Unsupported) => (),

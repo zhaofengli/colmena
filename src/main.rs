@@ -1,11 +1,11 @@
 #![deny(unused_must_use)]
 
-mod error;
-mod nix;
 mod cli;
 mod command;
-mod progress;
+mod error;
 mod job;
+mod nix;
+mod progress;
 mod troubleshooter;
 mod util;
 

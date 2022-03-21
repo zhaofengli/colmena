@@ -8,10 +8,7 @@ pub mod plain;
 pub mod spinner;
 
 use async_trait::async_trait;
-use tokio::sync::mpsc::{self,
-    UnboundedReceiver as TokioReceiver,
-    UnboundedSender as TokioSender,
-};
+use tokio::sync::mpsc::{self, UnboundedReceiver as TokioReceiver, UnboundedSender as TokioSender};
 
 use crate::error::ColmenaResult;
 use crate::job::JobId;
@@ -31,7 +28,7 @@ pub enum SimpleProgressOutput {
 
 /// A progress display driver.
 #[async_trait]
-pub trait ProgressOutput : Sized {
+pub trait ProgressOutput: Sized {
     /// Runs until a Message::Complete is received.
     async fn run_until_completion(self) -> ColmenaResult<Self>;
 
@@ -111,14 +108,8 @@ impl SimpleProgressOutput {
 
     pub async fn run_until_completion(self) -> ColmenaResult<Self> {
         match self {
-            Self::Plain(o) => {
-                o.run_until_completion().await
-                    .map(Self::Plain)
-            }
-            Self::Spinner(o) => {
-                o.run_until_completion().await
-                    .map(Self::Spinner)
-            }
+            Self::Plain(o) => o.run_until_completion().await.map(Self::Plain),
+            Self::Spinner(o) => o.run_until_completion().await.map(Self::Spinner),
         }
     }
 }

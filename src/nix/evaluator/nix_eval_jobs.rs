@@ -18,11 +18,11 @@ use tempfile::NamedTempFile;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
-use crate::error::{ColmenaResult, ColmenaError};
-use crate::job::{JobHandle, null_job_handle};
-use crate::nix::{StorePath, NixExpression, NixOptions};
+use super::{AttributeError, AttributeOutput, DrvSetEvaluator, EvalError, EvalResult};
+use crate::error::{ColmenaError, ColmenaResult};
+use crate::job::{null_job_handle, JobHandle};
+use crate::nix::{NixExpression, NixOptions, StorePath};
 use crate::util::capture_stream;
-use super::{DrvSetEvaluator, EvalResult, EvalError, AttributeOutput, AttributeError};
 
 /// The pinned nix-eval-jobs binary.
 pub const NIX_EVAL_JOBS: Option<&str> = option_env!("NIX_EVAL_JOBS");
@@ -73,7 +73,11 @@ struct EvalLineGlobalError {
 
 #[async_trait]
 impl DrvSetEvaluator for NixEvalJobs {
-    async fn evaluate(&self, expression: &dyn NixExpression, options: NixOptions) -> ColmenaResult<Pin<Box<dyn Stream<Item = EvalResult>>>> {
+    async fn evaluate(
+        &self,
+        expression: &dyn NixExpression,
+        options: NixOptions,
+    ) -> ColmenaResult<Pin<Box<dyn Stream<Item = EvalResult>>>> {
         let expr_file = {
             let mut f = NamedTempFile::new()?;
             f.write_all(expression.expression().as_bytes())?;
@@ -83,7 +87,8 @@ impl DrvSetEvaluator for NixEvalJobs {
         let mut command = Command::new(&self.executable);
         command
             .arg("--impure")
-            .arg("--workers").arg(self.workers.to_string())
+            .arg("--workers")
+            .arg(self.workers.to_string())
             .arg(&expr_file);
 
         command.args(options.to_args());
@@ -101,9 +106,7 @@ impl DrvSetEvaluator for NixEvalJobs {
         let stderr = BufReader::new(child.stderr.take().unwrap());
 
         let job = self.job.clone();
-        tokio::spawn(async move {
-            capture_stream(stderr, Some(job), true).await
-        });
+        tokio::spawn(async move { capture_stream(stderr, Some(job), true).await });
 
         Ok(Box::pin(stream! {
             loop {
@@ -202,9 +205,7 @@ impl From<EvalLineAttributeError> for AttributeError {
 
 impl From<EvalLineGlobalError> for ColmenaError {
     fn from(ele: EvalLineGlobalError) -> Self {
-        ColmenaError::Unknown {
-            message: ele.error,
-        }
+        ColmenaError::Unknown { message: ele.error }
     }
 }
 
@@ -230,8 +231,8 @@ mod tests {
     use super::*;
 
     use ntest::timeout;
-    use tokio_test::block_on;
     use tokio_stream::StreamExt;
+    use tokio_test::block_on;
 
     #[test]
     #[timeout(30000)]
@@ -240,7 +241,10 @@ mod tests {
         let expr = r#"with import <nixpkgs> {}; { a = pkgs.hello; b = pkgs.bash; }"#.to_string();
 
         block_on(async move {
-            let mut stream = evaluator.evaluate(&expr, NixOptions::default()).await.unwrap();
+            let mut stream = evaluator
+                .evaluate(&expr, NixOptions::default())
+                .await
+                .unwrap();
             let mut count = 0;
 
             while let Some(value) = stream.next().await {
@@ -261,7 +265,10 @@ mod tests {
         let expr = r#"gibberish"#.to_string();
 
         block_on(async move {
-            let mut stream = evaluator.evaluate(&expr, NixOptions::default()).await.unwrap();
+            let mut stream = evaluator
+                .evaluate(&expr, NixOptions::default())
+                .await
+                .unwrap();
             let mut count = 0;
 
             while let Some(value) = stream.next().await {
@@ -278,10 +285,14 @@ mod tests {
     #[timeout(30000)]
     fn test_attribute_error() {
         let evaluator = NixEvalJobs::default();
-        let expr = r#"with import <nixpkgs> {}; { a = pkgs.hello; b = throw "an error"; }"#.to_string();
+        let expr =
+            r#"with import <nixpkgs> {}; { a = pkgs.hello; b = throw "an error"; }"#.to_string();
 
         block_on(async move {
-            let mut stream = evaluator.evaluate(&expr, NixOptions::default()).await.unwrap();
+            let mut stream = evaluator
+                .evaluate(&expr, NixOptions::default())
+                .await
+                .unwrap();
             let mut count = 0;
 
             while let Some(value) = stream.next().await {
@@ -291,16 +302,14 @@ mod tests {
                     Ok(v) => {
                         assert_eq!("a", v.attribute);
                     }
-                    Err(e) => {
-                        match e {
-                            EvalError::Attribute(a) => {
-                                assert_eq!("b", a.attribute);
-                            }
-                            _ => {
-                                panic!("Expected an attribute error, got {:?}", e);
-                            }
+                    Err(e) => match e {
+                        EvalError::Attribute(a) => {
+                            assert_eq!("b", a.attribute);
                         }
-                    }
+                        _ => {
+                            panic!("Expected an attribute error, got {:?}", e);
+                        }
+                    },
                 }
                 count += 1;
             }
@@ -320,7 +329,10 @@ mod tests {
         let expr = r#"with import <nixpkgs> {}; { a = pkgs.hello; b = pkgs.writeText "x" (import /sys/nonexistentfile); }"#.to_string();
 
         block_on(async move {
-            let mut stream = evaluator.evaluate(&expr, NixOptions::default()).await.unwrap();
+            let mut stream = evaluator
+                .evaluate(&expr, NixOptions::default())
+                .await
+                .unwrap();
             let mut count = 0;
 
             while let Some(value) = stream.next().await {
@@ -330,17 +342,15 @@ mod tests {
                     Ok(v) => {
                         assert_eq!("a", v.attribute);
                     }
-                    Err(e) => {
-                        match e {
-                            EvalError::Global(e) => {
-                                let message = format!("{}", e);
-                                assert!(message.find("No such file or directory").is_some());
-                            }
-                            _ => {
-                                panic!("Expected a global error, got {:?}", e);
-                            }
+                    Err(e) => match e {
+                        EvalError::Global(e) => {
+                            let message = format!("{}", e);
+                            assert!(message.find("No such file or directory").is_some());
                         }
-                    }
+                        _ => {
+                            panic!("Expected a global error, got {:?}", e);
+                        }
+                    },
                 }
                 count += 1;
             }
