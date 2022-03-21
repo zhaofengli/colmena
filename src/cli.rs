@@ -166,6 +166,7 @@ It's also possible to specify the preference using environment variables. See <h
     register_command!(upload_keys, app);
     register_command!(exec, app);
     register_command!(nix_info, app);
+    register_command!(reboot, app);
 
     // This does _not_ take the --color flag into account (haven't
     // parsed yet), only the CLICOLOR environment variable.
@@ -191,6 +192,7 @@ pub async fn run() {
     handle_command!("upload-keys", upload_keys, matches);
     handle_command!(exec, matches);
     handle_command!("nix-info", nix_info, matches);
+    handle_command!(reboot, matches);
 
     #[cfg(debug_assertions)]
     handle_command!("test-progress", test_progress, matches);

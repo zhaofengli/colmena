@@ -4,6 +4,7 @@ pub mod build;
 pub mod eval;
 pub mod exec;
 pub mod nix_info;
+pub mod reboot;
 pub mod upload_keys;
 
 #[cfg(debug_assertions)]
