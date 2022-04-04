@@ -130,6 +130,8 @@ let
   '';
 
   makeTest = test: let
+    customArgs = [ "bundle" ];
+
     targetList = "[${concatStringsSep ", " targets}]";
 
     fullScript = ''
@@ -170,7 +172,7 @@ let
 
     combined = {
       inherit nodes;
-    } // test // {
+    } // (removeAttrs test customArgs) // {
       testScript = fullScript;
     };
   in lib.makeOverridable pkgs.nixosTest combined;
