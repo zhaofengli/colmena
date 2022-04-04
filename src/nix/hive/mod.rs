@@ -28,6 +28,8 @@ use crate::job::JobHandle;
 mod tests;
 
 const HIVE_EVAL: &[u8] = include_bytes!("eval.nix");
+const HIVE_OPTIONS: &[u8] = include_bytes!("options.nix");
+const HIVE_MODULES: &[u8] = include_bytes!("modules.nix");
 
 #[derive(Debug)]
 pub enum HivePath {
@@ -53,6 +55,12 @@ pub struct Hive {
 
     /// Path to temporary file containing eval.nix.
     eval_nix: TempPath,
+
+    /// Path to temporary file containing options.nix.
+    options_nix: TempPath,
+
+    /// Path to temporary file containing modules.nix.
+    modules_nix: TempPath,
 
     /// Whether to pass --show-trace in Nix commands.
     show_trace: bool,
@@ -111,7 +119,11 @@ impl HivePath {
 impl Hive {
     pub fn new(path: HivePath) -> ColmenaResult<Self> {
         let mut eval_nix = NamedTempFile::new()?;
+        let mut options_nix = NamedTempFile::new()?;
+        let mut modules_nix = NamedTempFile::new()?;
         eval_nix.write_all(HIVE_EVAL).unwrap();
+        options_nix.write_all(HIVE_OPTIONS).unwrap();
+        modules_nix.write_all(HIVE_MODULES).unwrap();
 
         let context_dir = path.context_dir();
 
@@ -119,6 +131,8 @@ impl Hive {
             path,
             context_dir,
             eval_nix: eval_nix.into_temp_path(),
+            options_nix: options_nix.into_temp_path(),
+            modules_nix: modules_nix.into_temp_path(),
             show_trace: false,
             machines_file: RwLock::new(None),
         })
@@ -342,16 +356,20 @@ impl Hive {
         match self.path() {
             HivePath::Legacy(path) => {
                 format!(
-                    "with builtins; let eval = import {}; hive = eval {{ rawHive = import {}; }}; in ",
+                    "with builtins; let eval = import {}; hive = eval {{ rawHive = import {}; colmenaOptions = import {}; colmenaModules = import {}; }}; in ",
                     self.eval_nix.to_str().unwrap(),
                     path.to_str().unwrap(),
+                    self.options_nix.to_str().unwrap(),
+                    self.modules_nix.to_str().unwrap(),
                 )
             }
             HivePath::Flake(flake) => {
                 format!(
-                    "with builtins; let eval = import {}; hive = eval {{ flakeUri = \"{}\"; }}; in ",
+                    "with builtins; let eval = import {}; hive = eval {{ flakeUri = \"{}\"; colmenaOptions = import {}; colmenaModules = import {}; }}; in ",
                     self.eval_nix.to_str().unwrap(),
                     flake.uri(),
+                    self.options_nix.to_str().unwrap(),
+                    self.modules_nix.to_str().unwrap(),
                 )
             }
         }
