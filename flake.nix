@@ -15,8 +15,11 @@
 
   outputs = { self, nixpkgs, utils, ... }: let
     supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+    colmenaOptions = import ./src/nix/hive/options.nix;
+    colmenaModules = import ./src/nix/hive/modules.nix;
     evalNix = import ./src/nix/hive/eval.nix {
       hermetic = true;
+      inherit colmenaOptions colmenaModules;
     };
   in utils.lib.eachSystem supportedSystems (system: let
     pkgs = import nixpkgs {
