@@ -1,4 +1,4 @@
-{ lib, stdenv, rustPlatform, installShellFiles, nix-eval-jobs ? null }:
+{ lib, stdenv, rustPlatform, installShellFiles, nix-eval-jobs }:
 
 rustPlatform.buildRustPackage rec {
   pname = "colmena";
@@ -13,9 +13,9 @@ rustPlatform.buildRustPackage rec {
 
   nativeBuildInputs = [ installShellFiles ];
 
-  propagatedBuildInputs = lib.optional (nix-eval-jobs != null) nix-eval-jobs;
+  buildInputs = [ nix-eval-jobs ];
 
-  NIX_EVAL_JOBS = lib.optionalString (nix-eval-jobs != null) "${nix-eval-jobs}/bin/nix-eval-jobs";
+  NIX_EVAL_JOBS = "${nix-eval-jobs}/bin/nix-eval-jobs";
 
   preBuild = ''
     if [[ -z "$NIX_EVAL_JOBS" ]]; then
