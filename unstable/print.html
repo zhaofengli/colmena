@@ -83,7 +83,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="tutorial/index.html"><strong aria-hidden="true">2.</strong> Tutorial</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorial/flakes.html"><strong aria-hidden="true">2.1.</strong> Usage with Flakes</a></li><li class="chapter-item expanded "><a href="tutorial/migration.html"><strong aria-hidden="true">2.2.</strong> Migrating from NixOps/morph</a></li></ol></li><li class="chapter-item expanded "><a href="features/index.html"><strong aria-hidden="true">3.</strong> Features</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="features/tags.html"><strong aria-hidden="true">3.1.</strong> Node Tagging</a></li><li class="chapter-item expanded "><a href="features/apply-local.html"><strong aria-hidden="true">3.2.</strong> Local Deployment</a></li><li class="chapter-item expanded "><a href="features/keys.html"><strong aria-hidden="true">3.3.</strong> Secrets</a></li><li class="chapter-item expanded "><a href="features/eval.html"><strong aria-hidden="true">3.4.</strong> Ad Hoc Evaluation</a></li><li class="chapter-item expanded "><a href="features/parallelism.html"><strong aria-hidden="true">3.5.</strong> Parallelism</a></li><li class="chapter-item expanded "><a href="features/remote-builds.html"><strong aria-hidden="true">3.6.</strong> Remote Builds</a></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">4.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/multi-arch.html"><strong aria-hidden="true">4.1.</strong> Multi-Architecture Deployments</a></li></ol></li><li class="chapter-item expanded "><a href="reference/index.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="reference/deployment.html"><strong aria-hidden="true">5.1.</strong> Deployment Options</a></li><li class="chapter-item expanded "><a href="reference/meta.html"><strong aria-hidden="true">5.2.</strong> Meta Options</a></li><li class="chapter-item expanded "><a href="reference/cli.html"><strong aria-hidden="true">5.3.</strong> Command Line Options</a></li></ol></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">6.</strong> Contributing</a></li></ol>            </div>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="tutorial/index.html"><strong aria-hidden="true">2.</strong> Tutorial</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorial/flakes.html"><strong aria-hidden="true">2.1.</strong> Usage with Flakes</a></li><li class="chapter-item expanded "><a href="tutorial/migration.html"><strong aria-hidden="true">2.2.</strong> Migrating from NixOps/morph</a></li></ol></li><li class="chapter-item expanded "><a href="features/index.html"><strong aria-hidden="true">3.</strong> Features</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="features/tags.html"><strong aria-hidden="true">3.1.</strong> Node Tagging</a></li><li class="chapter-item expanded "><a href="features/apply-local.html"><strong aria-hidden="true">3.2.</strong> Local Deployment</a></li><li class="chapter-item expanded "><a href="features/keys.html"><strong aria-hidden="true">3.3.</strong> Secrets</a></li><li class="chapter-item expanded "><a href="features/eval.html"><strong aria-hidden="true">3.4.</strong> Ad Hoc Evaluation</a></li><li class="chapter-item expanded "><a href="features/parallelism.html"><strong aria-hidden="true">3.5.</strong> Parallelism</a></li><li class="chapter-item expanded "><a href="features/remote-builds.html"><strong aria-hidden="true">3.6.</strong> Remote Builds</a></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">4.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/multi-arch.html"><strong aria-hidden="true">4.1.</strong> Multi-Architecture Deployments</a></li></ol></li><li class="chapter-item expanded "><a href="reference/index.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="reference/deployment.html"><strong aria-hidden="true">5.1.</strong> Deployment Options</a></li><li class="chapter-item expanded "><a href="reference/meta.html"><strong aria-hidden="true">5.2.</strong> Meta Options</a></li><li class="chapter-item expanded "><a href="reference/cli.html"><strong aria-hidden="true">5.3.</strong> Command Line Options</a></li></ol></li><li class="chapter-item expanded "><a href="release-notes.html"><strong aria-hidden="true">6.</strong> Release Notes</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">7.</strong> Contributing</a></li></ol>            </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
         </nav>
 
@@ -515,13 +515,18 @@ lib.attrsets.mapAttrs (k: v: v.config.deployment.targetHost) nodes
 <div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="parallelism"><a class="header" href="#parallelism">Parallelism</a></h1>
 <p>Colmena is built from the ground up to support parallel deployments.
-Evaluation, build, and deployment of node configurations can happen at the same time.
-This parallelism can be controlled primarily through two flags:</p>
+Evaluation, build, and deployment of node configurations can happen at the same time.</p>
+<h2 id="configuration"><a class="header" href="#configuration">Configuration</a></h2>
+<p>The parallelism of Colmena can be controlled through two flags:</p>
 <p><strong><code>--limit &lt;number&gt;</code></strong></p>
 <p>Number of hosts to deploy at once in the final step (pushing closures and activating new profiles). The default value is 10.</p>
 <p><strong><code>--eval-node-limit &lt;number&gt;</code></strong></p>
 <p>By default, Colmena will automatically determine the maximum number of nodes to evaluate at the same time according to available RAM.
 This flag allows you to set the limit to a predetermined value.</p>
+<h2 id="parallel-evaluation-experimental"><a class="header" href="#parallel-evaluation-experimental">Parallel Evaluation (Experimental)</a></h2>
+<p>By default, Colmena evaluates nodes in batches according to available RAM using Nix's built-in single-threaded evaluator.
+Experimental support is available for using <a href="https://github.com/nix-community/nix-eval-jobs">nix-eval-jobs</a> as the evaluator.</p>
+<p>When nix-eval-jobs is enabled via <code>--evaluator streaming</code>, evaluation is parallelized with deployment processes kicked off as individual nodes finish evaluating.</p>
 <div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="remote-builds"><a class="header" href="#remote-builds">Remote Builds</a></h1>
 <p>If the host running Colmena is not powerful enough, consider offloading the actual builds to remote machines.
@@ -2604,6 +2609,35 @@ Show information about the current Nix installation
             [default: auto]
             [possible values: auto, always, never]
 </div></pre>
+<div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
+<h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
+<h2 id="release-030-202204"><a class="header" href="#release-030-202204">Release 0.3.0 (2022/04/??)</a></h2>
+<ul>
+<li><a href="https://zhaofengli.github.io/colmena/0.3/features/remote-builds.html">Remote builds</a> are now supported (<a href="https://github.com/zhaofengli/colmena/issues/33">#33</a>).</li>
+<li><a href="https://zhaofengli.github.io/colmena/0.3/features/parallelism.html#parallel-evaluation-experimental">Streaming evaluation</a> powered by <a href="https://github.com/nix-community/nix-eval-jobs">nix-eval-jobs</a> is now available as an experimental feature (<code>--evaluator streaming</code>).</li>
+<li>Colmena can now run on macOS to deploy to NixOS hosts using <a href="https://zhaofengli.github.io/colmena/0.3/features/remote-builds.html">remote building</a>.</li>
+<li>It's now possible to configure output colorization via the CLI and environment variables. Colmena follows the <a href="https://bixense.com/clicolors">clicolors</a> standard.</li>
+<li>Node enumeration is now faster if you do not filter against tags with <code>--on @tag-name</code>.</li>
+<li>The main deployment logic has been rewritten to be cleaner and easier to follow.</li>
+<li>There are now <a href="https://github.com/zhaofengli/colmena/tree/main/integration-tests">end-to-end tests</a> to ensure that the development branch is actually functional as a whole at all times.</li>
+</ul>
+<h2 id="a-hrefhttpsgithubcomzhaofenglicolmenareleasestagv022release-022a-20220308"><a class="header" href="#a-hrefhttpsgithubcomzhaofenglicolmenareleasestagv022release-022a-20220308"><a href="https://github.com/zhaofengli/colmena/releases/tag/v0.2.2">Release 0.2.2</a> (2022/03/08)</a></h2>
+<p>This bugfix release fixes NixOS detection so <code>apply-local</code> works with the latest changes in <code>nixos-unstable</code> (<a href="https://github.com/zhaofengli/colmena/pull/63">#63</a>). Additionally, <code>--no-keys</code> was fixed in <code>apply-local</code>.</p>
+<h2 id="a-hrefhttpsgithubcomzhaofenglicolmenareleasestagv021release-021a-20220126"><a class="header" href="#a-hrefhttpsgithubcomzhaofenglicolmenareleasestagv021release-021a-20220126"><a href="https://github.com/zhaofengli/colmena/releases/tag/v0.2.1">Release 0.2.1</a> (2022/01/26)</a></h2>
+<p>This bugfix release fixes the issue (<a href="https://github.com/zhaofengli/colmena/issues/50">#50</a>) where <a href="https://github.com/NixOS/nixpkgs/pull/149532">sandboxed documentation builds</a> fail when using the unstable Nixpkgs channel.</p>
+<h2 id="a-hrefhttpsgithubcomzhaofenglicolmenareleasestagv020release-020a-20211118"><a class="header" href="#a-hrefhttpsgithubcomzhaofenglicolmenareleasestagv020release-020a-20211118"><a href="https://github.com/zhaofengli/colmena/releases/tag/v0.2.0">Release 0.2.0</a> (2021/11/18)</a></h2>
+<p>This is release 0.2.0, the first stable release of Colmena!</p>
+<p>Colmena is a simple, stateless NixOS deployment tool modeled after NixOps and morph, built from the ground up to support parallel deployments.</p>
+<p>This release contains the following features:</p>
+<ul>
+<li>Node Tagging</li>
+<li>Local Deployment</li>
+<li>Secrets</li>
+<li>Ad Hoc Evaluation</li>
+<li>Nix Flakes Support</li>
+<li>Parallelism</li>
+</ul>
+<p>We now have a User Manual at https://zhaofengli.github.io/colmena/0.2 containing tutorials, sample configurations as well as a complete listing of supported deployment options.</p>
 <div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.3.0-pre (apiVersion=0.3, unstable=True) -->
 <h1 id="contributing"><a class="header" href="#contributing">Contributing</a></h1>
 <p>Contributions are welcome!</p>
