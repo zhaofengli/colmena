@@ -153,6 +153,8 @@ impl Deref for NodeName {
 
 impl NodeConfig {
     pub fn tags(&self) -> &[String] { &self.tags }
+
+    #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
     pub fn allows_local_deployment(&self) -> bool { self.allow_local_deployment }
 
     pub fn build_on_target(&self) -> bool { self.build_on_target }

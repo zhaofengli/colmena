@@ -248,6 +248,7 @@ impl Hive {
     }
 
     /// Retrieve deployment info for a single node.
+    #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
     pub async fn deployment_info_single(&self, node: &NodeName) -> ColmenaResult<Option<NodeConfig>> {
         let expr = format!("hive.nodes.\"{}\".config.deployment or null", node.as_str());
         self.nix_instantiate(&expr).eval_with_builders().await?
