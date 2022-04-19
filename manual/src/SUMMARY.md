@@ -17,4 +17,5 @@
     - [Deployment Options](./reference/deployment.md)
     - [Meta Options](./reference/meta.md)
     - [Command Line Options](./reference/cli.md)
+- [Release Notes](./release-notes.md)
 - [Contributing](./contributing.md)
