@@ -197,7 +197,7 @@ impl Ssh {
     fn ssh_options(&self) -> Vec<String> {
         // TODO: Allow configuation of SSH parameters
 
-        let mut options: Vec<String> = ["-o", "StrictHostKeyChecking=accept-new", "-T"]
+        let mut options: Vec<String> = ["-o", "StrictHostKeyChecking=accept-new", "-o", "BatchMode=yes", "-T"]
             .iter().map(|s| s.to_string()).collect();
 
         if let Some(port) = self.port {
