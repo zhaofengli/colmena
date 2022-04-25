@@ -14,6 +14,8 @@ use super::nix::{Flake, Hive, HivePath, StorePath};
 use super::nix::deployment::TargetNodeMap;
 use super::job::JobHandle;
 
+const NEWLINE: u8 = 0xa;
+
 /// Non-interactive execution of an arbitrary command.
 pub struct CommandExecution {
     command: Command,
@@ -288,8 +290,9 @@ pub async fn capture_stream<R>(mut stream: BufReader<R>, job: Option<JobHandle>,
     let mut log = String::new();
 
     loop {
-        let mut line = String::new();
-        let len = stream.read_line(&mut line).await?;
+        let mut line = Vec::new();
+        let len = stream.read_until(NEWLINE, &mut line).await?;
+        let line = String::from_utf8_lossy(&line);
 
         if len == 0 {
             break;
@@ -314,4 +317,34 @@ pub async fn capture_stream<R>(mut stream: BufReader<R>, job: Option<JobHandle>,
 
 pub fn get_label_width(targets: &TargetNodeMap) -> Option<usize> {
     targets.keys().map(|n| n.len()).max()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use tokio::io::BufReader;
+    use tokio_test::block_on;
+
+    #[test]
+    fn test_capture_stream() {
+        let expected = "Hello\nWorld\n";
+
+        let stream = BufReader::new(expected.as_bytes());
+        let captured = block_on(async {
+            capture_stream(stream, None, false).await.unwrap()
+        });
+
+        assert_eq!(expected, captured);
+    }
+
+    #[test]
+    fn test_capture_stream_with_invalid_utf8() {
+        let stream = BufReader::new([0x80, 0xa].as_slice());
+        let captured = block_on(async {
+            capture_stream(stream, None, false).await.unwrap()
+        });
+
+        assert_eq!("\u{fffd}\n", captured);
+    }
 }
