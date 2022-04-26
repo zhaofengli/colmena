@@ -10,14 +10,8 @@ jobs:
           - ubuntu-latest
           - macos-11
         nix:
-          #- name: 2.3.16
-          #  url: https://releases.nixos.org/nix/nix-2.3.16/install
-          #- name: 2.4
-          #  url: https://releases.nixos.org/nix/nix-2.4/install
           - name: 2.7.0
             url: https://releases.nixos.org/nix/nix-2.7.0/install
-          #- name: 2.8.0pre
-          #  url: https://github.com/numtide/nix-unstable-installer/releases/download/nix-2.8.0pre20220314_a618097/install
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2.3.5
