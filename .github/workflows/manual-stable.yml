@@ -1,7 +1,3 @@
-# This is the workflow file to deploy the user manual for
-# the next stable release. For the one that is currently in
-# effect, check the release branches (e.g., release-0.2.x).
-
 name: Deploy Stable Manual
 
 on:
@@ -13,7 +9,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: haya14busa/action-workflow_run-status@v1
       - uses: actions/checkout@v2.3.5
       - uses: cachix/install-nix-action@v15
         with:
