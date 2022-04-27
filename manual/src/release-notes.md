@@ -1,6 +1,6 @@
 # Release Notes
 
-## Release 0.3.0 (2022/04/??)
+## [Release 0.3.0](https://github.com/zhaofengli/colmena/releases/tag/v0.3.0) (2022/04/27)
 
 - [Remote builds](https://zhaofengli.github.io/colmena/0.3/features/remote-builds.html) are now supported ([#33](https://github.com/zhaofengli/colmena/issues/33)).
 - [Streaming evaluation](https://zhaofengli.github.io/colmena/0.3/features/parallelism.html#parallel-evaluation-experimental) powered by [nix-eval-jobs](https://github.com/nix-community/nix-eval-jobs) is now available as an experimental feature (`--evaluator streaming`).
