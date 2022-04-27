@@ -28,7 +28,7 @@ jobs:
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - run: nix flake check
-        if: ${{ !contains(matrix.nix.name, '2.3') }}
+        if: ${{ !contains(matrix.nix.name, '2.3') && runner.os != 'macOS' }}
 
       - name: Build Colmena
         run: nix build -L
