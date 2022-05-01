@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use std::io::Write;
+use std::io::{Read, Write};
+use std::fs::File;
 use std::path::{Path, PathBuf};
 use std::convert::AsRef;
 
@@ -53,7 +54,7 @@ pub struct Hive {
     /// or "flake.nix".
     context_dir: Option<PathBuf>,
 
-    /// Path to temporary file containing eval.nix.
+    /// Path to a temporary file containing the builtin eval.nix or to the user supplied eval.nix.
     eval_nix: TempPath,
 
     /// Path to temporary file containing options.nix.
@@ -117,13 +118,23 @@ impl HivePath {
 }
 
 impl Hive {
-    pub fn new(path: HivePath) -> ColmenaResult<Self> {
+    pub fn new(path: HivePath, eval: Option<&Path>) -> ColmenaResult<Self> {
         let mut eval_nix = NamedTempFile::new()?;
         let mut options_nix = NamedTempFile::new()?;
         let mut modules_nix = NamedTempFile::new()?;
-        eval_nix.write_all(HIVE_EVAL).unwrap();
         options_nix.write_all(HIVE_OPTIONS).unwrap();
         modules_nix.write_all(HIVE_MODULES).unwrap();
+
+        if let Some(p) = eval {
+          let mut f = File::open(p)?;
+          let mut buffer = Vec::new();
+
+          // read the whole file
+          f.read_to_end(&mut buffer)?;
+          eval_nix.write_all(&buffer).unwrap();
+        } else {
+          eval_nix.write_all(HIVE_EVAL).unwrap();
+        }
 
         let context_dir = path.context_dir();
 

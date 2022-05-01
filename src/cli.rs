@@ -49,6 +49,17 @@ For more details, read the manual at <{}>.
 For a sample configuration, check the manual at <{}>.
 "#, MANUAL_URL)
     };
+
+    static ref EVAL_HELP: String = {
+        format!(
+          r#"Specify a custom eval.nix file that can consume either a hive.nix or a flake.nix and extract the Hive's contract out of it.
+If this argument is not specified, Colmena will use a builtin eval.nix.
+If this argument is specified, the aspects of the official manual about the colmena nix schema & contracts
+might not be true any more.
+
+For more details, read the manual at <{}>.
+"#, MANUAL_URL)
+    };
 }
 
 /// Display order in `--help` for arguments that should be shown first.
@@ -110,6 +121,13 @@ pub fn build_cli(include_internal: bool) -> ClapCommand<'static> {
             // or "hive.nix". This behavior is disabled if --config/-f
             // is explicitly supplied by the user (occurrences_of > 0).
             .default_value("hive.nix")
+            .global(true))
+        .arg(Arg::new("eval")
+            .long("eval")
+            .hide(true)
+            .value_name("EVAL")
+            .help("Path to a custom nix evaluator expression that satisfies the Hive contract")
+            .long_help(Some(EVAL_HELP.as_str()))
             .global(true))
         .arg(Arg::new("show-trace")
             .long("show-trace")

@@ -1,5 +1,5 @@
 use std::convert::TryFrom;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
 use async_trait::async_trait;
@@ -184,6 +184,12 @@ impl CommandExt for CommandExecution {
 }
 
 pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
+    let eval = match args.value_of("eval") {
+        Some(s) => {
+          Some(Path::new(s))
+        }
+        None => None,
+    };
     let path = match args.occurrences_of("config") {
         0 => {
             // traverse upwards until we find hive.nix
@@ -227,7 +233,7 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
                 // Treat as flake URI
                 let flake = Flake::from_uri(path).await?;
                 let hive_path = HivePath::Flake(flake);
-                let mut hive = Hive::new(hive_path)?;
+                let mut hive = Hive::new(hive_path, eval)?;
 
                 if args.is_present("show-trace") {
                     hive.set_show_trace(true);
@@ -250,7 +256,7 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
         }
     }
 
-    let mut hive = Hive::new(hive_path)?;
+    let mut hive = Hive::new(hive_path, eval)?;
 
     if args.is_present("show-trace") {
         hive.set_show_trace(true);

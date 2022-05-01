@@ -40,7 +40,7 @@ impl TempHive {
         temp_file.write_all(text.as_bytes()).unwrap();
 
         let hive_path = block_on(HivePath::from_path(temp_file.path())).unwrap();
-        let hive = Hive::new(hive_path).unwrap();
+        let hive = Hive::new(hive_path, None).unwrap();
 
         Self {
             hive,
@@ -158,7 +158,7 @@ fn test_parse_flake() {
     let flake = block_on(Flake::from_dir(flake_dir)).unwrap();
 
     let hive_path = HivePath::Flake(flake);
-    let mut hive = Hive::new(hive_path).unwrap();
+    let mut hive = Hive::new(hive_path, None).unwrap();
 
     hive.set_show_trace(true);
 
