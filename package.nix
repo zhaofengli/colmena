@@ -30,7 +30,7 @@ rustPlatform.buildRustPackage rec {
 
   meta = with lib; {
     description = "A simple, stateless NixOS deployment tool";
-    homepage = "https://zhaofengli.github.io/colmena/${passthru.apiVersion}";
+    homepage = "https://colmena.cli.rs/${passthru.apiVersion}";
     license = licenses.mit;
     maintainers = with maintainers; [ zhaofengli ];
     platforms = platforms.linux ++ platforms.darwin;
