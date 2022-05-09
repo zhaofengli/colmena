@@ -6,7 +6,7 @@ src = "src"
 title = "Colmena (Unstable)"
 
 [output.html]
-site-url = "/colmena/unstable/"
+site-url = "/unstable/"
 git-repository-url = "https://github.com/zhaofengli/colmena"
 edit-url-template = "https://github.com/zhaofengli/colmena/edit/main/manual/{path}"
 

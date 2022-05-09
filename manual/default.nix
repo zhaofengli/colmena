@@ -25,10 +25,10 @@ let
     <head>
       <meta charset="utf-8">
       <title>Redirecting</title>
-      <meta http-equiv="refresh" content="0; URL=https://zhaofengli.github.io/colmena@path@">
+      <meta http-equiv="refresh" content="0; URL=https://colmena.cli.rs@path@">
     </head>
     <body>
-      Redirecting to <a href="https://zhaofengli.github.io/colmena@path@">https://zhaofengli.github.io/colmena@path@</a>
+      Redirecting to <a href="https://colmena.cli.rs@path@">https://colmena.cli.rs@path@</a>
     </body>
     </html>
   '';
