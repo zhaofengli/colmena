@@ -6,7 +6,7 @@ src = "src"
 title = "Colmena @apiVersion@"
 
 [output.html]
-site-url = "/colmena/@apiVersion@/"
+site-url = "/@apiVersion@/"
 git-repository-url = "https://github.com/zhaofengli/colmena"
 edit-url-template = "https://github.com/zhaofengli/colmena/edit/main/manual/{path}"
 
