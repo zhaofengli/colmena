@@ -145,7 +145,7 @@ let
 
       for node in ${targetList}:
           node.wait_for_unit("sshd.service")
-          deployer.succeed(f"ssh -o StrictHostKeyChecking=accept-new {node.name} true")
+          deployer.succeed(f"ssh -o StrictHostKeyChecking=accept-new {node.name} true", timeout=30)
 
       deployer.succeed("cp --no-preserve=mode -r ${bundle} /tmp/bundle && chmod u+w /tmp/bundle")
 
