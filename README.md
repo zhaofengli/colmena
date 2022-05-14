@@ -1,8 +1,8 @@
 # Colmena
 
 [![Matrix Channel](https://img.shields.io/badge/Matrix-%23colmena%3Anixos.org-blueviolet)](https://matrix.to/#/#colmena:nixos.org)
-[![Stable Manual](https://img.shields.io/badge/Manual-Stable-informational)](https://zhaofengli.github.io/colmena/stable)
-[![Unstable Manual](https://img.shields.io/badge/Manual-Unstable-orange)](https://zhaofengli.github.io/colmena/unstable)
+[![Stable Manual](https://img.shields.io/badge/Manual-Stable-informational)](https://colmena.cli.rs/stable)
+[![Unstable Manual](https://img.shields.io/badge/Manual-Unstable-orange)](https://colmena.cli.rs/unstable)
 [![Build](https://github.com/zhaofengli/colmena/workflows/Build/badge.svg)](https://github.com/zhaofengli/colmena/actions/workflows/build.yml)
 
 Colmena is a simple, stateless [NixOS](https://nixos.org) deployment tool modeled after [NixOps](https://github.com/NixOS/nixops) and [morph](https://github.com/DBCDK/morph), written in Rust.
@@ -145,7 +145,7 @@ Here is a sample `hive.nix` with two nodes, with some common configurations appl
 }
 ```
 
-The full set of options can be found in [the manual](https://zhaofengli.github.io/colmena/unstable/reference).
+The full set of options can be found in [the manual](https://colmena.cli.rs/unstable/reference).
 Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to build and deploy it to all nodes.
 
 ## Tutorial with Flakes
@@ -186,12 +186,12 @@ Here is a short example:
 }
 ```
 
-The full set of options can be found in [the manual](https://zhaofengli.github.io/colmena/unstable/reference).
+The full set of options can be found in [the manual](https://colmena.cli.rs/unstable/reference).
 Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to build and deploy it to all nodes.
 
 ## Manual
 
-Read [the Colmena Manual](https://zhaofengli.github.io/colmena).
+Read [the Colmena Manual](https://colmena.cli.rs).
 
 ## Environment Variables
 

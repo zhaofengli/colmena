@@ -2,11 +2,11 @@
 
 ## [Release 0.3.0](https://github.com/zhaofengli/colmena/releases/tag/v0.3.0) (2022/04/27)
 
-- [Remote builds](https://zhaofengli.github.io/colmena/0.3/features/remote-builds.html) are now supported ([#33](https://github.com/zhaofengli/colmena/issues/33)).
-- [Streaming evaluation](https://zhaofengli.github.io/colmena/0.3/features/parallelism.html#parallel-evaluation-experimental) powered by [nix-eval-jobs](https://github.com/nix-community/nix-eval-jobs) is now available as an experimental feature (`--evaluator streaming`).
-- Colmena can now run on macOS to deploy to NixOS hosts using [remote building](https://zhaofengli.github.io/colmena/0.3/features/remote-builds.html).
+- [Remote builds](https://colmena.cli.rs/0.3/features/remote-builds.html) are now supported ([#33](https://github.com/zhaofengli/colmena/issues/33)).
+- [Streaming evaluation](https://colmena.cli.rs/0.3/features/parallelism.html#parallel-evaluation-experimental) powered by [nix-eval-jobs](https://github.com/nix-community/nix-eval-jobs) is now available as an experimental feature (`--evaluator streaming`).
+- Colmena can now run on macOS to deploy to NixOS hosts using [remote building](https://colmena.cli.rs/0.3/features/remote-builds.html).
 - It's now possible to configure output colorization via the CLI and environment variables. Colmena follows the [clicolors](https://bixense.com/clicolors) standard.
-- [A systemd unit](https://zhaofengli.github.io/colmena/0.3/features/keys.html#key-services) (`${name}-key.service`) is now created for each secret file deployed using `deployment.keys` ([#48](https://github.com/zhaofengli/colmena/issues/48)).
+- [A systemd unit](https://colmena.cli.rs/0.3/features/keys.html#key-services) (`${name}-key.service`) is now created for each secret file deployed using `deployment.keys` ([#48](https://github.com/zhaofengli/colmena/issues/48)).
 - Node enumeration is now faster if you do not filter against tags with `--on @tag-name`.
 - The main deployment logic has been rewritten to be cleaner and easier to follow.
 - There are now [end-to-end tests](https://github.com/zhaofengli/colmena/tree/main/integration-tests) to ensure that the development branch is actually functional as a whole at all times.
@@ -34,4 +34,4 @@ This release contains the following features:
 - Nix Flakes Support
 - Parallelism
 
-We now have a User Manual at https://zhaofengli.github.io/colmena/0.2 containing tutorials, sample configurations as well as a complete listing of supported deployment options.
+We now have a User Manual at https://colmena.cli.rs/0.2 containing tutorials, sample configurations as well as a complete listing of supported deployment options.

@@ -1,6 +1,6 @@
 # Manual
 
-You can read the rendered version [here](https://zhaofengli.github.io/colmena).
+You can read the rendered version [here](https://colmena.cli.rs).
 
 ## Building the Manual
 
