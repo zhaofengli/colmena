@@ -135,8 +135,7 @@ let
   in evalConfig {
     inherit (npkgs) system;
 
-    modules = let
-    in [
+    modules = [
       nixpkgsModule
       colmenaModules.assertionModule
       colmenaModules.keyChownModule
@@ -191,6 +190,14 @@ let
     inherit nixpkgs lib;
     nodes = uncheckedNodes;
   };
+
+  suppressModuleArgsDocs = { lib, ... }: {
+    options = {
+      _module.args = lib.mkOption {
+        internal = true;
+      };
+    };
+  };
 in {
   inherit
     nodes toplevel
@@ -204,7 +211,7 @@ in {
   docs = {
     deploymentOptions = pkgs: let
       eval = pkgs.lib.evalModules {
-        modules = [ colmenaOptions.deploymentOptions ];
+        modules = [ colmenaOptions.deploymentOptions suppressModuleArgsDocs ];
         specialArgs = {
           name = "nixos";
           nodes = {};
@@ -214,7 +221,7 @@ in {
 
     metaOptions = pkgs: let
       eval = pkgs.lib.evalModules {
-        modules = [ colmenaOptions.metaOptions ];
+        modules = [ colmenaOptions.metaOptions suppressModuleArgsDocs ];
       };
     in eval.options;
   };
