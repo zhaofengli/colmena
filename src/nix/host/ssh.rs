@@ -39,6 +39,7 @@ impl Host for Ssh {
         let command = self.nix_copy_closure(closure, direction, options);
         self.run_command(command).await
     }
+
     async fn realize_remote(&mut self, derivation: &StorePath) -> ColmenaResult<Vec<StorePath>> {
         let command = self.ssh(&["nix-store", "--no-gc-warning", "--realise", derivation.as_path().to_str().unwrap()]);
 
@@ -51,6 +52,11 @@ impl Host for Ssh {
 
         paths.lines().map(|p| p.to_string().try_into()).collect()
     }
+
+    fn set_job(&mut self, job: Option<JobHandle>) {
+        self.job = job;
+    }
+
     async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> ColmenaResult<()> {
         for (name, key) in keys {
             self.upload_key(name, key, require_ownership).await?;
@@ -58,6 +64,7 @@ impl Host for Ssh {
 
         Ok(())
     }
+
     async fn activate(&mut self, profile: &Profile, goal: Goal) -> ColmenaResult<()> {
         if !goal.requires_activation() {
             return Err(ColmenaError::Unsupported);
@@ -74,10 +81,7 @@ impl Host for Ssh {
         let command = self.ssh(&v);
         self.run_command(command).await
     }
-    async fn run_command(&mut self, command: &[&str]) -> ColmenaResult<()> {
-        let command = self.ssh(command);
-        self.run_command(command).await
-    }
+
     async fn get_main_system_profile(&mut self) -> ColmenaResult<StorePath> {
         let command = format!("\"readlink -e {} || readlink -e {}\"", SYSTEM_PROFILE, CURRENT_PROFILE);
 
@@ -92,8 +96,10 @@ impl Host for Ssh {
 
         Ok(path)
     }
-    fn set_job(&mut self, job: Option<JobHandle>) {
-        self.job = job;
+
+    async fn run_command(&mut self, command: &[&str]) -> ColmenaResult<()> {
+        let command = self.ssh(command);
+        self.run_command(command).await
     }
 }
 
@@ -152,9 +158,7 @@ impl Ssh {
         let mut execution = CommandExecution::new(command);
         execution.set_job(self.job.clone());
 
-        let result = execution.run().await;
-
-        result
+        execution.run().await
     }
 
     fn ssh_target(&self) -> String {
