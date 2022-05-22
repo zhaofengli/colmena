@@ -540,6 +540,14 @@ let
     value = evalNode name configs;
   }) nodeNames);
 
+  suppressModuleArgsDocs = { lib, ... }: {
+    options = {
+      _module.args = lib.mkOption {
+        internal = true;
+      };
+    };
+  };
+
   # Exported attributes
   #
   # Functions are intended to be called with `nix-instantiate --eval --json`
@@ -579,7 +587,7 @@ in {
   docs = {
     deploymentOptions = pkgs: let
       eval = pkgs.lib.evalModules {
-        modules = [ deploymentOptions ];
+        modules = [ deploymentOptions suppressModuleArgsDocs ];
         specialArgs = {
           name = "nixos";
           nodes = {};
@@ -589,7 +597,7 @@ in {
 
     metaOptions = pkgs: let
       eval = pkgs.lib.evalModules {
-        modules = [ metaOptions ];
+        modules = [ metaOptions suppressModuleArgsDocs ];
       };
     in eval.options;
   };
