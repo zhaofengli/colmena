@@ -82,7 +82,20 @@ impl Host for Ssh {
         self.run_command(command).await
     }
 
-    async fn get_main_system_profile(&mut self) -> ColmenaResult<StorePath> {
+    async fn get_current_system_profile(&mut self) -> ColmenaResult<Profile> {
+        let paths = self.ssh(&["readlink", "-e", CURRENT_PROFILE])
+            .capture_output()
+            .await?;
+
+        let path = paths.lines().into_iter().next()
+            .ok_or(ColmenaError::FailedToGetCurrentProfile)?
+            .to_string()
+            .try_into()?;
+
+        Ok(Profile::from_store_path_unchecked(path))
+    }
+
+    async fn get_main_system_profile(&mut self) -> ColmenaResult<Profile> {
         let command = format!("\"readlink -e {} || readlink -e {}\"", SYSTEM_PROFILE, CURRENT_PROFILE);
 
         let paths = self.ssh(&["sh", "-c", &command])
@@ -94,7 +107,7 @@ impl Host for Ssh {
             .to_string()
             .try_into()?;
 
-        Ok(path)
+        Ok(Profile::from_store_path_unchecked(path))
     }
 
     async fn run_command(&mut self, command: &[&str]) -> ColmenaResult<()> {

@@ -538,13 +538,13 @@ impl Deployment {
 
                 let profile = host.get_main_system_profile().await?;
 
-                if profile.exists() {
+                if profile.as_store_path().exists() {
                     job.message("Remote profile known".to_string())?;
                 } else if arc_self.options.force_replace_unknown_profiles {
                     job.message("Warning: Remote profile is unknown, but unknown profiles are being ignored".to_string())?;
                 } else {
                     return Err(ColmenaError::ActiveProfileUnknown {
-                        store_path: profile,
+                        profile,
                     });
                 }
             }

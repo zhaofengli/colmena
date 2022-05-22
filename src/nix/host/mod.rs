@@ -111,12 +111,15 @@ pub trait Host: Send + Sync + std::fmt::Debug {
         Err(ColmenaError::Unsupported)
     }
 
+    /// Returns the current system profile on the host.
+    async fn get_current_system_profile(&mut self) -> ColmenaResult<Profile>;
+
     /// Returns the main system profile on the host.
     ///
     /// This may _not_ be the system profile that's currently activated!
     /// It will first try `/nix/var/nix/profiles/system`, falling back
     /// to `/run/current-system` if it doesn't exist.
-    async fn get_main_system_profile(&mut self) -> ColmenaResult<StorePath>;
+    async fn get_main_system_profile(&mut self) -> ColmenaResult<Profile>;
 
     /// Activates a system profile on the host, if it runs NixOS.
     ///

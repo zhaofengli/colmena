@@ -92,7 +92,21 @@ impl Host for Local {
         result
     }
 
-    async fn get_main_system_profile(&mut self) -> ColmenaResult<StorePath> {
+    async fn get_current_system_profile(&mut self) -> ColmenaResult<Profile> {
+        let paths = Command::new("readlink")
+            .args(&["-e", CURRENT_PROFILE])
+            .capture_output()
+            .await?;
+
+        let path = paths.lines().into_iter().next()
+            .ok_or(ColmenaError::FailedToGetCurrentProfile)?
+            .to_string()
+            .try_into()?;
+
+        Ok(Profile::from_store_path_unchecked(path))
+    }
+
+    async fn get_main_system_profile(&mut self) -> ColmenaResult<Profile> {
         let paths = Command::new("sh")
             .args(&["-c", &format!("readlink -e {} || readlink -e {}", SYSTEM_PROFILE, CURRENT_PROFILE)])
             .capture_output()
@@ -103,7 +117,7 @@ impl Host for Local {
             .to_string()
             .try_into()?;
 
-        Ok(path)
+        Ok(Profile::from_store_path_unchecked(path))
     }
 
     fn set_job(&mut self, job: Option<JobHandle>) {

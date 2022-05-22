@@ -16,7 +16,7 @@ use super::{
 pub type ProfileDerivation = StoreDerivation<Profile>;
 
 /// A NixOS system profile.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Profile(StorePath);
 
 impl Profile {
@@ -77,7 +77,7 @@ impl Profile {
         Ok(())
     }
 
-    fn from_store_path_unchecked(path: StorePath) -> Self {
+    pub(super) fn from_store_path_unchecked(path: StorePath) -> Self {
         Self(path)
     }
 }

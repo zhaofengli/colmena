@@ -12,7 +12,7 @@ use crate::util::CommandExt;
 use super::Host;
 
 /// A Nix store path.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StorePath(PathBuf);
 
 /// A store derivation (.drv) that will result in a T when built.

@@ -6,7 +6,7 @@ use std::process::ExitStatus;
 use snafu::Snafu;
 use validator::ValidationErrors;
 
-use crate::nix::{key, StorePath};
+use crate::nix::{key, StorePath, Profile};
 
 pub type ColmenaResult<T> = Result<T, ColmenaError>;
 
@@ -43,8 +43,8 @@ pub enum ColmenaError {
     #[snafu(display("Invalid NixOS system profile"))]
     InvalidProfile,
 
-    #[snafu(display("Unknown active profile: {:?}", store_path))]
-    ActiveProfileUnknown { store_path: StorePath },
+    #[snafu(display("Unknown active profile: {:?}", profile))]
+    ActiveProfileUnknown { profile: Profile },
 
     #[snafu(display("Could not determine current profile"))]
     FailedToGetCurrentProfile,
