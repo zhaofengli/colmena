@@ -2,15 +2,17 @@ use std::collections::HashMap;
 use std::convert::TryInto;
 use std::path::PathBuf;
 use std::process::Stdio;
+use std::time::Duration;
 
 use async_trait::async_trait;
 use tokio::process::Command;
+use tokio::time::sleep;
 
 use crate::error::{ColmenaResult, ColmenaError};
 use crate::nix::{StorePath, Profile, Goal, Key, SYSTEM_PROFILE, CURRENT_PROFILE};
 use crate::util::{CommandExecution, CommandExt};
 use crate::job::JobHandle;
-use super::{CopyDirection, CopyOptions, Host, key_uploader};
+use super::{CopyDirection, CopyOptions, RebootOptions, Host, key_uploader};
 
 /// A remote machine connected over SSH.
 #[derive(Debug)]
@@ -32,6 +34,10 @@ pub struct Ssh {
 
     job: Option<JobHandle>,
 }
+
+/// An opaque boot ID.
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct BootId(String);
 
 #[async_trait]
 impl Host for Ssh {
@@ -113,6 +119,49 @@ impl Host for Ssh {
     async fn run_command(&mut self, command: &[&str]) -> ColmenaResult<()> {
         let command = self.ssh(command);
         self.run_command(command).await
+    }
+
+    async fn reboot(&mut self, options: RebootOptions) -> ColmenaResult<()> {
+        if !options.wait_for_boot {
+            return self.initate_reboot().await;
+        }
+
+        let old_id = self.get_boot_id().await?;
+
+        self.initate_reboot().await?;
+
+        if let Some(job) = &self.job {
+            job.message("Waiting for reboot".to_string())?;
+        }
+
+        // Wait for node to come back up
+        loop {
+            match self.get_boot_id().await {
+                Ok(new_id) => {
+                    if new_id != old_id {
+                        break;
+                    }
+                }
+                Err(_) => {
+                    // Ignore errors while waiting
+                }
+            }
+
+            sleep(Duration::from_secs(2)).await;
+        }
+
+        // Ensure node has correct system profile
+        if let Some(new_profile) = options.new_profile {
+            let profile = self.get_current_system_profile().await?;
+
+            if new_profile != profile {
+                return Err(ColmenaError::ActiveProfileUnexpected {
+                    profile,
+                });
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -247,5 +296,29 @@ impl Ssh {
 
         let uploader = command.spawn()?;
         key_uploader::feed_uploader(uploader, key, self.job.clone()).await
+    }
+
+    /// Returns the current Boot ID.
+    async fn get_boot_id(&mut self) -> ColmenaResult<BootId> {
+        let boot_id = self.ssh(&["cat", "/proc/sys/kernel/random/boot_id"])
+            .capture_output()
+            .await?;
+
+        Ok(BootId(boot_id))
+    }
+
+    /// Initiates reboot.
+    async fn initate_reboot(&mut self) -> ColmenaResult<()> {
+        match self.run_command(self.ssh(&["reboot"])).await {
+            Ok(()) => Ok(()),
+            Err(e) => {
+                if let ColmenaError::ChildFailure { exit_code: 255 } = e {
+                    // Assume it's "Connection closed by remote host"
+                    Ok(())
+                } else {
+                    Err(e)
+                }
+            }
+        }
     }
 }

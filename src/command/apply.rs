@@ -81,6 +81,11 @@ By default, Colmena will upload keys set in `deployment.keys` before deploying t
 To upload keys without building or deploying the rest of the configuration, use `colmena upload-keys`.
 "#)
             .takes_value(false))
+        .arg(Arg::new("reboot")
+            .long("reboot")
+            .help("Reboot nodes after activation")
+            .long_help("Reboots nodes after activation and wait for them to come back up.")
+            .takes_value(false))
         .arg(Arg::new("no-substitutes")
             .long("no-substitutes")
             .help("Do not use substitutes")
@@ -164,6 +169,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         options.set_substituters_push(!local_args.is_present("no-substitutes"));
         options.set_gzip(!local_args.is_present("no-gzip"));
         options.set_upload_keys(!local_args.is_present("no-keys"));
+        options.set_reboot(local_args.is_present("reboot"));
         options.set_force_replace_unknown_profiles(local_args.is_present("force-replace-unknown-profiles"));
         options.set_evaluator(local_args.value_of_t("evaluator").unwrap());
 

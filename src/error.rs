@@ -46,6 +46,9 @@ pub enum ColmenaError {
     #[snafu(display("Unknown active profile: {:?}", profile))]
     ActiveProfileUnknown { profile: Profile },
 
+    #[snafu(display("Unexpected active profile: {:?}", profile))]
+    ActiveProfileUnexpected { profile: Profile },
+
     #[snafu(display("Could not determine current profile"))]
     FailedToGetCurrentProfile,
 

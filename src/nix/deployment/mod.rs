@@ -34,6 +34,7 @@ use super::{
     ProfileDerivation,
     CopyDirection,
     CopyOptions,
+    RebootOptions,
     key::{Key, UploadAt as UploadKeyAt},
     evaluator::{
         DrvSetEvaluator,
@@ -585,7 +586,8 @@ impl Deployment {
         };
 
         // Create GC root
-        if self.options.create_gc_roots {
+        let profile_r = profile.clone();
+        let mut target = if self.options.create_gc_roots {
             let job = parent.create_job(JobType::CreateGcRoots, nodes.clone())?;
             let arc_self = self.clone();
             job.run_waiting(|job| async move {
@@ -597,10 +599,36 @@ impl Deployment {
                     job.state(JobState::Running)?;
                     let path = dir.join(".gcroots").join(format!("node-{}", &*target_name));
 
-                    profile.create_gc_root(&path).await?;
+                    profile_r.create_gc_root(&path).await?;
                 } else {
                     job.noop("No context directory to create GC roots in".to_string())?;
                 }
+                Ok(target)
+            }).await?
+        } else {
+            target
+        };
+
+        // Reboot
+        if self.options.reboot {
+            let job = parent.create_job(JobType::Reboot, nodes.clone())?;
+            let arc_self = self.clone();
+            job.run(|job| async move {
+                let host = target.host.as_mut().unwrap();
+                host.set_job(Some(job.clone()));
+
+                let new_profile = if arc_self.goal.persists_after_reboot() {
+                    Some(profile)
+                } else {
+                    None
+                };
+
+                let options = RebootOptions::default()
+                    .wait_for_boot(true)
+                    .new_profile(new_profile);
+
+                host.reboot(options).await?;
+
                 Ok(())
             }).await?;
         }

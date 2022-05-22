@@ -1,5 +1,9 @@
 # Release Notes
 
+## Release 0.4.0 (Unreleased)
+
+- `--reboot` is added to trigger a reboot and wait for the node to come back up.
+
 ## [Release 0.3.0](https://github.com/zhaofengli/colmena/releases/tag/v0.3.0) (2022/04/27)
 
 - [Remote builds](https://colmena.cli.rs/0.3/features/remote-builds.html) are now supported ([#33](https://github.com/zhaofengli/colmena/issues/33)).

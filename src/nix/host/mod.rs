@@ -31,6 +31,15 @@ pub struct CopyOptions {
     gzip: bool,
 }
 
+#[derive(Clone, Debug)]
+pub struct RebootOptions {
+    /// Whether to wait for host to boot back up.
+    wait_for_boot: bool,
+
+    /// New system profile to expect upon reboot.
+    new_profile: Option<Profile>,
+}
+
 impl Default for CopyOptions {
     fn default() -> Self {
         Self {
@@ -54,6 +63,27 @@ impl CopyOptions {
 
     pub fn gzip(mut self, val: bool) -> Self {
         self.gzip = val;
+        self
+    }
+}
+
+impl Default for RebootOptions {
+    fn default() -> Self {
+        Self {
+            wait_for_boot: true,
+            new_profile: None,
+        }
+    }
+}
+
+impl RebootOptions {
+    pub fn wait_for_boot(mut self, val: bool) -> Self {
+        self.wait_for_boot = val;
+        self
+    }
+
+    pub fn new_profile(mut self, profile: Option<Profile>) -> Self {
+        self.new_profile = profile;
         self
     }
 }
@@ -132,6 +162,12 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     /// Runs an arbitrary command on the host.
     #[allow(unused_variables)]
     async fn run_command(&mut self, command: &[&str]) -> ColmenaResult<()> {
+        Err(ColmenaError::Unsupported)
+    }
+
+    /// Reboots the host.
+    #[allow(unused_variables)]
+    async fn reboot(&mut self, options: RebootOptions) -> ColmenaResult<()> {
         Err(ColmenaError::Unsupported)
     }
 }

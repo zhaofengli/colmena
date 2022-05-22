@@ -11,7 +11,7 @@ use validator::{Validate, ValidationError as ValidationErrorType};
 use crate::error::{ColmenaResult, ColmenaError};
 
 pub mod host;
-pub use host::{Host, CopyDirection, CopyOptions};
+pub use host::{Host, CopyDirection, CopyOptions, RebootOptions};
 use host::Ssh;
 
 pub mod hive;

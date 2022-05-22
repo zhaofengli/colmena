@@ -75,6 +75,11 @@ impl Goal {
         !matches!(self, Build | UploadKeys | Push)
     }
 
+    pub fn persists_after_reboot(&self) -> bool {
+        use Goal::*;
+        matches!(self, Switch | Boot)
+    }
+
     pub fn requires_target_host(&self) -> bool {
         use Goal::*;
         !matches!(self, Build)

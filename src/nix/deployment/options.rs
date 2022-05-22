@@ -17,6 +17,9 @@ pub struct Options {
     /// Whether to upload keys when deploying.
     pub(super) upload_keys: bool,
 
+    /// Whether to reboot the hosts after activation.
+    pub(super) reboot: bool,
+
     /// Whether to create GC roots for node profiles.
     ///
     /// If true, .gc_roots will be created under the hive's context
@@ -53,6 +56,10 @@ impl Options {
         self.upload_keys = enable;
     }
 
+    pub fn set_reboot(&mut self, enable: bool) {
+        self.reboot = enable;
+    }
+
     pub fn set_create_gc_roots(&mut self, enable: bool) {
         self.create_gc_roots = enable;
     }
@@ -84,6 +91,7 @@ impl Default for Options {
             substituters_push: true,
             gzip: true,
             upload_keys: true,
+            reboot: false,
             create_gc_roots: false,
             force_build_on_target: None,
             force_replace_unknown_profiles: false,

@@ -98,6 +98,9 @@ pub enum JobType {
 
     /// Creating GC roots.
     CreateGcRoots,
+
+    /// Rebooting a host.
+    Reboot,
 }
 
 /// A handle to a job.
@@ -710,6 +713,10 @@ impl JobMetadata {
             (JobType::Activate, JobState::Running) => "Activating system profile".to_string(),
             (JobType::Activate, JobState::Failed) => format!("Activation failed: {}", message),
 
+            (JobType::Reboot, JobState::Running) => "Rebooting".to_string(),
+            (JobType::Reboot, JobState::Succeeded) => "Rebooted".to_string(),
+            (JobType::Reboot, JobState::Failed) => format!("Reboot failed: {}", message),
+
             (_, JobState::Failed) => format!("Failed: {}", message),
             (_, JobState::Succeeded) => "Succeeded".to_string(),
             _ => "".to_string(),
@@ -727,6 +734,7 @@ impl JobMetadata {
             JobType::Push => format!("Failed to push system closure to {}", node_list),
             JobType::UploadKeys => format!("Failed to upload keys to {}", node_list),
             JobType::Activate => format!("Failed to deploy to {}", node_list),
+            JobType::Reboot => format!("Failed to reboot {}", node_list),
             JobType::Meta => "Failed to complete requested operation".to_string(),
             _ => format!("Failed to complete job on {}", node_list),
         }
