@@ -167,33 +167,6 @@ let
     value = evalNode name configs;
   }) nodeNames);
 
-  # Exported attributes
-  #
-  # Functions are intended to be called with `nix-instantiate --eval --json`
-
-  nodes = listToAttrs (map (name: {
-    inherit name;
-    value = evalNode name (configsFor name);
-  }) nodeNames);
-
-  toplevel = lib.mapAttrs (name: eval: eval.config.system.build.toplevel) nodes;
-
-  deploymentConfig = lib.mapAttrs (name: eval: eval.config.deployment) nodes;
-
-  deploymentConfigSelected = names:
-    listToAttrs (map (name: { inherit name; value = nodes.${name}.config.deployment; }) names);
-
-  evalSelected = names: let
-    selected = lib.filterAttrs (name: _: elem name names) toplevel;
-  in selected;
-  evalSelectedDrvPaths = names: lib.mapAttrs (k: v: v.drvPath) (evalSelected names);
-
-  introspect = function: function {
-    inherit lib;
-    pkgs = nixpkgs;
-    nodes = uncheckedNodes;
-  };
-
   # Add required config Key here since we don't want to eval nixpkgs
   metaConfigKeys = [
     "name" "description"
@@ -201,16 +174,16 @@ let
     "allowApplyAll"
   ];
 
+in rec {
+  # Exported attributes
+  #
+  # Functions are intended to be called with `nix-instantiate --eval --json`
+  nodes = listToAttrs (map (name: { inherit name; value = evalNode name (configsFor name); }) nodeNames);
+  toplevel =         lib.mapAttrs (_: v: v.config.system.build.toplevel) nodes;
+  deploymentConfig = lib.mapAttrs (_: v: v.config.deployment)            nodes;
+  deploymentConfigSelected = names: lib.filterAttrs (name: _: elem name names) deploymentConfig;
+  evalSelected =             names: lib.filterAttrs (name: _: elem name names) toplevel;
+  evalSelectedDrvPaths =     names: lib.mapAttrs    (_: v: v.drvPath)          (evalSelected names);
   metaConfig = lib.filterAttrs (n: v: elem n metaConfigKeys) hive.meta;
-in {
-  inherit
-    deploymentConfig
-    deploymentConfigSelected
-    evalSelected
-    evalSelectedDrvPaths
-    introspect
-    metaConfig
-    nodes
-    toplevel
-    ;
+  introspect = f: f { inherit lib; pkgs = nixpkgs; nodes = uncheckedNodes; };
 }
