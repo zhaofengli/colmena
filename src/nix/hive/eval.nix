@@ -183,7 +183,6 @@ let
   deploymentConfigSelected = names:
     listToAttrs (map (name: { inherit name; value = nodes.${name}.config.deployment; }) names);
 
-  evalAll = evalSelected nodeNames;
   evalSelected = names: let
     selected = lib.filterAttrs (name: _: elem name names) toplevel;
   in selected;
@@ -205,10 +204,13 @@ let
   metaConfig = lib.filterAttrs (n: v: elem n metaConfigKeys) hive.meta;
 in {
   inherit
-    nodes toplevel
-    deploymentConfig deploymentConfigSelected
-    evalAll evalSelected evalSelectedDrvPaths introspect
-    metaConfig;
-
-  meta = hive.meta;
+    deploymentConfig
+    deploymentConfigSelected
+    evalSelected
+    evalSelectedDrvPaths
+    introspect
+    metaConfig
+    nodes
+    toplevel
+    ;
 }
