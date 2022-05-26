@@ -211,6 +211,4 @@ in {
     metaConfig;
 
   meta = hive.meta;
-
-  nixosModules = { inherit (colmenaOptions) deploymentOptions; };
 }
