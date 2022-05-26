@@ -58,14 +58,14 @@
     };
 
     devShell = pkgs.mkShell {
+      RUST_SRC_PATH = "${pkgs.rustPlatform.rustcSrc}/library";
+      NIX_PATH = "nixpkgs=${pkgs.path}";
+
       inputsFrom = [ defaultPackage packages.manualFast ];
       packages = with pkgs; [
         python3 editorconfig-checker
         clippy rust-analyzer cargo-outdated
       ];
-      shellHook = ''
-        export NIX_PATH=nixpkgs=${pkgs.path}
-      '';
     };
   }) // {
     overlay = final: prev: {
