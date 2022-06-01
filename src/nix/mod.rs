@@ -5,7 +5,6 @@ use std::path::Path;
 
 use serde::de;
 use serde::{Deserialize, Deserializer, Serialize};
-use users::get_current_username;
 use validator::{Validate, ValidationError as ValidationErrorType};
 
 use crate::error::{ColmenaResult, ColmenaError};
@@ -164,12 +163,7 @@ impl NodeConfig {
 
     pub fn to_ssh_host(&self) -> Option<Ssh> {
         self.target_host.as_ref().map(|target_host| {
-            let username =
-                match &self.target_user {
-                    Some(uname) => uname.clone(),
-                    None => get_current_username().unwrap().into_string().unwrap(),
-                };
-            let mut host = Ssh::new(username, target_host.clone());
+            let mut host = Ssh::new(self.target_user.clone(), target_host.clone());
             host.set_privilege_escalation_command(self.privilege_escalation_command.clone());
 
             if let Some(target_port) = self.target_port {
