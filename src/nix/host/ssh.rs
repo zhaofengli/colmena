@@ -18,7 +18,7 @@ use super::{CopyDirection, CopyOptions, RebootOptions, Host, key_uploader};
 #[derive(Debug)]
 pub struct Ssh {
     /// The username to use to connect.
-    user: String,
+    user: Option<String>,
 
     /// The hostname or IP address to connect to.
     host: String,
@@ -166,7 +166,7 @@ impl Host for Ssh {
 }
 
 impl Ssh {
-    pub fn new(user: String, host: String) -> Self {
+    pub fn new(user: Option<String>, host: String) -> Self {
         Self {
             user,
             host,
@@ -197,7 +197,7 @@ impl Ssh {
     pub fn ssh(&self, command: &[&str]) -> Command {
         let options = self.ssh_options();
         let options_str = options.join(" ");
-        let privilege_escalation_command = if self.user != "root" {
+        let privilege_escalation_command = if self.user.as_deref() != Some("root") {
             self.privilege_escalation_command.as_slice()
         } else {
             &[]
@@ -224,7 +224,10 @@ impl Ssh {
     }
 
     fn ssh_target(&self) -> String {
-        format!("{}@{}", self.user, self.host)
+        match &self.user {
+            Some(n) => format!("{}@{}", n, self.host),
+            None => self.host.clone(),
+        }
     }
 
     fn nix_copy_closure(&self, path: &StorePath, direction: CopyDirection, options: CopyOptions) -> Command {
