@@ -64,6 +64,7 @@
 
       inputsFrom = [ defaultPackage packages.manualFast ];
       packages = with pkgs; [
+        bashInteractive
         python3 editorconfig-checker
         clippy rust-analyzer cargo-outdated
       ];
