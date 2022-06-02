@@ -89,4 +89,12 @@ in {
   deployer = tools.getStandaloneConfigFor "deployer";
   beta = tools.getStandaloneConfigFor "beta";
   gamma = tools.getStandaloneConfigFor "gamma";
+
+  "gamma.tld" = { lib, ... }: {
+    imports = [
+      (tools.getStandaloneConfigFor "gamma")
+    ];
+
+    deployment.tags = lib.mkForce [];
+  };
 }
