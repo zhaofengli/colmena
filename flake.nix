@@ -52,6 +52,7 @@
     };
 
     defaultApp = self.apps.${system}.colmena;
+    apps.default = self.apps.${system}.colmena;
     apps.colmena = {
       type = "app";
       program = "${defaultPackage}/bin/colmena";
