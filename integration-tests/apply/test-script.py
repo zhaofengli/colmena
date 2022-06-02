@@ -102,3 +102,7 @@ with subtest("Check that our Nix store test is actually working"):
     deployer.succeed(f"nix-build -E 'with import <nixpkgs> {{}}; writeText \"forbidden-text.txt\" \"{poison}\"'")
     new_store_paths = " ".join(get_new_store_paths())
     deployer.succeed(f"grep -r '{poison}' {new_store_paths}")
+
+with subtest("Check that we can build nodes with dots in their names"):
+    deployer.succeed("cd /tmp/bundle &&" \
+        f"{colmena} build --evaluator {evaluator} --eval-node-limit 4 --on gamma.tld")
