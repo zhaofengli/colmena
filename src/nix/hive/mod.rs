@@ -1,3 +1,8 @@
+mod assets;
+
+#[cfg(test)]
+mod tests;
+
 use std::collections::HashMap;
 use std::io::Write;
 use std::path::{Path, PathBuf};
@@ -23,13 +28,7 @@ use super::deployment::TargetNode;
 use crate::error::ColmenaResult;
 use crate::util::{CommandExecution, CommandExt};
 use crate::job::JobHandle;
-
-#[cfg(test)]
-mod tests;
-
-const HIVE_EVAL: &[u8] = include_bytes!("eval.nix");
-const HIVE_OPTIONS: &[u8] = include_bytes!("options.nix");
-const HIVE_MODULES: &[u8] = include_bytes!("modules.nix");
+use assets::Assets;
 
 #[derive(Debug)]
 pub enum HivePath {
@@ -53,14 +52,8 @@ pub struct Hive {
     /// or "flake.nix".
     context_dir: Option<PathBuf>,
 
-    /// Path to temporary file containing eval.nix.
-    eval_nix: TempPath,
-
-    /// Path to temporary file containing options.nix.
-    options_nix: TempPath,
-
-    /// Path to temporary file containing modules.nix.
-    modules_nix: TempPath,
+    /// Static files required to evaluate a Hive configuration.
+    assets: Assets,
 
     /// Whether to pass --show-trace in Nix commands.
     show_trace: bool,
@@ -118,21 +111,12 @@ impl HivePath {
 
 impl Hive {
     pub fn new(path: HivePath) -> ColmenaResult<Self> {
-        let mut eval_nix = NamedTempFile::new()?;
-        let mut options_nix = NamedTempFile::new()?;
-        let mut modules_nix = NamedTempFile::new()?;
-        eval_nix.write_all(HIVE_EVAL).unwrap();
-        options_nix.write_all(HIVE_OPTIONS).unwrap();
-        modules_nix.write_all(HIVE_MODULES).unwrap();
-
         let context_dir = path.context_dir();
 
         Ok(Self {
             path,
             context_dir,
-            eval_nix: eval_nix.into_temp_path(),
-            options_nix: options_nix.into_temp_path(),
-            modules_nix: modules_nix.into_temp_path(),
+            assets: Assets::new(),
             show_trace: false,
             machines_file: RwLock::new(None),
         })
@@ -353,26 +337,7 @@ impl Hive {
 
     /// Returns the base expression from which the evaluated Hive can be used.
     fn get_base_expression(&self) -> String {
-        match self.path() {
-            HivePath::Legacy(path) => {
-                format!(
-                    "with builtins; let eval = import {}; hive = eval {{ rawHive = import {}; colmenaOptions = import {}; colmenaModules = import {}; }}; in ",
-                    self.eval_nix.to_str().unwrap(),
-                    path.to_str().unwrap(),
-                    self.options_nix.to_str().unwrap(),
-                    self.modules_nix.to_str().unwrap(),
-                )
-            }
-            HivePath::Flake(flake) => {
-                format!(
-                    "with builtins; let eval = import {}; hive = eval {{ flakeUri = \"{}\"; colmenaOptions = import {}; colmenaModules = import {}; }}; in ",
-                    self.eval_nix.to_str().unwrap(),
-                    flake.uri(),
-                    self.options_nix.to_str().unwrap(),
-                    self.modules_nix.to_str().unwrap(),
-                )
-            }
-        }
+        self.assets.get_base_expression(self.path())
     }
 
     /// Returns whether this Hive is a flake.
