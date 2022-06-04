@@ -211,7 +211,7 @@ impl Deployment {
         -> ColmenaResult<()>
     {
         let eval_limit = self.evaluation_node_limit.get_limit()
-            .unwrap_or_else(|| self.targets.len());
+            .unwrap_or(self.targets.len());
 
         let mut futures = Vec::new();
 
@@ -246,7 +246,7 @@ impl Deployment {
 
         let futures = job.run(|job| async move {
             let mut evaluator = NixEvalJobs::default();
-            let eval_limit = self.evaluation_node_limit.get_limit().unwrap_or_else(|| self.targets.len());
+            let eval_limit = self.evaluation_node_limit.get_limit().unwrap_or(self.targets.len());
             evaluator.set_eval_limit(eval_limit);
             evaluator.set_job(job.clone());
 

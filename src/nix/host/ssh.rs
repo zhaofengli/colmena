@@ -136,14 +136,10 @@ impl Host for Ssh {
 
         // Wait for node to come back up
         loop {
-            match self.get_boot_id().await {
-                Ok(new_id) => {
-                    if new_id != old_id {
-                        break;
-                    }
-                }
-                Err(_) => {
-                    // Ignore errors while waiting
+            // Ignore errors while waiting
+            if let Ok(new_id) = self.get_boot_id().await {
+                if new_id != old_id {
+                    break;
                 }
             }
 
