@@ -84,7 +84,7 @@ To upload keys without building or deploying the rest of the configuration, use 
         .arg(Arg::new("reboot")
             .long("reboot")
             .help("Reboot nodes after activation")
-            .long_help("Reboots nodes after activation and wait for them to come back up.")
+            .long_help("Reboots nodes after activation and waits for them to come back up.")
             .takes_value(false))
         .arg(Arg::new("no-substitutes")
             .long("no-substitutes")
