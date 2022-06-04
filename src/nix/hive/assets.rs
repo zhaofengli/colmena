@@ -5,7 +5,7 @@
 //! to ease distribution. The files are written to a temporary path when
 //! we need to use them.
 
-use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::Write;
 use std::os::unix::fs::OpenOptionsExt;
 
@@ -70,7 +70,7 @@ impl Assets {
 fn create_file(base: &TempDir, name: &str, executable: bool, contents: &[u8]) {
     let mode = if executable { 0o700 } else { 0o600 };
     let path = base.path().join(name);
-    let mut f = File::options()
+    let mut f = OpenOptions::new()
         .create_new(true)
         .write(true)
         .mode(mode)
