@@ -80,7 +80,7 @@ let
       }
     '';
   in
-    if typeOf pkgConf == "path" then
+    if typeOf pkgConf == "path" || (typeOf pkgConf == "set" && pkgConf ? outPath) then
       if hermetic then throw (uninitializedError "a path to Nixpkgs")
       # The referenced file might return an initialized Nixpkgs attribute set directly
       else mkNixpkgs configName (import pkgConf)

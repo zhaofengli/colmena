@@ -320,6 +320,22 @@ fn test_nixpkgs_system() {
 }
 
 #[test]
+fn test_nixpkgs_path_like() {
+    TempHive::valid(r#"
+      {
+        meta = {
+          nixpkgs = {
+            outPath = <nixpkgs>;
+          };
+        };
+        test = { pkgs, ... }: {
+          boot.isContainer = true;
+        };
+      }
+    "#);
+}
+
+#[test]
 fn test_nixpkgs_overlay_meta_nixpkgs() {
     // Only set overlays in meta.nixpkgs
     TempHive::eval_success(r#"
