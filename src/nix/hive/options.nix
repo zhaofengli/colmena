@@ -118,8 +118,8 @@ with builtins; rec {
         };
         targetUser = lib.mkOption {
           description = ''
-            The user to use to log into the remote node. If null, login as the
-            current user.
+            The user to use to log into the remote node. If set to null, the
+            target user will not be specified in SSH invocations.
           '';
           type = types.nullOr types.str;
           default = "root";

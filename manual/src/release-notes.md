@@ -3,6 +3,7 @@
 ## Release 0.4.0 (Unreleased)
 
 - `--reboot` is added to trigger a reboot and wait for the node to come back up.
+- The target user is no longer explicitly set when `deployment.targetUser` is null ([#91](https://github.com/zhaofengli/colmena/pull/91)).
 
 ## [Release 0.3.0](https://github.com/zhaofengli/colmena/releases/tag/v0.3.0) (2022/04/27)
 
