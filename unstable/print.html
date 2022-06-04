@@ -306,6 +306,7 @@ This binary cache contains unstable versions of Colmena built by <a href="https:
       meta = {
         nixpkgs = import nixpkgs {
           system = &quot;x86_64-linux&quot;;
+          overlays = [];
         };
       };
 
@@ -761,8 +762,8 @@ null or unsigned integer, meaning &gt;=0</p>
 <pre><code>null
 </code></pre>
 <h2 id="deploymenttargetuser"><a class="header" href="#deploymenttargetuser">deployment.targetUser</a></h2>
-<p>The user to use to log into the remote node. If null, login as the
-current user.</p>
+<p>The user to use to log into the remote node. If set to null, the
+target user will not be specified in SSH invocations.</p>
 <p><em><em>Type</em></em>:
 null or string</p>
 <p><em><em>Default</em></em></p>
@@ -2130,7 +2131,7 @@ Apply configurations on remote machines
             [default: 10]
 
         <span class="ansi32">--reboot</span>
-            Reboots nodes after activation and wait for them to come back up.
+            Reboots nodes after activation and waits for them to come back up.
 
         <span class="ansi32">--show-trace</span>
             Passes --show-trace to Nix commands
@@ -2192,11 +2193,6 @@ Apply configurations on the local machine
 
         <span class="ansi32">--sudo</span>
             Attempt to escalate privileges if not run as root
-
-        <span class="ansi32">--sudo-command</span> <span class="ansi32">&lt;COMMAND&gt;</span>
-            Command to use to escalate privileges
-            
-            [default: sudo]
 
     <span class="ansi32">-v</span>, <span class="ansi32">--verbose</span>
             Deactivates the progress spinner and prints every line of output.
@@ -2311,7 +2307,7 @@ This subcommand behaves as if you invoked `apply` with the `build` goal.
             [default: 10]
 
         <span class="ansi32">--reboot</span>
-            Reboots nodes after activation and wait for them to come back up.
+            Reboots nodes after activation and waits for them to come back up.
 
         <span class="ansi32">--show-trace</span>
             Passes --show-trace to Nix commands
@@ -2429,7 +2425,7 @@ This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
             [default: 10]
 
         <span class="ansi32">--reboot</span>
-            Reboots nodes after activation and wait for them to come back up.
+            Reboots nodes after activation and waits for them to come back up.
 
         <span class="ansi32">--show-trace</span>
             Passes --show-trace to Nix commands
@@ -2606,6 +2602,9 @@ Show information about the current Nix installation
 <h2 id="release-040-unreleased"><a class="header" href="#release-040-unreleased">Release 0.4.0 (Unreleased)</a></h2>
 <ul>
 <li><code>--reboot</code> is added to trigger a reboot and wait for the node to come back up.</li>
+<li>The target user is no longer explicitly set when <code>deployment.targetUser</code> is null (<a href="https://github.com/zhaofengli/colmena/pull/91">#91</a>).</li>
+<li>In <code>apply-local</code>, we now only escalate privileges during activation (<a href="https://github.com/zhaofengli/colmena/issues/85">#85</a>).</li>
+<li>Impure overlays are no longer imported by default if a path is specified in <code>meta.nixpkgs</code> (<a href="https://github.com/zhaofengli/colmena/issues/39">#39</a>)</li>
 </ul>
 <h2 id="release-030-20220427"><a class="header" href="#release-030-20220427"><a href="https://github.com/zhaofengli/colmena/releases/tag/v0.3.0">Release 0.3.0</a> (2022/04/27)</a></h2>
 <ul>
