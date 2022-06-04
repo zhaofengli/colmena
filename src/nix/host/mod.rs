@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::JobHandle;
-use super::{StorePath, Profile, Goal, Key, NixOptions};
+use super::{StorePath, Profile, Goal, Key};
 
 mod ssh;
 pub use ssh::Ssh;
@@ -13,10 +13,6 @@ mod local;
 pub use local::Local;
 
 mod key_uploader;
-
-pub(crate) fn local(nix_options: NixOptions) -> Box<dyn Host + 'static> {
-    Box::new(Local::new(nix_options))
-}
 
 #[derive(Copy, Clone, Debug)]
 pub enum CopyDirection {

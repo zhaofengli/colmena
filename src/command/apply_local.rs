@@ -1,10 +1,8 @@
-use std::env;
 use regex::Regex;
 use std::collections::HashMap;
 
 use clap::{Arg, Command as ClapCommand, ArgMatches};
 use tokio::fs;
-use tokio::process::Command;
 
 use crate::error::ColmenaError;
 use crate::nix::deployment::{
@@ -13,7 +11,7 @@ use crate::nix::deployment::{
     TargetNode,
     Options,
 };
-use crate::nix::{NodeName, host};
+use crate::nix::{NodeName, host::Local as LocalHost};
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
@@ -29,12 +27,6 @@ pub fn subcommand() -> ClapCommand<'static> {
         .arg(Arg::new("sudo")
             .long("sudo")
             .help("Attempt to escalate privileges if not run as root"))
-        .arg(Arg::new("sudo-command")
-            .long("sudo-command")
-            .value_name("COMMAND")
-            .help("Command to use to escalate privileges")
-            .default_value("sudo")
-            .takes_value(true))
         .arg(Arg::new("verbose")
             .short('v')
             .long("verbose")
@@ -53,13 +45,22 @@ By default, Colmena will deploy keys set in `deployment.keys` before activating 
             .long("node")
             .help("Override the node name to use")
             .takes_value(true))
-        .arg(Arg::new("we-are-launched-by-sudo")
-            .long("we-are-launched-by-sudo")
+
+        // Removed
+        .arg(Arg::new("sudo-command")
+            .long("sudo-command")
+            .value_name("COMMAND")
+            .help("Removed: Configure deployment.privilegeEscalationCommand in node configuration")
             .hide(true)
-            .takes_value(false))
+            .takes_value(true))
 }
 
 pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
+    if local_args.occurrences_of("sudo-command") > 0 {
+        log::error!("--sudo-command has been removed. Please configure it in deployment.privilegeEscalationCommand in the node configuration.");
+        quit::with_code(1);
+    }
+
     // Sanity check: Are we running NixOS?
     if let Ok(os_release) = fs::read_to_string("/etc/os-release").await {
         let re = Regex::new(r#"ID="?nixos"?"#).unwrap();
@@ -72,23 +73,14 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         quit::with_code(5);
     }
 
-    // Escalate privileges?
+    let escalate_privileges = local_args.is_present("sudo");
+    let verbose = local_args.is_present("verbose") || escalate_privileges; // cannot use spinners with interactive sudo
+
     {
         let euid: u32 = unsafe { libc::geteuid() };
-        if euid != 0 {
-            if local_args.is_present("we-are-launched-by-sudo") {
-                log::error!("Failed to escalate privileges. We are still not root despite a successful sudo invocation.");
-                quit::with_code(3);
-            }
-
-            if local_args.is_present("sudo") {
-                let sudo = local_args.value_of("sudo-command").unwrap();
-
-                escalate(sudo).await;
-            } else {
-                log::warn!("Colmena was not started by root. This is probably not going to work.");
-                log::warn!("Hint: Add the --sudo flag.");
-            }
+        if euid != 0 && !escalate_privileges {
+            log::warn!("Colmena was not started by root. This is probably not going to work.");
+            log::warn!("Hint: Add the --sudo flag.");
         }
     }
 
@@ -113,9 +105,15 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
                 log::error!("Hint: Set deployment.allowLocalDeployment to true.");
                 quit::with_code(2);
             }
+            let mut host = LocalHost::new(nix_options);
+            if escalate_privileges {
+                let command = info.privilege_escalation_command().to_owned();
+                host.set_privilege_escalation_command(Some(command));
+            }
+
             TargetNode::new(
                 hostname.clone(),
-                Some(host::local(nix_options)),
+                Some(host.upcast()),
                 info.clone(),
             )
         } else {
@@ -127,7 +125,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     let mut targets = HashMap::new();
     targets.insert(hostname.clone(), target);
 
-    let mut output = SimpleProgressOutput::new(local_args.is_present("verbose"));
+    let mut output = SimpleProgressOutput::new(verbose);
     let progress = output.get_sender();
 
     let mut deployment = Deployment::new(hive, targets, goal, progress);
@@ -148,22 +146,4 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     deployment?; output?;
 
     Ok(())
-}
-
-async fn escalate(sudo: &str) -> ! {
-    // Restart ourselves with sudo
-    let argv: Vec<String> = env::args().collect();
-
-    let exit = Command::new(sudo)
-        .arg("--")
-        .args(argv)
-        .arg("--we-are-launched-by-sudo")
-        .spawn()
-        .expect("Failed to run sudo to escalate privileges")
-        .wait()
-        .await
-        .expect("Failed to wait on child");
-
-    // Exit with the same exit code
-    quit::with_code(exit.code().unwrap());
 }

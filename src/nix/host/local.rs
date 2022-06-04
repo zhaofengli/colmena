@@ -19,6 +19,7 @@ use super::{CopyDirection, CopyOptions, Host, key_uploader};
 pub struct Local {
     job: Option<JobHandle>,
     nix_options: NixOptions,
+    privilege_escalation_command: Option<Vec<String>>,
 }
 
 impl Local {
@@ -26,6 +27,7 @@ impl Local {
         Self {
             job: None,
             nix_options,
+            privilege_escalation_command: None,
         }
     }
 }
@@ -71,17 +73,15 @@ impl Host for Local {
 
         if goal.should_switch_profile() {
             let path = profile.as_path().to_str().unwrap();
-            Command::new("nix-env")
-                .args(&["--profile", SYSTEM_PROFILE])
-                .args(&["--set", path])
+            self.make_privileged_command(&["nix-env", "--profile", SYSTEM_PROFILE, "--set", path])
                 .passthrough()
                 .await?;
         }
 
-        let activation_command = profile.activation_command(goal).unwrap();
-        let mut command = Command::new(&activation_command[0]);
-        command
-            .args(&activation_command[1..]);
+        let command = {
+            let activation_command = profile.activation_command(goal).unwrap();
+            self.make_privileged_command(&activation_command)
+        };
 
         let mut execution = CommandExecution::new(command);
 
@@ -126,6 +126,14 @@ impl Host for Local {
 }
 
 impl Local {
+    pub fn set_privilege_escalation_command(&mut self, command: Option<Vec<String>>) {
+        self.privilege_escalation_command = command;
+    }
+
+    pub fn upcast(self) -> Box<dyn Host> {
+        Box::new(self)
+    }
+
     /// "Uploads" a single key.
     async fn upload_key(&mut self, name: &str, key: &Key, require_ownership: bool) -> ColmenaResult<()> {
         if let Some(job) = &self.job {
@@ -144,5 +152,21 @@ impl Local {
 
         let uploader = command.spawn()?;
         key_uploader::feed_uploader(uploader, key, self.job.clone()).await
+    }
+
+    /// Constructs a command with privilege escalation.
+    fn make_privileged_command<S: AsRef<str>>(&self, command: &[S]) -> Command {
+        let mut full_command = Vec::new();
+        if let Some(esc) = &self.privilege_escalation_command {
+            full_command.extend(esc.iter().map(|s| s.as_str()));
+        }
+        full_command.extend(command.iter().map(|s| s.as_ref()));
+
+        let mut result = Command::new(full_command[0]);
+        if full_command.len() > 1 {
+            result.args(&full_command[1..]);
+        }
+
+        result
     }
 }

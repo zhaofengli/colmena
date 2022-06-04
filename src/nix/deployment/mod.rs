@@ -35,6 +35,7 @@ use super::{
     CopyDirection,
     CopyOptions,
     RebootOptions,
+    host::Local as LocalHost,
     key::{Key, UploadAt as UploadKeyAt},
     evaluator::{
         DrvSetEvaluator,
@@ -42,7 +43,6 @@ use super::{
         EvalError,
     },
 };
-use super::host;
 
 /// A deployment.
 pub type DeploymentHandle = Arc<Deployment>;
@@ -450,7 +450,7 @@ impl Deployment {
         let arc_self = self.clone();
         let profile: Profile = build_job.run(|job| async move {
             // FIXME: Remote builder?
-            let mut builder = host::local(arc_self.nix_options.clone());
+            let mut builder = LocalHost::new(arc_self.nix_options.clone()).upcast();
             builder.set_job(Some(job.clone()));
 
             let profile = profile_drv.realize(&mut builder).await?;

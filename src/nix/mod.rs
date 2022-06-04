@@ -156,6 +156,8 @@ impl NodeConfig {
     #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
     pub fn allows_local_deployment(&self) -> bool { self.allow_local_deployment }
 
+    pub fn privilege_escalation_command(&self) -> &Vec<String> { &self.privilege_escalation_command }
+
     pub fn build_on_target(&self) -> bool { self.build_on_target }
     pub fn set_build_on_target(&mut self, enable: bool) {
         self.build_on_target = enable;
