@@ -407,6 +407,9 @@ fn test_nixpkgs_config_meta_nixpkgs() {
           };
         };
         test = { pkgs, ... }: {
+          nixpkgs.config = {
+            allowAliases = false;
+          };
           boot.isContainer = assert pkgs.config.allowUnfree; true;
         };
       }

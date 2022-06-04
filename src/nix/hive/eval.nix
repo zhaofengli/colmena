@@ -118,19 +118,21 @@ let
 
     # Here we need to merge the configurations in meta.nixpkgs
     # and in machine config.
-    nixpkgsModule = { config, lib, ... }: {
+    nixpkgsModule = { config, lib, ... }: let
+      hasTypedConfig = lib.versionAtLeast lib.version "22.11pre";
+    in {
       nixpkgs.overlays = lib.mkBefore npkgs.overlays;
-      nixpkgs.config = lib.mkOptionDefault npkgs.config;
+      nixpkgs.config = if hasTypedConfig then lib.mkBefore npkgs.config else lib.mkOptionDefault npkgs.config;
 
-      # The merging of nixpkgs.config seems to be broken.
-      # Let's warn the user if not all config attributes set in
-      # meta.nixpkgs are overridden.
       warnings = let
+        # Before 22.11, most config keys were untyped thus the merging
+        # was broken. Let's warn the user if not all config attributes
+        # set in meta.nixpkgs are overridden.
         metaKeys = attrNames npkgs.config;
         nodeKeys = [ "doCheckByDefault" "warnings" "allowAliases" ] ++ (attrNames config.nixpkgs.config);
         remainingKeys = filter (k: ! elem k nodeKeys) metaKeys;
       in
-        lib.optional (length remainingKeys != 0)
+        lib.optional (!hasTypedConfig && length remainingKeys != 0)
         "The following Nixpkgs configuration keys set in meta.nixpkgs will be ignored: ${toString remainingKeys}";
     };
   in evalConfig {
