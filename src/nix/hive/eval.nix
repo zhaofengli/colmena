@@ -73,6 +73,7 @@ let
           colmena = {
             ${configName} = import nixpkgs {
               system = "${currentSystem}";
+              overlays = [];
             };
           };
         };
@@ -85,7 +86,7 @@ let
       else mkNixpkgs configName (import pkgConf)
     else if typeOf pkgConf == "lambda" then
       if hermetic then throw (uninitializedError "a Nixpkgs lambda")
-      else pkgConf {}
+      else pkgConf { overlays = []; }
     else if typeOf pkgConf == "set" then
       if pkgConf ? outputs then throw (uninitializedError "an uninitialized Nixpkgs input")
       else pkgConf

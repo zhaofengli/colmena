@@ -53,6 +53,7 @@ Here is a short example:
       meta = {
         nixpkgs = import nixpkgs {
           system = "x86_64-linux";
+          overlays = [];
         };
       };
 
