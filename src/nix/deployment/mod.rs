@@ -438,7 +438,7 @@ impl Deployment {
     }
 
     /// Builds and pushes a system profile on a node.
-    async fn build_and_push_node(self: &DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile_drv: ProfileDerivation)
+    async fn build_and_push_node(self: &DeploymentHandle, parent: JobHandle, target: TargetNode, profile_drv: ProfileDerivation)
         -> ColmenaResult<(TargetNode, Profile)>
     {
         let nodes = vec![target.name.clone()];
@@ -458,6 +458,26 @@ impl Deployment {
             job.success_with_message(format!("Built {:?}", profile.as_path()))?;
             Ok(profile)
         }).await?;
+
+        // Create GC root
+        let profile_r = profile.clone();
+        let mut target = if self.options.create_gc_roots {
+            let job = parent.create_job(JobType::CreateGcRoots, nodes.clone())?;
+            let arc_self = self.clone();
+            job.run_waiting(|job| async move {
+                if let Some(dir) = arc_self.hive.context_dir() {
+                    job.state(JobState::Running)?;
+                    let path = dir.join(".gcroots").join(format!("node-{}", &*target.name));
+
+                    profile_r.create_gc_root(&path).await?;
+                } else {
+                    job.noop("No context directory to create GC roots in".to_string())?;
+                }
+                Ok(target)
+            }).await?
+        } else {
+            target
+        };
 
         if self.goal == Goal::Build {
             return Ok((target, profile));
@@ -494,7 +514,6 @@ impl Deployment {
         -> ColmenaResult<()>
     {
         let nodes = vec![target.name.clone()];
-        let target_name = target.name.clone();
 
         let permit = self.parallelism_limit.apply.acquire().await.unwrap();
 
@@ -558,7 +577,7 @@ impl Deployment {
         }).await?;
 
         // Upload post-activation keys
-        let target = if self.options.upload_keys {
+        let mut target = if self.options.upload_keys {
             let job = parent.create_job(JobType::UploadKeys, nodes.clone())?;
             job.run_waiting(|job| async move {
                 let keys = target.config.keys.iter()
@@ -579,30 +598,6 @@ impl Deployment {
                 host.upload_keys(&keys, true).await?;
 
                 job.success_with_message("Uploaded keys (post-activation)".to_string())?;
-                Ok(target)
-            }).await?
-        } else {
-            target
-        };
-
-        // Create GC root
-        let profile_r = profile.clone();
-        let mut target = if self.options.create_gc_roots {
-            let job = parent.create_job(JobType::CreateGcRoots, nodes.clone())?;
-            let arc_self = self.clone();
-            job.run_waiting(|job| async move {
-                if target.config.build_on_target() {
-                    job.noop("The system profile was built on target node itself".to_string())?;
-                }
-
-                if let Some(dir) = arc_self.hive.context_dir() {
-                    job.state(JobState::Running)?;
-                    let path = dir.join(".gcroots").join(format!("node-{}", &*target_name));
-
-                    profile_r.create_gc_root(&path).await?;
-                } else {
-                    job.noop("No context directory to create GC roots in".to_string())?;
-                }
                 Ok(target)
             }).await?
         } else {
