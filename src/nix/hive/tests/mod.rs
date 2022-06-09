@@ -531,7 +531,7 @@ fn test_hive_introspect() {
     "#);
 
     let expr = r#"
-      { pkgs, lib, nodes }: 
+      { pkgs, lib, nodes }:
         assert pkgs ? hello;
         assert lib ? versionAtLeast;
         nodes.test.config.boot.isContainer
