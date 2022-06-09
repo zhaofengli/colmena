@@ -519,3 +519,26 @@ fn test_hive_autocall() {
       }
     "#);
 }
+
+#[test]
+fn test_hive_introspect() {
+    let hive = TempHive::new(r#"
+      {
+        test = { ... }: {
+          boot.isContainer = true;
+        };
+      }
+    "#);
+
+    let expr = r#"
+      { pkgs, lib, nodes }: 
+        assert pkgs ? hello;
+        assert lib ? versionAtLeast;
+        nodes.test.config.boot.isContainer
+    "#.to_string();
+
+    let eval = block_on(hive.introspect(expr, false))
+        .unwrap();
+
+    assert_eq!("true", eval);
+}

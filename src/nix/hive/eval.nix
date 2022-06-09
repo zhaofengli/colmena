@@ -190,7 +190,8 @@ let
   evalSelectedDrvPaths = names: lib.mapAttrs (k: v: v.drvPath) (evalSelected names);
 
   introspect = function: function {
-    inherit nixpkgs lib;
+    inherit lib;
+    pkgs = nixpkgs;
     nodes = uncheckedNodes;
   };
 
