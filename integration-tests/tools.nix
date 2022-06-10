@@ -10,6 +10,7 @@
 { insideVm ? false
 , deployers ? [ "deployer" ]           # Nodes configured as deployers (with Colmena and pre-built system closure)
 , targets ? [ "alpha" "beta" "gamma" ] # Nodes configured as targets (minimal config)
+, extraDeployerConfig ? {}             # Extra config on the deployer
 , prebuiltTarget ? "alpha"             # Target node to prebuild system closure for, or null
 
 , pkgs ? if insideVm then import <nixpkgs> {} else throw "Must specify pkgs"
@@ -38,6 +39,10 @@ let
     # so it can build system profiles for the targets without
     # network access.
     deployerConfig = { lib, config, ... }: {
+      imports = [
+        extraDeployerConfig
+      ];
+
       nix.nixPath = [
         "nixpkgs=${pkgs.path}"
       ];

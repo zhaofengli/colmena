@@ -19,5 +19,8 @@ in {
     };
 
     environment.etc."deployment".text = "SUCCESS";
+
+    # /run/keys/key-text
+    deployment.keys."key-text".text = "SECRET";
   };
 }
