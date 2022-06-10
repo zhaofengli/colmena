@@ -6,6 +6,7 @@
 - The target user is no longer explicitly set when `deployment.targetUser` is null ([#91](https://github.com/zhaofengli/colmena/pull/91)).
 - In `apply-local`, we now only escalate privileges during activation ([#85](https://github.com/zhaofengli/colmena/issues/85)).
 - Impure overlays are no longer imported by default if a path is specified in `meta.nixpkgs` ([#39](https://github.com/zhaofengli/colmena/issues/39))
+- GC roots are now created right after the builds are complete, as opposed to after activation.
 
 ## [Release 0.3.0](https://github.com/zhaofengli/colmena/releases/tag/v0.3.0) (2022/04/27)
 
