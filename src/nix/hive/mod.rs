@@ -10,7 +10,7 @@ use std::convert::AsRef;
 
 use tempfile::{NamedTempFile, TempPath};
 use tokio::process::Command;
-use tokio::sync::RwLock;
+use tokio::sync::OnceCell;
 use serde::Serialize;
 use validator::Validate;
 
@@ -22,7 +22,7 @@ use super::{
     NodeFilter,
     NixExpression,
     ProfileDerivation,
-    StorePath,
+    StorePath, MetaConfig,
 };
 use super::deployment::TargetNode;
 use crate::error::ColmenaResult;
@@ -58,8 +58,7 @@ pub struct Hive {
     /// Whether to pass --show-trace in Nix commands.
     show_trace: bool,
 
-    /// The cached machines_file expression.
-    machines_file: RwLock<Option<Option<String>>>,
+    meta_config: OnceCell<MetaConfig>,
 }
 
 struct NixInstantiate<'hive> {
@@ -113,17 +112,24 @@ impl Hive {
     pub fn new(path: HivePath) -> ColmenaResult<Self> {
         let context_dir = path.context_dir();
 
-        Ok(Self {
+        Ok(Self{
             path,
             context_dir,
             assets: Assets::new(),
             show_trace: false,
-            machines_file: RwLock::new(None),
+            meta_config: OnceCell::new(),
         })
     }
 
     pub fn context_dir(&self) -> Option<&Path> {
         self.context_dir.as_ref().map(|p| p.as_ref())
+    }
+
+    pub async fn get_meta_config(&self) -> ColmenaResult<&MetaConfig> {
+      self.meta_config.get_or_try_init(||async {
+        self.nix_instantiate("hive.metaConfig").eval()
+            .capture_json().await
+      }).await
     }
 
     pub fn set_show_trace(&mut self, value: bool) {
@@ -142,7 +148,7 @@ impl Hive {
         let mut options = NixOptions::default();
         options.set_show_trace(self.show_trace);
 
-        if let Some(machines_file) = self.machines_file().await? {
+        if let Some(machines_file) = &self.get_meta_config().await?.machines_file {
             options.set_builders(Some(format!("@{}", machines_file)));
         }
 
@@ -317,22 +323,6 @@ impl Hive {
             self.nix_instantiate(&expression).eval_with_builders().await?
                 .capture_json().await
         }
-    }
-
-    /// Retrieve the machinesFile setting for the Hive.
-    async fn machines_file(&self) -> ColmenaResult<Option<String>> {
-        if let Some(machines_file) = &*self.machines_file.read().await {
-            return Ok(machines_file.clone());
-        }
-
-        let expr = "toJSON (hive.meta.machinesFile or null)";
-        let s: String = self.nix_instantiate(expr).eval()
-            .capture_json().await?;
-
-        let parsed: Option<String> = serde_json::from_str(&s).unwrap();
-        self.machines_file.write().await.replace(parsed.clone());
-
-        Ok(parsed)
     }
 
     /// Returns the base expression from which the evaluated Hive can be used.

@@ -8,6 +8,8 @@
   flakes-streaming = import ./flakes { evaluator = "streaming"; };
   parallel = import ./parallel {};
 
+  allow-apply-all = import ./allow-apply-all {};
+
   apply-stable = let
     test = import ./apply { pkgs = import ./nixpkgs-stable.nix; };
   in test.override (old: {

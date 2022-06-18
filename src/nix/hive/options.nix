@@ -282,6 +282,19 @@ with builtins; rec {
         default = {};
         type = types.attrsOf types.unspecified;
       };
+      allowApplyAll = lib.mkOption {
+        description = ''
+          Whether to allow deployments without a node filter set.
+
+          If set to false, a node filter must be specified with `--on` when
+          deploying.
+
+          It helps prevent accidental deployments to the entire cluster
+          when tags are used (e.g., `@production` and `@staging`).
+        '';
+        default = true;
+        type = types.bool;
+      };
     };
   };
 }

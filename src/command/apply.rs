@@ -151,6 +151,16 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         .map(NodeFilter::new)
         .transpose()?;
 
+    if !filter.is_some() {
+      // User did not specify node, we should check meta and see rules
+      let meta = hive.get_meta_config().await?;
+      if !meta.allow_apply_all {
+        log::error!("No node filter is specified and meta.allowApplyAll is set to false.");
+        log::error!("Hint: Filter the nodes with --on.");
+        quit::with_code(1);
+      }
+    }
+
     let goal_arg = local_args.value_of("goal").unwrap();
     let goal = Goal::from_str(goal_arg).unwrap();
 
