@@ -153,6 +153,17 @@ However, you cannot specify both at the same time.</p>
 
     Looking to improve the descriptions? Head to `src/nix/hive/eval.nix` in the repo :)
 -->
+<h2 id="allowapplyall"><a class="header" href="#allowapplyall">allowApplyAll</a></h2>
+<p>Whether to allow deployments without a node filter set.</p>
+<p>If set to false, a node filter must be specified with <code>--on</code> when
+deploying.</p>
+<p>It helps prevent accidental deployments to the entire cluster
+when tags are used (e.g., <code>@production</code> and <code>@staging</code>).</p>
+<p><em><em>Type</em></em>:
+boolean</p>
+<p><em><em>Default</em></em></p>
+<pre><code>true
+</code></pre>
 <h2 id="description"><a class="header" href="#description">description</a></h2>
 <p>A short description for the configuration.</p>
 <p><em><em>Type</em></em>:

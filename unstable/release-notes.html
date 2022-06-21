@@ -149,6 +149,7 @@
 <li>In <code>apply-local</code>, we now only escalate privileges during activation (<a href="https://github.com/zhaofengli/colmena/issues/85">#85</a>).</li>
 <li>Impure overlays are no longer imported by default if a path is specified in <code>meta.nixpkgs</code> (<a href="https://github.com/zhaofengli/colmena/issues/39">#39</a>)</li>
 <li>GC roots are now created right after the builds are complete, as opposed to after activation.</li>
+<li>The <a href="./reference/meta.html#allowapplyall"><code>meta.allowApplyAll</code></a> option has been added. If set to false, deployments without a node filter (<code>--on</code>) are disallowed.</li>
 </ul>
 <h2 id="release-030-20220427"><a class="header" href="#release-030-20220427"><a href="https://github.com/zhaofengli/colmena/releases/tag/v0.3.0">Release 0.3.0</a> (2022/04/27)</a></h2>
 <ul>
