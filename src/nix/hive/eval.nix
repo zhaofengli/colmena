@@ -202,11 +202,21 @@ let
       };
     };
   };
+
+  # Add required config Key here since we don't want to eval nixpkgs
+  metaConfigKeys = [
+    "name" "description"
+    "machinesFile"
+    "allowApplyAll"
+  ];
+
+  metaConfig = lib.filterAttrs (n: v: elem n metaConfigKeys) hive.meta;
 in {
   inherit
     nodes toplevel
     deploymentConfig deploymentConfigSelected
-    evalAll evalSelected evalSelectedDrvPaths introspect;
+    evalAll evalSelected evalSelectedDrvPaths introspect
+    metaConfig;
 
   meta = hive.meta;
 

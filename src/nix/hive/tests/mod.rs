@@ -542,3 +542,22 @@ fn test_hive_introspect() {
 
     assert_eq!("true", eval);
 }
+
+#[test]
+fn test_hive_get_meta() {
+  let hive = TempHive::new(r#"
+      {
+        meta.allowApplyAll = false;
+        meta.specialArgs = {
+          this_is_new = false;
+        };
+      }
+  "#);
+
+  let eval = block_on(hive.get_meta_config())
+        .unwrap();
+
+  eprintln!("{:?}", eval);
+
+  assert!(!eval.allow_apply_all);
+}

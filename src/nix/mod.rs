@@ -82,6 +82,15 @@ pub struct NodeConfig {
     keys: HashMap<String, Key>,
 }
 
+#[derive(Debug, Clone, Validate, Deserialize)]
+pub struct MetaConfig {
+    #[serde(rename = "allowApplyAll")]
+    pub allow_apply_all: bool,
+
+    #[serde(rename = "machinesFile")]
+    pub machines_file: Option<String>,
+}
+
 /// Nix options.
 #[derive(Debug, Clone, Default)]
 pub struct NixOptions {
