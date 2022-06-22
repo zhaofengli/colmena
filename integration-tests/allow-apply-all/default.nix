@@ -12,7 +12,7 @@ in tools.makeTest {
   testScript = ''
     logs = deployer.fail("cd /tmp/bundle && run-copy-stderr ${tools.colmenaExec} apply")
 
-    assert "no filter supplied" in logs
+    assert "No node filter" in logs
 
     deployer.succeed("cd /tmp/bundle && run-copy-stderr ${tools.colmenaExec} apply --on @target")
   '';
