@@ -146,7 +146,7 @@ let
       colmenaOptions.deploymentOptions
       hive.defaults
     ] ++ configs;
-    specialArgs = hive.meta.specialArgs // {
+    specialArgs = hive.meta.specialArgs // (hive.meta.nodeSpecialArgs.${name} or {}) // {
       inherit name;
       nodes = uncheckedNodes;
     };
