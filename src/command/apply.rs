@@ -147,11 +147,14 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     let ssh_config = env::var("SSH_CONFIG_FILE")
         .ok().map(PathBuf::from);
 
+    let goal_arg = local_args.value_of("goal").unwrap();
+    let goal = Goal::from_str(goal_arg).unwrap();
+
     let filter = local_args.value_of("on")
         .map(NodeFilter::new)
         .transpose()?;
 
-    if !filter.is_some() {
+    if !filter.is_some() && goal != Goal::Build {
       // User did not specify node, we should check meta and see rules
       let meta = hive.get_meta_config().await?;
       if !meta.allow_apply_all {
@@ -160,9 +163,6 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         quit::with_code(1);
       }
     }
-
-    let goal_arg = local_args.value_of("goal").unwrap();
-    let goal = Goal::from_str(goal_arg).unwrap();
 
     let targets = hive.select_nodes(filter, ssh_config, goal.requires_target_host()).await?;
     let n_targets = targets.len();
