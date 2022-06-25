@@ -34,8 +34,8 @@ pub enum ColmenaError {
     #[snafu(display("Validation error"))]
     ValidationError { errors: ValidationErrors },
 
-    #[snafu(display("Failed to upload keys: {}", error))]
-    KeyError { error: key::KeyError },
+    #[snafu(display("Error processing key \"{}\": {}", name, error))]
+    KeyError { name: String, error: key::KeyError },
 
     #[snafu(display("Store path {:?} is not a derivation", store_path))]
     NotADerivation { store_path: StorePath },
@@ -74,12 +74,6 @@ pub enum ColmenaError {
 impl From<std::io::Error> for ColmenaError {
     fn from(error: std::io::Error) -> Self {
         Self::IoError { error }
-    }
-}
-
-impl From<key::KeyError> for ColmenaError {
-    fn from(error: key::KeyError) -> Self {
-        Self::KeyError { error }
     }
 }
 

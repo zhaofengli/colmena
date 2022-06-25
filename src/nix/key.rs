@@ -148,6 +148,7 @@ impl Key {
         }
     }
 
+    pub fn name(&self) -> &str { &self.name }
     pub fn path(&self) -> &Path { &self.path }
     pub fn user(&self) -> &str { &self.user }
     pub fn group(&self) -> &str { &self.group }

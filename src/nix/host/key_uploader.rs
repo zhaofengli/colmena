@@ -12,7 +12,7 @@ use shell_escape::unix::escape;
 use tokio::io::{AsyncWriteExt, BufReader};
 use tokio::process::Child;
 
-use crate::error::ColmenaResult;
+use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::JobHandle;
 use crate::nix::Key;
 use crate::util::capture_stream;
@@ -32,7 +32,11 @@ pub fn generate_script<'a>(key: &'a Key, destination: &'a Path, require_ownershi
 }
 
 pub async fn feed_uploader(mut uploader: Child, key: &Key, job: Option<JobHandle>) -> ColmenaResult<()> {
-    let mut reader = key.reader().await?;
+    let mut reader = key.reader().await
+        .map_err(|error| ColmenaError::KeyError {
+            name: key.name().to_owned(),
+            error,
+        })?;
     let mut stdin = uploader.stdin.take().unwrap();
 
     tokio::io::copy(reader.as_mut(), &mut stdin).await?;
