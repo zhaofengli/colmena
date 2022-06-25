@@ -65,8 +65,9 @@
       inputsFrom = [ defaultPackage packages.manualFast ];
       packages = with pkgs; [
         bashInteractive
-        python3 editorconfig-checker
+        editorconfig-checker
         clippy rust-analyzer cargo-outdated
+        python3 python3Packages.flake8
       ];
     };
   }) // {

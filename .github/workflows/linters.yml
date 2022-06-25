@@ -1,4 +1,4 @@
-name: Check EditorConfig
+name: Linters
 
 on:
   pull_request:
@@ -17,4 +17,8 @@ jobs:
           name: colmena
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-      - run: nix-shell --run "editorconfig-checker"
+      - name: Check EditorConfig
+        run: nix-shell --run "editorconfig-checker"
+
+      - name: Check flake8
+        run: nix-shell --run "flake8 manual/preprocess.py"

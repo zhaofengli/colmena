@@ -11,23 +11,25 @@
 
 import json
 import os
-import pprint
 import re
 import sys
+
 
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
+
 def process(book, version, unstable):
     marker_to_remove = "STABLE" if unstable else "UNSTABLE"
 
-    api_version = re.match("^[0-9]+\.[0-9]+(?=$|\.[0-9]+(.*)?$)", version)
+    api_version = re.match(r"^[0-9]+\.[0-9]+(?=$|\.[0-9]+(.*)?$)", version)
     if api_version:
         api_version = api_version.group()
     else:
         api_version = version
 
-    version_debug = f"{version} (apiVersion={api_version}, unstable={str(unstable)})"
+    version_debug = f"{version} " \
+        f"(apiVersion={api_version}, unstable={str(unstable)})"
 
     def replace_version_markers(s):
         s = s.replace("@version@", version)
@@ -40,29 +42,28 @@ def process(book, version, unstable):
         for sub_item in chapter["sub_items"]:
             process_item(sub_item)
 
-        regex = r".*\b{marker}_BEGIN\b(.|\n|\r)*?\b{marker}_END\b.*".format(marker=marker_to_remove)
+        regex = r".*\b{marker}_BEGIN\b(.|\n|\r)*?\b{marker}_END\b.*" \
+            .format(marker=marker_to_remove)
 
-        chapter["content"] = f"<!-- Generated from version {version_debug} -->\n" + chapter["content"]
-        chapter["content"] = re.sub(regex, "", chapter["content"])
-        chapter["content"] = replace_version_markers(chapter["content"])
-
-        #eprint(f"Processed {chapter['name']}")
+        chapter["content"] = \
+            f"<!-- Generated from version {version_debug} -->\n" \
+            + replace_version_markers(re.sub(regex, "", chapter["content"]))
 
     eprint(f"Version is {version_debug}")
 
     for section in book['sections']:
         process_item(section)
 
+
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         if sys.argv[1] == "supports":
-            #eprint("mdbook asked about support for", sys.argv[2])
             sys.exit(0)
 
     version = os.environ.get("COLMENA_VERSION", "unstable")
     unstable = bool(os.environ.get("COLMENA_UNSTABLE", ""))
 
-    if version in [ "" "unstable" ]:
+    if version in ["", "unstable"]:
         unstable = True
 
     context, book = json.load(sys.stdin)
