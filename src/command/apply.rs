@@ -86,8 +86,9 @@ To upload keys without building or deploying the rest of the configuration, use 
             .help("Reboot nodes after activation")
             .long_help("Reboots nodes after activation and waits for them to come back up.")
             .takes_value(false))
-        .arg(Arg::new("no-substitutes")
-            .long("no-substitutes")
+        .arg(Arg::new("no-substitute")
+            .long("no-substitute")
+            .alias("no-substitutes")
             .help("Do not use substitutes")
             .long_help("Disables the use of substituters when copying closures to the remote host.")
             .takes_value(false))
@@ -176,7 +177,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     // FIXME: Configure limits
     let options = {
         let mut options = Options::default();
-        options.set_substituters_push(!local_args.is_present("no-substitutes"));
+        options.set_substituters_push(!local_args.is_present("no-substitute"));
         options.set_gzip(!local_args.is_present("no-gzip"));
         options.set_upload_keys(!local_args.is_present("no-keys"));
         options.set_reboot(local_args.is_present("reboot"));
