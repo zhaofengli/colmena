@@ -487,6 +487,33 @@ fn test_meta_special_args() {
 }
 
 #[test]
+fn test_meta_node_special_args() {
+    TempHive::valid(r#"
+      {
+        meta.specialArgs = {
+          someArg = "global";
+        };
+
+        meta.nodeSpecialArgs.node-a = {
+          someArg = "node-specific";
+        };
+
+        node-a = { someArg, ... }:
+          assert someArg == "node-specific";
+        {
+          boot.isContainer = true;
+        };
+
+        node-b = { someArg, ... }:
+          assert someArg == "global";
+        {
+          boot.isContainer = true;
+        };
+      }
+    "#);
+}
+
+#[test]
 fn test_hive_autocall() {
     TempHive::valid(r#"
       {
