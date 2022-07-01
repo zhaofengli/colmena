@@ -9,6 +9,7 @@
 - GC roots are now created right after the builds are complete, as opposed to after activation.
 - The [`meta.allowApplyAll`](./reference/meta.md#allowapplyall) option has been added. If set to false, deployments without a node filter (`--on`) are disallowed.
 - The `--no-substitutes` option under the `apply` subcommand has been renamed to `--no-substitute` ([#59](https://github.com/zhaofengli/colmena/issues/59)).
+- The [`meta.nodeSpecialArgs`](./reference/meta.md#nodespecialargs) option has been added. It allows specifying node-specific `specialArgs` passed to NixOS modules ([#100](https://github.com/zhaofengli/colmena/pull/100)).
 
 ## [Release 0.3.0](https://github.com/zhaofengli/colmena/releases/tag/v0.3.0) (2022/04/27)
 
