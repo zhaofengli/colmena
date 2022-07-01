@@ -7,7 +7,7 @@
 - In `apply-local`, we now only escalate privileges during activation ([#85](https://github.com/zhaofengli/colmena/issues/85)).
 - Impure overlays are no longer imported by default if a path is specified in `meta.nixpkgs` ([#39](https://github.com/zhaofengli/colmena/issues/39))
 - GC roots are now created right after the builds are complete, as opposed to after activation.
-- The [`meta.allowApplyAll`](./reference/meta.md#allowapplyall) option has been added. If set to false, deployments without a node filter (`--on`) are disallowed.
+- The [`meta.allowApplyAll`](./reference/meta.md#allowapplyall) option has been added. If set to false, deployments without a node filter (`--on`) are disallowed ([#95](https://github.com/zhaofengli/colmena/issues/95)).
 - The `--no-substitutes` option under the `apply` subcommand has been renamed to `--no-substitute` ([#59](https://github.com/zhaofengli/colmena/issues/59)).
 - The [`meta.nodeSpecialArgs`](./reference/meta.md#nodespecialargs) option has been added. It allows specifying node-specific `specialArgs` passed to NixOS modules ([#100](https://github.com/zhaofengli/colmena/pull/100)).
 
