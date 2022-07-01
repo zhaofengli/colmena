@@ -148,9 +148,11 @@ let
       deployer.succeed("ln -sf ${pkgs.path} /nixpkgs")
       deployer.succeed("mkdir -p /root/.ssh && touch /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa && cat ${sshKeys.snakeOilPrivateKey} > /root/.ssh/id_rsa")
 
+      ${lib.optionalString (length targets != 0) ''
       for node in ${targetList}:
           node.wait_for_unit("sshd.service")
           deployer.succeed(f"ssh -o StrictHostKeyChecking=accept-new {node.name} true", timeout=30)
+      ''}
 
       deployer.succeed("cp --no-preserve=mode -r ${bundle} /tmp/bundle && chmod u+w /tmp/bundle")
 
