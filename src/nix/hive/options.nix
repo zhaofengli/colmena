@@ -248,6 +248,13 @@ with builtins; rec {
         type = types.attrsOf types.unspecified;
         default = {};
       };
+      nodeSpecialArgs = lib.mkOption {
+        description = ''
+          Node-specific special args.
+        '';
+        type = types.attrsOf types.unspecified;
+        default = {};
+      };
       machinesFile = lib.mkOption {
         description = ''
           Use the machines listed in this file when building this hive configuration.
