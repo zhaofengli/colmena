@@ -847,6 +847,13 @@ attribute set of unspecified</p>
 <p><em><em>Default</em></em></p>
 <pre><code>{}
 </code></pre>
+<h2 id="nodespecialargs"><a class="header" href="#nodespecialargs">nodeSpecialArgs</a></h2>
+<p>Node-specific special args.</p>
+<p><em><em>Type</em></em>:
+attribute set of unspecified</p>
+<p><em><em>Default</em></em></p>
+<pre><code>{}
+</code></pre>
 <h2 id="specialargs"><a class="header" href="#specialargs">specialArgs</a></h2>
 <p>A set of special arguments to be passed to NixOS modules.</p>
 <p>This will be merged into the <code>specialArgs</code> used to evaluate
@@ -2617,8 +2624,9 @@ Show information about the current Nix installation
 <li>In <code>apply-local</code>, we now only escalate privileges during activation (<a href="https://github.com/zhaofengli/colmena/issues/85">#85</a>).</li>
 <li>Impure overlays are no longer imported by default if a path is specified in <code>meta.nixpkgs</code> (<a href="https://github.com/zhaofengli/colmena/issues/39">#39</a>)</li>
 <li>GC roots are now created right after the builds are complete, as opposed to after activation.</li>
-<li>The <a href="./reference/meta.html#allowapplyall"><code>meta.allowApplyAll</code></a> option has been added. If set to false, deployments without a node filter (<code>--on</code>) are disallowed.</li>
+<li>The <a href="./reference/meta.html#allowapplyall"><code>meta.allowApplyAll</code></a> option has been added. If set to false, deployments without a node filter (<code>--on</code>) are disallowed (<a href="https://github.com/zhaofengli/colmena/issues/95">#95</a>).</li>
 <li>The <code>--no-substitutes</code> option under the <code>apply</code> subcommand has been renamed to <code>--no-substitute</code> (<a href="https://github.com/zhaofengli/colmena/issues/59">#59</a>).</li>
+<li>The <a href="./reference/meta.html#nodespecialargs"><code>meta.nodeSpecialArgs</code></a> option has been added. It allows specifying node-specific <code>specialArgs</code> passed to NixOS modules (<a href="https://github.com/zhaofengli/colmena/pull/100">#100</a>).</li>
 </ul>
 <h2 id="release-030-20220427"><a class="header" href="#release-030-20220427"><a href="https://github.com/zhaofengli/colmena/releases/tag/v0.3.0">Release 0.3.0</a> (2022/04/27)</a></h2>
 <ul>
