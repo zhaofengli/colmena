@@ -39,7 +39,7 @@ jobs:
 
       - name: Build manual
         run: nix build .#manual -L
-        if: ${{ !contains(matrix.nix.name, '2.3') }}
+        if: ${{ !contains(matrix.nix.name, '2.3') && runner.os != 'macOS' }}
 
   tests:
     strategy:
