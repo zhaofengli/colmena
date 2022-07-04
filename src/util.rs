@@ -221,11 +221,13 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
         }
         _ => {
             let path = args.value_of("config").expect("The config arg should exist").to_owned();
-            let fpath = canonicalize_cli_path(&path);
+            let fpath = PathBuf::from(&path);
 
             if !fpath.exists() && path.contains(':') {
                 // Treat as flake URI
                 let flake = Flake::from_uri(path).await?;
+                log::info!("Using flake: {}", flake.uri());
+
                 let hive_path = HivePath::Flake(flake);
                 let mut hive = Hive::new(hive_path)?;
 
@@ -274,14 +276,6 @@ The list is comma-separated and globs are supported. To match tags, prepend the 
 - edge-*,core-*
 - @a-tag,@tags-can-have-*"#)
             .takes_value(true))
-}
-
-fn canonicalize_cli_path(path: &str) -> PathBuf {
-    if !path.starts_with('/') {
-        format!("./{}", path).into()
-    } else {
-        path.into()
-    }
 }
 
 pub async fn capture_stream<R>(mut stream: BufReader<R>, job: Option<JobHandle>, stderr: bool) -> ColmenaResult<String>
