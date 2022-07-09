@@ -195,14 +195,6 @@ let
     nodes = uncheckedNodes;
   };
 
-  suppressModuleArgsDocs = { lib, ... }: {
-    options = {
-      _module.args = lib.mkOption {
-        internal = true;
-      };
-    };
-  };
-
   # Add required config Key here since we don't want to eval nixpkgs
   metaConfigKeys = [
     "name" "description"
@@ -221,22 +213,4 @@ in {
   meta = hive.meta;
 
   nixosModules = { inherit (colmenaOptions) deploymentOptions; };
-
-  docs = {
-    deploymentOptions = pkgs: let
-      eval = pkgs.lib.evalModules {
-        modules = [ colmenaOptions.deploymentOptions suppressModuleArgsDocs ];
-        specialArgs = {
-          name = "nixos";
-          nodes = {};
-        };
-      };
-    in eval.options;
-
-    metaOptions = pkgs: let
-      eval = pkgs.lib.evalModules {
-        modules = [ colmenaOptions.metaOptions suppressModuleArgsDocs ];
-      };
-    in eval.options;
-  };
 }

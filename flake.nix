@@ -33,12 +33,24 @@
 
       # Full user manual
       manual = let
+        suppressModuleArgsDocs = { lib, ... }: {
+          options = {
+            _module.args = lib.mkOption {
+              internal = true;
+            };
+          };
+        };
         colmena = self.packages.${system}.colmena;
         deploymentOptionsMd = (pkgs.nixosOptionsDoc {
-          options = evalNix.docs.deploymentOptions pkgs;
+          inherit (pkgs.lib.evalModules {
+            modules = [ colmenaOptions.deploymentOptions suppressModuleArgsDocs];
+            specialArgs = { name = "nixos"; nodes = {}; };
+          }) options;
         }).optionsCommonMark;
         metaOptionsMd = (pkgs.nixosOptionsDoc {
-          options = evalNix.docs.metaOptions pkgs;
+          inherit (pkgs.lib.evalModules {
+            modules = [ colmenaOptions.metaOptions  suppressModuleArgsDocs];
+          }) options;
         }).optionsCommonMark;
       in pkgs.callPackage ./manual {
         inherit colmena deploymentOptionsMd metaOptionsMd;
