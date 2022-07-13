@@ -17,10 +17,6 @@
     supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
     colmenaOptions = import ./src/nix/hive/options.nix;
     colmenaModules = import ./src/nix/hive/modules.nix;
-    evalNix = import ./src/nix/hive/eval.nix {
-      hermetic = true;
-      inherit colmenaOptions colmenaModules;
-    };
   in utils.lib.eachSystem supportedSystems (system: let
     pkgs = import nixpkgs {
       inherit system;
@@ -33,12 +29,24 @@
 
       # Full user manual
       manual = let
+        suppressModuleArgsDocs = { lib, ... }: {
+          options = {
+            _module.args = lib.mkOption {
+              internal = true;
+            };
+          };
+        };
         colmena = self.packages.${system}.colmena;
         deploymentOptionsMd = (pkgs.nixosOptionsDoc {
-          options = evalNix.docs.deploymentOptions pkgs;
+          inherit (pkgs.lib.evalModules {
+            modules = [ colmenaOptions.deploymentOptions suppressModuleArgsDocs];
+            specialArgs = { name = "nixos"; nodes = {}; };
+          }) options;
         }).optionsCommonMark;
         metaOptionsMd = (pkgs.nixosOptionsDoc {
-          options = evalNix.docs.metaOptions pkgs;
+          inherit (pkgs.lib.evalModules {
+            modules = [ colmenaOptions.metaOptions  suppressModuleArgsDocs];
+          }) options;
         }).optionsCommonMark;
       in pkgs.callPackage ./manual {
         inherit colmena deploymentOptionsMd metaOptionsMd;
@@ -74,7 +82,10 @@
     overlay = final: prev: {
       colmena = final.callPackage ./package.nix { };
     };
-    inherit (evalNix) nixosModules;
+    nixosModules = {
+        inherit (colmenaOptions) deploymentOptions metaOptions;
+        inherit (colmenaModules) keyChownModule keyServiceModule;
+    };
   };
 
   nixConfig = {
