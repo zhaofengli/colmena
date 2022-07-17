@@ -12,12 +12,18 @@ jobs:
   deploy-unstable:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        nix:
+          - name: 2.10.3
+            url: https://releases.nixos.org/nix/nix-2.10.3/install
+
     steps:
       - uses: haya14busa/action-workflow_run-status@v1
-      - uses: actions/checkout@v2.3.5
-      - uses: cachix/install-nix-action@v15
+      - uses: actions/checkout@v3.0.2
+      - uses: cachix/install-nix-action@v17
         with:
-          install_url: https://releases.nixos.org/nix/nix-2.4/install
+          install_url: ${{ matrix.nix.url }}
           extra_nix_config: |
             experimental-features = nix-command flakes
       - uses: cachix/cachix-action@v10
@@ -30,7 +36,7 @@ jobs:
         run: nix build .#manual -L
 
       - name: Deploy manual
-        uses: JamesIves/github-pages-deploy-action@4.1.6
+        uses: JamesIves/github-pages-deploy-action@4.3.4
         with:
           branch: gh-pages
           folder: result

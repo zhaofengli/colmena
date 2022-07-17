@@ -10,11 +10,11 @@ jobs:
           - ubuntu-latest
           - macos-11
         nix:
-          - name: 2.8.0
-            url: https://releases.nixos.org/nix/nix-2.8.0/install
+          - name: 2.10.3
+            url: https://releases.nixos.org/nix/nix-2.10.3/install
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2.3.5
+      - uses: actions/checkout@v3.0.2
       - uses: cachix/install-nix-action@v17
         with:
           install_url: ${{ matrix.nix.url }}
@@ -51,8 +51,8 @@ jobs:
             url: https://releases.nixos.org/nix/nix-2.3.16/install
           - name: 2.4
             url: https://releases.nixos.org/nix/nix-2.4/install
-          - name: 2.8.0
-            url: https://releases.nixos.org/nix/nix-2.8.0/install
+          - name: 2.10.3
+            url: https://releases.nixos.org/nix/nix-2.10.3/install
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2.3.5
