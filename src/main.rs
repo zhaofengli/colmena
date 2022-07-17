@@ -10,6 +10,7 @@ mod troubleshooter;
 mod util;
 
 #[tokio::main]
+#[quit::main]
 async fn main() {
     cli::run().await;
 }
