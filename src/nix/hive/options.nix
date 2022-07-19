@@ -124,6 +124,14 @@ with builtins; rec {
           type = types.nullOr types.str;
           default = "root";
         };
+        targetContainer = lib.mkOption {
+          description = ''
+            If set to a string, Colmena will update a container on the
+            target host instead of updating the target host itself.
+          '';
+          type = types.nullOr types.str;
+          default = null;
+        };
         allowLocalDeployment = lib.mkOption {
           description = ''
             Allow the configuration to be applied locally on the host running

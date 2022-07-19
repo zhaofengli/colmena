@@ -26,6 +26,9 @@ pub struct Ssh {
     /// The port to connect to.
     port: Option<u16>,
 
+    /// The container to target on the host.
+    container: Option<String>,
+
     /// Local path to a ssh_config file.
     ssh_config: Option<PathBuf>,
 
@@ -162,11 +165,12 @@ impl Host for Ssh {
 }
 
 impl Ssh {
-    pub fn new(user: Option<String>, host: String) -> Self {
+    pub fn new(user: Option<String>, host: String, container: Option<String>) -> Self {
         Self {
             user,
             host,
             port: None,
+            container,
             ssh_config: None,
             privilege_escalation_command: Vec::new(),
             job: None,
@@ -199,6 +203,17 @@ impl Ssh {
             &[]
         };
 
+        // This scopes the command to a named container on the NixOS host, if requested.
+        let container_scope_command = match &self.container {
+            Some(container) => vec![
+                "nixos-container",
+                "run",
+                container.as_ref(),
+                "--"
+            ],
+            None => vec![]
+        };
+
         let mut cmd = Command::new("ssh");
 
         cmd
@@ -206,6 +221,7 @@ impl Ssh {
             .args(&options)
             .arg("--")
             .args(privilege_escalation_command)
+            .args(container_scope_command.as_slice())
             .args(command)
             .env("NIX_SSHOPTS", options_str);
 
