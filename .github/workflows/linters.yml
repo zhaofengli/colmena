@@ -32,3 +32,6 @@ jobs:
 
       - name: Check flake8
         run: nix-shell --run "flake8 manual/preprocess.py"
+
+      - name: Check rustfmt
+        run: nix-shell --run "cargo fmt --check"
