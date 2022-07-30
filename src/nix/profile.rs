@@ -4,14 +4,7 @@ use std::process::Stdio;
 
 use tokio::process::Command;
 
-use super::{
-    Goal,
-    ColmenaResult,
-    ColmenaError,
-    StorePath,
-    StoreDerivation,
-    BuildResult,
-};
+use super::{BuildResult, ColmenaError, ColmenaResult, Goal, StoreDerivation, StorePath};
 
 pub type ProfileDerivation = StoreDerivation<Profile>;
 
@@ -21,10 +14,7 @@ pub struct Profile(StorePath);
 
 impl Profile {
     pub fn from_store_path(path: StorePath) -> ColmenaResult<Self> {
-        if
-            !path.is_dir() ||
-            !path.join("bin/switch-to-configuration").exists()
-        {
+        if !path.is_dir() || !path.join("bin/switch-to-configuration").exists() {
             return Err(ColmenaError::InvalidProfile);
         }
 
@@ -39,14 +29,12 @@ impl Profile {
     pub fn activation_command(&self, goal: Goal) -> Option<Vec<String>> {
         if let Some(goal) = goal.as_str() {
             let path = self.as_path().join("bin/switch-to-configuration");
-            let switch_to_configuration = path.to_str()
+            let switch_to_configuration = path
+                .to_str()
                 .expect("The string should be UTF-8 valid")
                 .to_string();
 
-            Some(vec![
-                switch_to_configuration,
-                goal.to_string(),
-            ])
+            Some(vec![switch_to_configuration, goal.to_string()])
         } else {
             None
         }
@@ -65,7 +53,12 @@ impl Profile {
     /// Create a GC root for this profile.
     pub async fn create_gc_root(&self, path: &Path) -> ColmenaResult<()> {
         let mut command = Command::new("nix-store");
-        command.args(&["--no-build-output", "--indirect", "--add-root", path.to_str().unwrap()]);
+        command.args(&[
+            "--no-build-output",
+            "--indirect",
+            "--add-root",
+            path.to_str().unwrap(),
+        ]);
         command.args(&["--realise", self.as_path().to_str().unwrap()]);
         command.stdout(Stdio::null());
 
@@ -100,8 +93,7 @@ impl TryFrom<BuildResult<Profile>> for Profile {
             });
         }
 
-        let path = paths.iter().next()
-            .unwrap().to_owned();
+        let path = paths.iter().next().unwrap().to_owned();
 
         Ok(Self::from_store_path_unchecked(path))
     }

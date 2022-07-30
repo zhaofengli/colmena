@@ -8,11 +8,11 @@ use async_trait::async_trait;
 use tokio::process::Command;
 use tokio::time::sleep;
 
-use crate::error::{ColmenaResult, ColmenaError};
-use crate::nix::{StorePath, Profile, Goal, Key, SYSTEM_PROFILE, CURRENT_PROFILE};
-use crate::util::{CommandExecution, CommandExt};
+use super::{key_uploader, CopyDirection, CopyOptions, Host, RebootOptions};
+use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::JobHandle;
-use super::{CopyDirection, CopyOptions, RebootOptions, Host, key_uploader};
+use crate::nix::{Goal, Key, Profile, StorePath, CURRENT_PROFILE, SYSTEM_PROFILE};
+use crate::util::{CommandExecution, CommandExt};
 
 /// A remote machine connected over SSH.
 #[derive(Debug)]
@@ -41,20 +41,28 @@ struct BootId(String);
 
 #[async_trait]
 impl Host for Ssh {
-    async fn copy_closure(&mut self, closure: &StorePath, direction: CopyDirection, options: CopyOptions) -> ColmenaResult<()> {
+    async fn copy_closure(
+        &mut self,
+        closure: &StorePath,
+        direction: CopyDirection,
+        options: CopyOptions,
+    ) -> ColmenaResult<()> {
         let command = self.nix_copy_closure(closure, direction, options);
         self.run_command(command).await
     }
 
     async fn realize_remote(&mut self, derivation: &StorePath) -> ColmenaResult<Vec<StorePath>> {
-        let command = self.ssh(&["nix-store", "--no-gc-warning", "--realise", derivation.as_path().to_str().unwrap()]);
+        let command = self.ssh(&[
+            "nix-store",
+            "--no-gc-warning",
+            "--realise",
+            derivation.as_path().to_str().unwrap(),
+        ]);
 
         let mut execution = CommandExecution::new(command);
         execution.set_job(self.job.clone());
 
-        let paths = execution
-            .capture_output()
-            .await?;
+        let paths = execution.capture_output().await?;
 
         paths.lines().map(|p| p.to_string().try_into()).collect()
     }
@@ -63,7 +71,11 @@ impl Host for Ssh {
         self.job = job;
     }
 
-    async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> ColmenaResult<()> {
+    async fn upload_keys(
+        &mut self,
+        keys: &HashMap<String, Key>,
+        require_ownership: bool,
+    ) -> ColmenaResult<()> {
         for (name, key) in keys {
             self.upload_key(name, key, require_ownership).await?;
         }
@@ -89,11 +101,15 @@ impl Host for Ssh {
     }
 
     async fn get_current_system_profile(&mut self) -> ColmenaResult<Profile> {
-        let paths = self.ssh(&["readlink", "-e", CURRENT_PROFILE])
+        let paths = self
+            .ssh(&["readlink", "-e", CURRENT_PROFILE])
             .capture_output()
             .await?;
 
-        let path = paths.lines().into_iter().next()
+        let path = paths
+            .lines()
+            .into_iter()
+            .next()
             .ok_or(ColmenaError::FailedToGetCurrentProfile)?
             .to_string()
             .try_into()?;
@@ -102,13 +118,17 @@ impl Host for Ssh {
     }
 
     async fn get_main_system_profile(&mut self) -> ColmenaResult<Profile> {
-        let command = format!("\"readlink -e {} || readlink -e {}\"", SYSTEM_PROFILE, CURRENT_PROFILE);
+        let command = format!(
+            "\"readlink -e {} || readlink -e {}\"",
+            SYSTEM_PROFILE, CURRENT_PROFILE
+        );
 
-        let paths = self.ssh(&["sh", "-c", &command])
-            .capture_output()
-            .await?;
+        let paths = self.ssh(&["sh", "-c", &command]).capture_output().await?;
 
-        let path = paths.lines().into_iter().next()
+        let path = paths
+            .lines()
+            .into_iter()
+            .next()
             .ok_or(ColmenaError::FailedToGetCurrentProfile)?
             .to_string()
             .try_into()?;
@@ -151,9 +171,7 @@ impl Host for Ssh {
             let profile = self.get_current_system_profile().await?;
 
             if new_profile != profile {
-                return Err(ColmenaError::ActiveProfileUnexpected {
-                    profile,
-                });
+                return Err(ColmenaError::ActiveProfileUnexpected { profile });
             }
         }
 
@@ -201,8 +219,7 @@ impl Ssh {
 
         let mut cmd = Command::new("ssh");
 
-        cmd
-            .arg(self.ssh_target())
+        cmd.arg(self.ssh_target())
             .args(&options)
             .arg("--")
             .args(privilege_escalation_command)
@@ -226,7 +243,12 @@ impl Ssh {
         }
     }
 
-    fn nix_copy_closure(&self, path: &StorePath, direction: CopyDirection, options: CopyOptions) -> Command {
+    fn nix_copy_closure(
+        &self,
+        path: &StorePath,
+        direction: CopyDirection,
+        options: CopyOptions,
+    ) -> Command {
         let ssh_options = self.ssh_options();
         let ssh_options_str = ssh_options.join(" ");
 
@@ -262,8 +284,16 @@ impl Ssh {
     fn ssh_options(&self) -> Vec<String> {
         // TODO: Allow configuation of SSH parameters
 
-        let mut options: Vec<String> = ["-o", "StrictHostKeyChecking=accept-new", "-o", "BatchMode=yes", "-T"]
-            .iter().map(|s| s.to_string()).collect();
+        let mut options: Vec<String> = [
+            "-o",
+            "StrictHostKeyChecking=accept-new",
+            "-o",
+            "BatchMode=yes",
+            "-T",
+        ]
+        .iter()
+        .map(|s| s.to_string())
+        .collect();
 
         if let Some(port) = self.port {
             options.push("-p".to_string());
@@ -279,7 +309,12 @@ impl Ssh {
     }
 
     /// Uploads a single key.
-    async fn upload_key(&mut self, name: &str, key: &Key, require_ownership: bool) -> ColmenaResult<()> {
+    async fn upload_key(
+        &mut self,
+        name: &str,
+        key: &Key,
+        require_ownership: bool,
+    ) -> ColmenaResult<()> {
         if let Some(job) = &self.job {
             job.message(format!("Uploading key {}", name))?;
         }
@@ -299,7 +334,8 @@ impl Ssh {
 
     /// Returns the current Boot ID.
     async fn get_boot_id(&mut self) -> ColmenaResult<BootId> {
-        let boot_id = self.ssh(&["cat", "/proc/sys/kernel/random/boot_id"])
+        let boot_id = self
+            .ssh(&["cat", "/proc/sys/kernel/random/boot_id"])
             .capture_output()
             .await?;
 

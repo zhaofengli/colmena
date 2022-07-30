@@ -7,17 +7,17 @@ use serde::de;
 use serde::{Deserialize, Deserializer, Serialize};
 use validator::{Validate, ValidationError as ValidationErrorType};
 
-use crate::error::{ColmenaResult, ColmenaError};
+use crate::error::{ColmenaError, ColmenaResult};
 
 pub mod host;
-pub use host::{Host, CopyDirection, CopyOptions, RebootOptions};
 use host::Ssh;
+pub use host::{CopyDirection, CopyOptions, Host, RebootOptions};
 
 pub mod hive;
 pub use hive::{Hive, HivePath};
 
 pub mod store;
-pub use store::{StorePath, StoreDerivation, BuildResult};
+pub use store::{BuildResult, StoreDerivation, StorePath};
 
 pub mod key;
 pub use key::Key;
@@ -48,10 +48,7 @@ pub const CURRENT_PROFILE: &str = "/run/current-system";
 /// A node's attribute name.
 #[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 #[serde(transparent)]
-pub struct NodeName (
-    #[serde(deserialize_with = "NodeName::deserialize")]
-    String
-);
+pub struct NodeName(#[serde(deserialize_with = "NodeName::deserialize")] String);
 
 #[derive(Debug, Clone, Validate, Deserialize)]
 pub struct NodeConfig {
@@ -108,7 +105,7 @@ pub struct NixOptions {
 }
 
 /// A Nix expression.
-pub trait NixExpression : Send + Sync {
+pub trait NixExpression: Send + Sync {
     /// Returns the full Nix expression to be evaluated.
     fn expression(&self) -> String;
 
@@ -132,13 +129,12 @@ impl NodeName {
 
     /// Deserializes a potentially-invalid node name.
     fn deserialize<'de, D>(deserializer: D) -> Result<String, D::Error>
-        where D: Deserializer<'de>
+    where
+        D: Deserializer<'de>,
     {
         use de::Error;
         String::deserialize(deserializer)
-            .and_then(|s| {
-                Self::validate(s).map_err(|e| Error::custom(e.to_string()))
-            })
+            .and_then(|s| Self::validate(s).map_err(|e| Error::custom(e.to_string())))
     }
 
     fn validate(s: String) -> ColmenaResult<String> {
@@ -160,14 +156,22 @@ impl Deref for NodeName {
 }
 
 impl NodeConfig {
-    pub fn tags(&self) -> &[String] { &self.tags }
+    pub fn tags(&self) -> &[String] {
+        &self.tags
+    }
 
     #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-    pub fn allows_local_deployment(&self) -> bool { self.allow_local_deployment }
+    pub fn allows_local_deployment(&self) -> bool {
+        self.allow_local_deployment
+    }
 
-    pub fn privilege_escalation_command(&self) -> &Vec<String> { &self.privilege_escalation_command }
+    pub fn privilege_escalation_command(&self) -> &Vec<String> {
+        &self.privilege_escalation_command
+    }
 
-    pub fn build_on_target(&self) -> bool { self.build_on_target }
+    pub fn build_on_target(&self) -> bool {
+        self.build_on_target
+    }
     pub fn set_build_on_target(&mut self, enable: bool) {
         self.build_on_target = enable;
     }
@@ -228,11 +232,15 @@ fn validate_keys(keys: &HashMap<String, Key>) -> Result<(), ValidationErrorType>
     for name in keys.keys() {
         let path = Path::new(name);
         if path.has_root() {
-            return Err(ValidationErrorType::new("Secret key name cannot be absolute"));
+            return Err(ValidationErrorType::new(
+                "Secret key name cannot be absolute",
+            ));
         }
 
         if path.components().count() != 1 {
-            return Err(ValidationErrorType::new("Secret key name cannot contain path separators"));
+            return Err(ValidationErrorType::new(
+                "Secret key name cannot contain path separators",
+            ));
         }
     }
     Ok(())

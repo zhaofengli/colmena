@@ -4,30 +4,24 @@ mod assets;
 mod tests;
 
 use std::collections::HashMap;
+use std::convert::AsRef;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::convert::AsRef;
 
+use serde::Serialize;
 use tempfile::{NamedTempFile, TempPath};
 use tokio::process::Command;
 use tokio::sync::OnceCell;
-use serde::Serialize;
 use validator::Validate;
 
-use super::{
-    Flake,
-    NixOptions,
-    NodeName,
-    NodeConfig,
-    NodeFilter,
-    NixExpression,
-    ProfileDerivation,
-    StorePath, MetaConfig,
-};
 use super::deployment::TargetNode;
+use super::{
+    Flake, MetaConfig, NixExpression, NixOptions, NodeConfig, NodeFilter, NodeName,
+    ProfileDerivation, StorePath,
+};
 use crate::error::ColmenaResult;
-use crate::util::{CommandExecution, CommandExt};
 use crate::job::JobHandle;
+use crate::util::{CommandExecution, CommandExt};
 use assets::Assets;
 
 #[derive(Debug)]
@@ -98,12 +92,8 @@ impl HivePath {
 
     fn context_dir(&self) -> Option<PathBuf> {
         match self {
-            Self::Legacy(p) => {
-                p.parent().map(|d| d.to_owned())
-            }
-            Self::Flake(flake) => {
-                flake.local_dir().map(|d| d.to_owned())
-            }
+            Self::Legacy(p) => p.parent().map(|d| d.to_owned()),
+            Self::Flake(flake) => flake.local_dir().map(|d| d.to_owned()),
         }
     }
 }
@@ -112,7 +102,7 @@ impl Hive {
     pub fn new(path: HivePath) -> ColmenaResult<Self> {
         let context_dir = path.context_dir();
 
-        Ok(Self{
+        Ok(Self {
             path,
             context_dir,
             assets: Assets::new(),
@@ -126,10 +116,14 @@ impl Hive {
     }
 
     pub async fn get_meta_config(&self) -> ColmenaResult<&MetaConfig> {
-      self.meta_config.get_or_try_init(||async {
-        self.nix_instantiate("hive.metaConfig").eval()
-            .capture_json().await
-      }).await
+        self.meta_config
+            .get_or_try_init(|| async {
+                self.nix_instantiate("hive.metaConfig")
+                    .eval()
+                    .capture_json()
+                    .await
+            })
+            .await
     }
 
     pub fn set_show_trace(&mut self, value: bool) {
@@ -156,7 +150,12 @@ impl Hive {
     }
 
     /// Convenience wrapper to filter nodes for CLI actions.
-    pub async fn select_nodes(&self, filter: Option<NodeFilter>, ssh_config: Option<PathBuf>, ssh_only: bool) -> ColmenaResult<HashMap<NodeName, TargetNode>> {
+    pub async fn select_nodes(
+        &self,
+        filter: Option<NodeFilter>,
+        ssh_config: Option<PathBuf>,
+        ssh_only: bool,
+    ) -> ColmenaResult<HashMap<NodeName, TargetNode>> {
         let mut node_configs = None;
 
         log::info!("Enumerating nodes...");
@@ -168,15 +167,16 @@ impl Hive {
                     log::debug!("Retrieving deployment info for all nodes...");
 
                     let all_node_configs = self.deployment_info().await?;
-                    let filtered = filter.filter_node_configs(all_node_configs.iter())
-                        .into_iter().collect();
+                    let filtered = filter
+                        .filter_node_configs(all_node_configs.iter())
+                        .into_iter()
+                        .collect();
 
                     node_configs = Some(all_node_configs);
 
                     filtered
                 } else {
-                    filter.filter_node_names(&all_nodes)?
-                        .into_iter().collect()
+                    filter.filter_node_names(&all_nodes)?.into_iter().collect()
                 }
             }
             None => all_nodes.clone(),
@@ -223,9 +223,18 @@ impl Hive {
         } else if targets.len() == all_nodes.len() {
             log::info!("Selected all {} nodes.", targets.len());
         } else if !ssh_only || skipped == 0 {
-            log::info!("Selected {} out of {} hosts.", targets.len(), all_nodes.len());
+            log::info!(
+                "Selected {} out of {} hosts.",
+                targets.len(),
+                all_nodes.len()
+            );
         } else {
-            log::info!("Selected {} out of {} hosts ({} skipped).", targets.len(), all_nodes.len(), skipped);
+            log::info!(
+                "Selected {} out of {} hosts ({} skipped).",
+                targets.len(),
+                all_nodes.len(),
+                skipped
+            );
         }
 
         Ok(targets)
@@ -233,14 +242,20 @@ impl Hive {
 
     /// Returns a list of all node names.
     pub async fn node_names(&self) -> ColmenaResult<Vec<NodeName>> {
-        self.nix_instantiate("attrNames hive.nodes").eval()
-            .capture_json().await
+        self.nix_instantiate("attrNames hive.nodes")
+            .eval()
+            .capture_json()
+            .await
     }
 
     /// Retrieve deployment info for all nodes.
     pub async fn deployment_info(&self) -> ColmenaResult<HashMap<NodeName, NodeConfig>> {
-        let configs: HashMap<NodeName, NodeConfig> = self.nix_instantiate("hive.deploymentConfig").eval_with_builders().await?
-            .capture_json().await?;
+        let configs: HashMap<NodeName, NodeConfig> = self
+            .nix_instantiate("hive.deploymentConfig")
+            .eval_with_builders()
+            .await?
+            .capture_json()
+            .await?;
 
         for config in configs.values() {
             config.validate()?;
@@ -253,19 +268,34 @@ impl Hive {
 
     /// Retrieve deployment info for a single node.
     #[cfg_attr(not(target_os = "linux"), allow(dead_code))]
-    pub async fn deployment_info_single(&self, node: &NodeName) -> ColmenaResult<Option<NodeConfig>> {
+    pub async fn deployment_info_single(
+        &self,
+        node: &NodeName,
+    ) -> ColmenaResult<Option<NodeConfig>> {
         let expr = format!("hive.nodes.\"{}\".config.deployment or null", node.as_str());
-        self.nix_instantiate(&expr).eval_with_builders().await?
-            .capture_json().await
+        self.nix_instantiate(&expr)
+            .eval_with_builders()
+            .await?
+            .capture_json()
+            .await
     }
 
     /// Retrieve deployment info for a list of nodes.
-    pub async fn deployment_info_selected(&self, nodes: &[NodeName]) -> ColmenaResult<HashMap<NodeName, NodeConfig>> {
+    pub async fn deployment_info_selected(
+        &self,
+        nodes: &[NodeName],
+    ) -> ColmenaResult<HashMap<NodeName, NodeConfig>> {
         let nodes_expr = SerializedNixExpression::new(nodes)?;
 
-        let configs: HashMap<NodeName, NodeConfig> = self.nix_instantiate(&format!("hive.deploymentConfigSelected {}", nodes_expr.expression()))
-            .eval_with_builders().await?
-            .capture_json().await?;
+        let configs: HashMap<NodeName, NodeConfig> = self
+            .nix_instantiate(&format!(
+                "hive.deploymentConfigSelected {}",
+                nodes_expr.expression()
+            ))
+            .eval_with_builders()
+            .await?
+            .capture_json()
+            .await?;
 
         for config in configs.values() {
             config.validate()?;
@@ -282,20 +312,25 @@ impl Hive {
     /// Evaluation may take up a lot of memory, so we make it possible
     /// to split up the evaluation process into chunks and run them
     /// concurrently with other processes (e.g., build and apply).
-    pub async fn eval_selected(&self, nodes: &[NodeName], job: Option<JobHandle>) -> ColmenaResult<HashMap<NodeName, ProfileDerivation>> {
+    pub async fn eval_selected(
+        &self,
+        nodes: &[NodeName],
+        job: Option<JobHandle>,
+    ) -> ColmenaResult<HashMap<NodeName, ProfileDerivation>> {
         let nodes_expr = SerializedNixExpression::new(nodes)?;
 
         let expr = format!("hive.evalSelectedDrvPaths {}", nodes_expr.expression());
 
-        let command = self.nix_instantiate(&expr)
-            .eval_with_builders().await?;
+        let command = self.nix_instantiate(&expr).eval_with_builders().await?;
         let mut execution = CommandExecution::new(command);
         execution.set_job(job);
         execution.set_hide_stdout(true);
 
         execution
-            .capture_json::<HashMap<NodeName, StorePath>>().await?
-            .into_iter().map(|(name, path)| {
+            .capture_json::<HashMap<NodeName, StorePath>>()
+            .await?
+            .into_iter()
+            .map(|(name, path)| {
                 let path = path.into_derivation()?;
                 Ok((name, path))
             })
@@ -316,12 +351,18 @@ impl Hive {
     pub async fn introspect(&self, expression: String, instantiate: bool) -> ColmenaResult<String> {
         if instantiate {
             let expression = format!("hive.introspect ({})", expression);
-            self.nix_instantiate(&expression).instantiate_with_builders().await?
-                .capture_output().await
+            self.nix_instantiate(&expression)
+                .instantiate_with_builders()
+                .await?
+                .capture_output()
+                .await
         } else {
             let expression = format!("toJSON (hive.introspect ({}))", expression);
-            self.nix_instantiate(&expression).eval_with_builders().await?
-                .capture_json().await
+            self.nix_instantiate(&expression)
+                .eval_with_builders()
+                .await?
+                .capture_json()
+                .await
         }
     }
 
@@ -346,10 +387,7 @@ impl Hive {
 
 impl<'hive> NixInstantiate<'hive> {
     fn new(hive: &'hive Hive, expression: String) -> Self {
-        Self {
-            hive,
-            expression,
-        }
+        Self { hive, expression }
     }
 
     fn instantiate(&self) -> Command {
@@ -373,7 +411,10 @@ impl<'hive> NixInstantiate<'hive> {
     fn eval(self) -> Command {
         let mut command = self.instantiate();
         let options = self.hive.nix_options();
-        command.arg("--eval").arg("--json").arg("--strict")
+        command
+            .arg("--eval")
+            .arg("--json")
+            .arg("--strict")
             // Ensures the derivations are instantiated
             // Required for system profile evaluation and IFD
             .arg("--read-write-mode")
@@ -401,7 +442,10 @@ impl<'hive> NixInstantiate<'hive> {
 }
 
 impl SerializedNixExpression {
-    pub fn new<T>(data: T) -> ColmenaResult<Self> where T: Serialize {
+    pub fn new<T>(data: T) -> ColmenaResult<Self>
+    where
+        T: Serialize,
+    {
         let mut tmp = NamedTempFile::new()?;
         let json = serde_json::to_vec(&data).expect("Could not serialize data");
         tmp.write_all(&json)?;
@@ -414,7 +458,10 @@ impl SerializedNixExpression {
 
 impl NixExpression for SerializedNixExpression {
     fn expression(&self) -> String {
-        format!("(builtins.fromJSON (builtins.readFile {}))", self.json_file.to_str().unwrap())
+        format!(
+            "(builtins.fromJSON (builtins.readFile {}))",
+            self.json_file.to_str().unwrap()
+        )
     }
 }
 

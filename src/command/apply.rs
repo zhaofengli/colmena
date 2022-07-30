@@ -1,19 +1,14 @@
 use std::env;
 use std::path::PathBuf;
 
-use clap::{Arg, Command as ClapCommand, ArgMatches};
+use clap::{Arg, ArgMatches, Command as ClapCommand};
 
 use crate::error::ColmenaError;
 use crate::nix::deployment::{
-    Deployment,
-    Goal,
-    Options,
-    EvaluationNodeLimit,
-    Evaluator,
-    ParallelismLimit,
+    Deployment, EvaluationNodeLimit, Evaluator, Goal, Options, ParallelismLimit,
 };
-use crate::progress::SimpleProgressOutput;
 use crate::nix::NodeFilter;
+use crate::progress::SimpleProgressOutput;
 use crate::util;
 
 pub fn register_deploy_args(command: ClapCommand) -> ClapCommand {
@@ -145,27 +140,26 @@ pub fn subcommand() -> ClapCommand<'static> {
 pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
     let hive = util::hive_from_args(local_args).await?;
 
-    let ssh_config = env::var("SSH_CONFIG_FILE")
-        .ok().map(PathBuf::from);
+    let ssh_config = env::var("SSH_CONFIG_FILE").ok().map(PathBuf::from);
 
     let goal_arg = local_args.value_of("goal").unwrap();
     let goal = Goal::from_str(goal_arg).unwrap();
 
-    let filter = local_args.value_of("on")
-        .map(NodeFilter::new)
-        .transpose()?;
+    let filter = local_args.value_of("on").map(NodeFilter::new).transpose()?;
 
     if !filter.is_some() && goal != Goal::Build {
-      // User did not specify node, we should check meta and see rules
-      let meta = hive.get_meta_config().await?;
-      if !meta.allow_apply_all {
-        log::error!("No node filter is specified and meta.allowApplyAll is set to false.");
-        log::error!("Hint: Filter the nodes with --on.");
-        quit::with_code(1);
-      }
+        // User did not specify node, we should check meta and see rules
+        let meta = hive.get_meta_config().await?;
+        if !meta.allow_apply_all {
+            log::error!("No node filter is specified and meta.allowApplyAll is set to false.");
+            log::error!("Hint: Filter the nodes with --on.");
+            quit::with_code(1);
+        }
     }
 
-    let targets = hive.select_nodes(filter, ssh_config, goal.requires_target_host()).await?;
+    let targets = hive
+        .select_nodes(filter, ssh_config, goal.requires_target_host())
+        .await?;
     let n_targets = targets.len();
 
     let verbose = local_args.is_present("verbose") || goal == Goal::DryActivate;
@@ -181,7 +175,9 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         options.set_gzip(!local_args.is_present("no-gzip"));
         options.set_upload_keys(!local_args.is_present("no-keys"));
         options.set_reboot(local_args.is_present("reboot"));
-        options.set_force_replace_unknown_profiles(local_args.is_present("force-replace-unknown-profiles"));
+        options.set_force_replace_unknown_profiles(
+            local_args.is_present("force-replace-unknown-profiles"),
+        );
         options.set_evaluator(local_args.value_of_t("evaluator").unwrap());
 
         if local_args.is_present("keep-result") {
@@ -207,7 +203,11 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     let parallelism_limit = {
         let mut limit = ParallelismLimit::default();
         limit.set_apply_limit({
-            let limit = local_args.value_of("parallel").unwrap().parse::<usize>().unwrap();
+            let limit = local_args
+                .value_of("parallel")
+                .unwrap()
+                .parse::<usize>()
+                .unwrap();
             if limit == 0 {
                 n_targets
             } else {
@@ -232,12 +232,10 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     deployment.set_parallelism_limit(parallelism_limit);
     deployment.set_evaluation_node_limit(evaluation_node_limit);
 
-    let (deployment, output) = tokio::join!(
-        deployment.execute(),
-        output.run_until_completion(),
-    );
+    let (deployment, output) = tokio::join!(deployment.execute(), output.run_until_completion(),);
 
-    deployment?; output?;
+    deployment?;
+    output?;
 
     Ok(())
 }

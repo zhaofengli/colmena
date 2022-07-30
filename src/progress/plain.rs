@@ -3,17 +3,10 @@
 use async_trait::async_trait;
 use console::Style as ConsoleStyle;
 
-use crate::error::ColmenaResult;
 use super::{
-    DEFAULT_LABEL_WIDTH,
-    ProgressOutput,
-    Sender,
-    Receiver,
-    Message,
-    Line,
-    LineStyle,
-    create_channel,
+    create_channel, Line, LineStyle, Message, ProgressOutput, Receiver, Sender, DEFAULT_LABEL_WIDTH,
 };
+use crate::error::ColmenaResult;
 
 pub struct PlainOutput {
     sender: Option<Sender>,
@@ -42,36 +35,21 @@ impl PlainOutput {
         }
 
         let label_style = match line.style {
-            LineStyle::Normal => {
-                ConsoleStyle::new().bold()
-            }
-            LineStyle::Success => {
-                ConsoleStyle::new().bold().green()
-            }
-            LineStyle::SuccessNoop => {
-                ConsoleStyle::new().bold().green().dim()
-            }
-            LineStyle::Failure => {
-                ConsoleStyle::new().bold().red()
-            }
+            LineStyle::Normal => ConsoleStyle::new().bold(),
+            LineStyle::Success => ConsoleStyle::new().bold().green(),
+            LineStyle::SuccessNoop => ConsoleStyle::new().bold().green().dim(),
+            LineStyle::Failure => ConsoleStyle::new().bold().red(),
         };
 
         let text_style = match line.style {
-            LineStyle::Normal => {
-                ConsoleStyle::new()
-            }
-            LineStyle::Success => {
-                ConsoleStyle::new().green()
-            }
-            LineStyle::SuccessNoop => {
-                ConsoleStyle::new().dim()
-            }
-            LineStyle::Failure => {
-                ConsoleStyle::new().red()
-            }
+            LineStyle::Normal => ConsoleStyle::new(),
+            LineStyle::Success => ConsoleStyle::new().green(),
+            LineStyle::SuccessNoop => ConsoleStyle::new().dim(),
+            LineStyle::Failure => ConsoleStyle::new().red(),
         };
 
-        eprintln!("{:>width$} | {}",
+        eprintln!(
+            "{:>width$} | {}",
             label_style.apply_to(line.label),
             text_style.apply_to(line.text),
             width = self.label_width,

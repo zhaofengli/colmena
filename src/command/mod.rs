@@ -1,9 +1,9 @@
-pub mod build;
 pub mod apply;
+pub mod build;
 pub mod eval;
-pub mod upload_keys;
 pub mod exec;
 pub mod nix_info;
+pub mod upload_keys;
 
 #[cfg(target_os = "linux")]
 pub mod apply_local;

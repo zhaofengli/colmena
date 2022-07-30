@@ -8,7 +8,7 @@ pub mod limits;
 pub use limits::{EvaluationNodeLimit, ParallelismLimit};
 
 pub mod options;
-pub use options::{Options, Evaluator};
+pub use options::{Evaluator, Options};
 
 use std::collections::HashMap;
 use std::mem;
@@ -18,30 +18,17 @@ use futures::future::join_all;
 use itertools::Itertools;
 use tokio_stream::StreamExt;
 
-use crate::progress::Sender as ProgressSender;
-use crate::job::{JobMonitor, JobHandle, JobType, JobState};
-use crate::util;
 use super::NixOptions;
+use crate::job::{JobHandle, JobMonitor, JobState, JobType};
+use crate::progress::Sender as ProgressSender;
+use crate::util;
 
 use super::{
-    Hive,
-    Host,
-    NodeName,
-    NodeConfig,
-    ColmenaError,
-    ColmenaResult,
-    Profile,
-    ProfileDerivation,
-    CopyDirection,
-    CopyOptions,
-    RebootOptions,
+    evaluator::{DrvSetEvaluator, EvalError, NixEvalJobs},
     host::Local as LocalHost,
     key::{Key, UploadAt as UploadKeyAt},
-    evaluator::{
-        DrvSetEvaluator,
-        NixEvalJobs,
-        EvalError,
-    },
+    ColmenaError, ColmenaResult, CopyDirection, CopyOptions, Hive, Host, NodeConfig, NodeName,
+    Profile, ProfileDerivation, RebootOptions,
 };
 
 /// A deployment.
@@ -106,7 +93,12 @@ impl TargetNode {
 
 impl Deployment {
     /// Creates a new deployment.
-    pub fn new(hive: Hive, targets: TargetNodeMap, goal: Goal, progress: Option<ProgressSender>) -> Self {
+    pub fn new(
+        hive: Hive,
+        targets: TargetNodeMap,
+        goal: Goal,
+        progress: Option<ProgressSender>,
+    ) -> Self {
         Self {
             hive,
             goal,
@@ -151,16 +143,15 @@ impl Deployment {
                     futures.push(deployment.upload_keys_to_node(meta.clone(), target));
                 }
 
-                join_all(futures).await
-                    .into_iter().collect::<ColmenaResult<Vec<()>>>()?;
+                join_all(futures)
+                    .await
+                    .into_iter()
+                    .collect::<ColmenaResult<Vec<()>>>()?;
 
                 Ok(())
             });
 
-            let (result, _) = tokio::join!(
-                meta_future,
-                monitor.run_until_completion(),
-            );
+            let (result, _) = tokio::join!(meta_future, monitor.run_until_completion(),);
 
             result?;
 
@@ -183,10 +174,7 @@ impl Deployment {
                 Ok(())
             });
 
-            let (result, _) = tokio::join!(
-                meta_future,
-                monitor.run_until_completion(),
-            );
+            let (result, _) = tokio::join!(meta_future, monitor.run_until_completion(),);
 
             result?;
 
@@ -207,10 +195,14 @@ impl Deployment {
     }
 
     /// Executes the deployment on selected nodes, evaluating a chunk at a time.
-    async fn execute_chunked(self: &DeploymentHandle, parent: JobHandle, mut targets: TargetNodeMap)
-        -> ColmenaResult<()>
-    {
-        let eval_limit = self.evaluation_node_limit.get_limit()
+    async fn execute_chunked(
+        self: &DeploymentHandle,
+        parent: JobHandle,
+        mut targets: TargetNodeMap,
+    ) -> ColmenaResult<()> {
+        let eval_limit = self
+            .evaluation_node_limit
+            .get_limit()
             .unwrap_or(self.targets.len());
 
         let mut futures = Vec::new();
@@ -224,7 +216,8 @@ impl Deployment {
             futures.push(self.execute_one_chunk(parent.clone(), map));
         }
 
-        join_all(futures).await
+        join_all(futures)
+            .await
             .into_iter()
             .collect::<ColmenaResult<Vec<()>>>()?;
 
@@ -232,9 +225,11 @@ impl Deployment {
     }
 
     /// Executes the deployment on selected nodes using a streaming evaluator.
-    async fn execute_streaming(self: &DeploymentHandle, parent: JobHandle, mut targets: TargetNodeMap)
-        -> ColmenaResult<()>
-    {
+    async fn execute_streaming(
+        self: &DeploymentHandle,
+        parent: JobHandle,
+        mut targets: TargetNodeMap,
+    ) -> ColmenaResult<()> {
         if self.goal == Goal::UploadKeys {
             unreachable!(); // some logic is screwed up
         }
@@ -244,81 +239,101 @@ impl Deployment {
 
         let job = parent.create_job(JobType::Evaluate, nodes.clone())?;
 
-        let futures = job.run(|job| async move {
-            let mut evaluator = NixEvalJobs::default();
-            let eval_limit = self.evaluation_node_limit.get_limit().unwrap_or(self.targets.len());
-            evaluator.set_eval_limit(eval_limit);
-            evaluator.set_job(job.clone());
+        let futures = job
+            .run(|job| async move {
+                let mut evaluator = NixEvalJobs::default();
+                let eval_limit = self
+                    .evaluation_node_limit
+                    .get_limit()
+                    .unwrap_or(self.targets.len());
+                evaluator.set_eval_limit(eval_limit);
+                evaluator.set_job(job.clone());
 
-            // FIXME: nix-eval-jobs currently does not support IFD with builders
-            let options = self.hive.nix_options();
-            let mut stream = evaluator.evaluate(&expr, options).await?;
+                // FIXME: nix-eval-jobs currently does not support IFD with builders
+                let options = self.hive.nix_options();
+                let mut stream = evaluator.evaluate(&expr, options).await?;
 
-            let mut futures: Vec<tokio::task::JoinHandle<ColmenaResult<()>>> = Vec::new();
+                let mut futures: Vec<tokio::task::JoinHandle<ColmenaResult<()>>> = Vec::new();
 
-            while let Some(item) = stream.next().await {
-                match item {
-                    Ok(attr) => {
-                        let node_name = NodeName::new(attr.attribute().to_owned())?;
-                        let profile_drv: ProfileDerivation = attr.into_derivation()?;
+                while let Some(item) = stream.next().await {
+                    match item {
+                        Ok(attr) => {
+                            let node_name = NodeName::new(attr.attribute().to_owned())?;
+                            let profile_drv: ProfileDerivation = attr.into_derivation()?;
 
-                        // FIXME: Consolidate
-                        let mut target = targets.remove(&node_name).unwrap();
+                            // FIXME: Consolidate
+                            let mut target = targets.remove(&node_name).unwrap();
 
-                        if let Some(force_build_on_target) = self.options.force_build_on_target {
-                            target.config.set_build_on_target(force_build_on_target);
-                        }
+                            if let Some(force_build_on_target) = self.options.force_build_on_target
+                            {
+                                target.config.set_build_on_target(force_build_on_target);
+                            }
 
-                        let job_handle = job.clone();
-                        let arc_self = self.clone();
-                        futures.push(tokio::spawn(async move {
-                            let (target, profile) = {
-                                if target.config.build_on_target() {
-                                    arc_self.build_on_node(job_handle.clone(), target, profile_drv.clone()).await?
+                            let job_handle = job.clone();
+                            let arc_self = self.clone();
+                            futures.push(tokio::spawn(async move {
+                                let (target, profile) = {
+                                    if target.config.build_on_target() {
+                                        arc_self
+                                            .build_on_node(
+                                                job_handle.clone(),
+                                                target,
+                                                profile_drv.clone(),
+                                            )
+                                            .await?
+                                    } else {
+                                        arc_self
+                                            .build_and_push_node(
+                                                job_handle.clone(),
+                                                target,
+                                                profile_drv.clone(),
+                                            )
+                                            .await?
+                                    }
+                                };
+
+                                if arc_self.goal.requires_activation() {
+                                    arc_self.activate_node(job_handle, target, profile).await
                                 } else {
-                                    arc_self.build_and_push_node(job_handle.clone(), target, profile_drv.clone()).await?
+                                    Ok(())
                                 }
-                            };
-
-                            if arc_self.goal.requires_activation() {
-                                arc_self.activate_node(job_handle, target, profile).await
-                            } else {
-                                Ok(())
-                            }
-                        }));
-                    }
-                    Err(e) => {
-                        match e {
-                            EvalError::Global(e) => {
-                                // Global error - Abort immediately
-                                return Err(e);
-                            }
-                            EvalError::Attribute(e) => {
-                                // Attribute-level error
-                                //
-                                // Here the eventual non-zero exit code of the evaluator
-                                // will translate into an `EvalError::Global`, causing
-                                // the entire future to resolve to an Err.
-
-                                let node_name = NodeName::new(e.attribute().to_string()).unwrap();
-                                let nodes = vec![ node_name ];
-                                let job = parent.create_job(JobType::Evaluate, nodes)?;
-
-                                job.state(JobState::Running)?;
-                                for line in e.error().lines() {
-                                    job.stderr(line.to_string())?;
+                            }));
+                        }
+                        Err(e) => {
+                            match e {
+                                EvalError::Global(e) => {
+                                    // Global error - Abort immediately
+                                    return Err(e);
                                 }
-                                job.state(JobState::Failed)?;
+                                EvalError::Attribute(e) => {
+                                    // Attribute-level error
+                                    //
+                                    // Here the eventual non-zero exit code of the evaluator
+                                    // will translate into an `EvalError::Global`, causing
+                                    // the entire future to resolve to an Err.
+
+                                    let node_name =
+                                        NodeName::new(e.attribute().to_string()).unwrap();
+                                    let nodes = vec![node_name];
+                                    let job = parent.create_job(JobType::Evaluate, nodes)?;
+
+                                    job.state(JobState::Running)?;
+                                    for line in e.error().lines() {
+                                        job.stderr(line.to_string())?;
+                                    }
+                                    job.state(JobState::Failed)?;
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            Ok(futures)
-        }).await?;
+                Ok(futures)
+            })
+            .await?;
 
-        join_all(futures).await
+        join_all(futures)
+            .await
             .into_iter()
             .map(|r| r.unwrap()) // panic on JoinError (future panicked)
             .collect::<ColmenaResult<Vec<()>>>()?;
@@ -327,7 +342,11 @@ impl Deployment {
     }
 
     /// Executes the deployment against a portion of nodes.
-    async fn execute_one_chunk(self: &DeploymentHandle, parent: JobHandle, mut chunk: TargetNodeMap) -> ColmenaResult<()> {
+    async fn execute_one_chunk(
+        self: &DeploymentHandle,
+        parent: JobHandle,
+        mut chunk: TargetNodeMap,
+    ) -> ColmenaResult<()> {
         if self.goal == Goal::UploadKeys {
             unreachable!(); // some logic is screwed up
         }
@@ -349,9 +368,13 @@ impl Deployment {
             futures.push(async move {
                 let (target, profile) = {
                     if target.config.build_on_target() {
-                        arc_self.build_on_node(job_handle.clone(), target, profile_drv.clone()).await?
+                        arc_self
+                            .build_on_node(job_handle.clone(), target, profile_drv.clone())
+                            .await?
                     } else {
-                        arc_self.build_and_push_node(job_handle.clone(), target, profile_drv.clone()).await?
+                        arc_self
+                            .build_and_push_node(job_handle.clone(), target, profile_drv.clone())
+                            .await?
                     }
                 };
 
@@ -363,16 +386,20 @@ impl Deployment {
             });
         }
 
-        join_all(futures).await
-            .into_iter().collect::<ColmenaResult<Vec<()>>>()?;
+        join_all(futures)
+            .await
+            .into_iter()
+            .collect::<ColmenaResult<Vec<()>>>()?;
 
         Ok(())
     }
 
     /// Evaluates a set of nodes, returning their corresponding store derivations.
-    async fn evaluate_nodes(self: &DeploymentHandle, parent: JobHandle, nodes: Vec<NodeName>)
-        -> ColmenaResult<HashMap<NodeName, ProfileDerivation>>
-    {
+    async fn evaluate_nodes(
+        self: &DeploymentHandle,
+        parent: JobHandle,
+        nodes: Vec<NodeName>,
+    ) -> ColmenaResult<HashMap<NodeName, ProfileDerivation>> {
         let job = parent.create_job(JobType::Evaluate, nodes.clone())?;
 
         job.run_waiting(|job| async move {
@@ -384,11 +411,16 @@ impl Deployment {
 
             drop(permit);
             result
-        }).await
+        })
+        .await
     }
 
     /// Only uploads keys to a node.
-    async fn upload_keys_to_node(self: &DeploymentHandle, parent: JobHandle, mut target: TargetNode) -> ColmenaResult<()> {
+    async fn upload_keys_to_node(
+        self: &DeploymentHandle,
+        parent: JobHandle,
+        mut target: TargetNode,
+    ) -> ColmenaResult<()> {
         let nodes = vec![target.name.clone()];
         let job = parent.create_job(JobType::UploadKeys, nodes)?;
         job.run(|_| async move {
@@ -400,37 +432,44 @@ impl Deployment {
             host.upload_keys(&target.config.keys, true).await?;
 
             Ok(())
-        }).await
+        })
+        .await
     }
 
     /// Builds a system profile directly on the node itself.
-    async fn build_on_node(self: &DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile_drv: ProfileDerivation)
-        -> ColmenaResult<(TargetNode, Profile)>
-    {
+    async fn build_on_node(
+        self: &DeploymentHandle,
+        parent: JobHandle,
+        mut target: TargetNode,
+        profile_drv: ProfileDerivation,
+    ) -> ColmenaResult<(TargetNode, Profile)> {
         let nodes = vec![target.name.clone()];
 
         let permit = self.parallelism_limit.apply.acquire().await.unwrap();
 
         let build_job = parent.create_job(JobType::Build, nodes.clone())?;
-        let (target, profile) = build_job.run(|job| async move {
-            if target.host.is_none() {
-                return Err(ColmenaError::Unsupported);
-            }
+        let (target, profile) = build_job
+            .run(|job| async move {
+                if target.host.is_none() {
+                    return Err(ColmenaError::Unsupported);
+                }
 
-            let host = target.host.as_mut().unwrap();
-            host.set_job(Some(job.clone()));
+                let host = target.host.as_mut().unwrap();
+                host.set_job(Some(job.clone()));
 
-            host.copy_closure(
-                profile_drv.as_store_path(),
-                CopyDirection::ToRemote,
-                CopyOptions::default().include_outputs(true),
-                ).await?;
+                host.copy_closure(
+                    profile_drv.as_store_path(),
+                    CopyDirection::ToRemote,
+                    CopyOptions::default().include_outputs(true),
+                )
+                .await?;
 
-            let profile = profile_drv.realize_remote(host).await?;
+                let profile = profile_drv.realize_remote(host).await?;
 
-            job.success_with_message(format!("Built {:?} on target node", profile.as_path()))?;
-            Ok((target, profile))
-        }).await?;
+                job.success_with_message(format!("Built {:?} on target node", profile.as_path()))?;
+                Ok((target, profile))
+            })
+            .await?;
 
         drop(permit);
 
@@ -438,9 +477,12 @@ impl Deployment {
     }
 
     /// Builds and pushes a system profile on a node.
-    async fn build_and_push_node(self: &DeploymentHandle, parent: JobHandle, target: TargetNode, profile_drv: ProfileDerivation)
-        -> ColmenaResult<(TargetNode, Profile)>
-    {
+    async fn build_and_push_node(
+        self: &DeploymentHandle,
+        parent: JobHandle,
+        target: TargetNode,
+        profile_drv: ProfileDerivation,
+    ) -> ColmenaResult<(TargetNode, Profile)> {
         let nodes = vec![target.name.clone()];
 
         let permit = self.parallelism_limit.apply.acquire().await.unwrap();
@@ -448,16 +490,18 @@ impl Deployment {
         // Build system profile
         let build_job = parent.create_job(JobType::Build, nodes.clone())?;
         let arc_self = self.clone();
-        let profile: Profile = build_job.run(|job| async move {
-            // FIXME: Remote builder?
-            let mut builder = LocalHost::new(arc_self.nix_options.clone()).upcast();
-            builder.set_job(Some(job.clone()));
+        let profile: Profile = build_job
+            .run(|job| async move {
+                // FIXME: Remote builder?
+                let mut builder = LocalHost::new(arc_self.nix_options.clone()).upcast();
+                builder.set_job(Some(job.clone()));
 
-            let profile = profile_drv.realize(&mut builder).await?;
+                let profile = profile_drv.realize(&mut builder).await?;
 
-            job.success_with_message(format!("Built {:?}", profile.as_path()))?;
-            Ok(profile)
-        }).await?;
+                job.success_with_message(format!("Built {:?}", profile.as_path()))?;
+                Ok(profile)
+            })
+            .await?;
 
         // Create GC root
         let profile_r = profile.clone();
@@ -474,7 +518,8 @@ impl Deployment {
                     job.noop("No context directory to create GC roots in".to_string())?;
                 }
                 Ok(target)
-            }).await?
+            })
+            .await?
         } else {
             target
         };
@@ -487,20 +532,24 @@ impl Deployment {
         let push_job = parent.create_job(JobType::Push, nodes.clone())?;
         let push_profile = profile.clone();
         let arc_self = self.clone();
-        let target = push_job.run(|job| async move {
-            if target.host.is_none() {
-                return Err(ColmenaError::Unsupported);
-            }
+        let target = push_job
+            .run(|job| async move {
+                if target.host.is_none() {
+                    return Err(ColmenaError::Unsupported);
+                }
 
-            let host = target.host.as_mut().unwrap();
-            host.set_job(Some(job.clone()));
-            host.copy_closure(
-                push_profile.as_store_path(),
-                CopyDirection::ToRemote,
-                arc_self.options.to_copy_options()).await?;
+                let host = target.host.as_mut().unwrap();
+                host.set_job(Some(job.clone()));
+                host.copy_closure(
+                    push_profile.as_store_path(),
+                    CopyDirection::ToRemote,
+                    arc_self.options.to_copy_options(),
+                )
+                .await?;
 
-            Ok(target)
-        }).await?;
+                Ok(target)
+            })
+            .await?;
 
         drop(permit);
 
@@ -510,9 +559,12 @@ impl Deployment {
     /// Activates a system profile on a node.
     ///
     /// This will also upload keys to the node.
-    async fn activate_node(self: DeploymentHandle, parent: JobHandle, mut target: TargetNode, profile: Profile)
-        -> ColmenaResult<()>
-    {
+    async fn activate_node(
+        self: DeploymentHandle,
+        parent: JobHandle,
+        mut target: TargetNode,
+        profile: Profile,
+    ) -> ColmenaResult<()> {
         let nodes = vec![target.name.clone()];
 
         let permit = self.parallelism_limit.apply.acquire().await.unwrap();
@@ -521,7 +573,10 @@ impl Deployment {
         let mut target = if self.options.upload_keys {
             let job = parent.create_job(JobType::UploadKeys, nodes.clone())?;
             job.run_waiting(|job| async move {
-                let keys = target.config.keys.iter()
+                let keys = target
+                    .config
+                    .keys
+                    .iter()
                     .filter(|(_, v)| v.upload_at() == UploadKeyAt::PreActivation)
                     .map(|(k, v)| (k.clone(), v.clone()))
                     .collect::<HashMap<String, Key>>();
@@ -540,7 +595,8 @@ impl Deployment {
 
                 job.success_with_message("Uploaded keys (pre-activation)".to_string())?;
                 Ok(target)
-            }).await?
+            })
+            .await?
         } else {
             target
         };
@@ -580,7 +636,10 @@ impl Deployment {
         let mut target = if self.options.upload_keys {
             let job = parent.create_job(JobType::UploadKeys, nodes.clone())?;
             job.run_waiting(|job| async move {
-                let keys = target.config.keys.iter()
+                let keys = target
+                    .config
+                    .keys
+                    .iter()
                     .filter(|(_, v)| v.upload_at() == UploadKeyAt::PostActivation)
                     .map(|(k, v)| (k.clone(), v.clone()))
                     .collect::<HashMap<String, Key>>();
@@ -599,7 +658,8 @@ impl Deployment {
 
                 job.success_with_message("Uploaded keys (post-activation)".to_string())?;
                 Ok(target)
-            }).await?
+            })
+            .await?
         } else {
             target
         };
@@ -625,7 +685,8 @@ impl Deployment {
                 host.reboot(options).await?;
 
                 Ok(())
-            }).await?;
+            })
+            .await?;
         }
 
         drop(permit);

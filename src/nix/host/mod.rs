@@ -2,9 +2,9 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 
+use super::{Goal, Key, Profile, StorePath};
 use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::JobHandle;
-use super::{StorePath, Profile, Goal, Key};
 
 mod ssh;
 pub use ssh::Ssh;
@@ -92,7 +92,12 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     /// Sends or receives the specified closure to the host
     ///
     /// The StorePath and its dependent paths will then exist on this host.
-    async fn copy_closure(&mut self, closure: &StorePath, direction: CopyDirection, options: CopyOptions) -> ColmenaResult<()>;
+    async fn copy_closure(
+        &mut self,
+        closure: &StorePath,
+        direction: CopyDirection,
+        options: CopyOptions,
+    ) -> ColmenaResult<()>;
 
     /// Realizes the specified derivation on the host
     ///
@@ -106,19 +111,30 @@ pub trait Host: Send + Sync + std::fmt::Debug {
 
     /// Realizes the specified local derivation on the host then retrieves the outputs.
     async fn realize(&mut self, derivation: &StorePath) -> ColmenaResult<Vec<StorePath>> {
-        let options = CopyOptions::default()
-            .include_outputs(true);
+        let options = CopyOptions::default().include_outputs(true);
 
-        self.copy_closure(derivation, CopyDirection::ToRemote, options).await?;
+        self.copy_closure(derivation, CopyDirection::ToRemote, options)
+            .await?;
         let paths = self.realize_remote(derivation).await?;
-        self.copy_closure(derivation, CopyDirection::FromRemote, options).await?;
+        self.copy_closure(derivation, CopyDirection::FromRemote, options)
+            .await?;
 
         Ok(paths)
     }
 
     /// Pushes and optionally activates a profile to the host.
-    async fn deploy(&mut self, profile: &Profile, goal: Goal, copy_options: CopyOptions) -> ColmenaResult<()> {
-        self.copy_closure(profile.as_store_path(), CopyDirection::ToRemote, copy_options).await?;
+    async fn deploy(
+        &mut self,
+        profile: &Profile,
+        goal: Goal,
+        copy_options: CopyOptions,
+    ) -> ColmenaResult<()> {
+        self.copy_closure(
+            profile.as_store_path(),
+            CopyDirection::ToRemote,
+            copy_options,
+        )
+        .await?;
 
         if goal.requires_activation() {
             self.activate(profile, goal).await?;
@@ -133,7 +149,11 @@ pub trait Host: Send + Sync + std::fmt::Debug {
     /// will not be applied if the specified user/group does not
     /// exist.
     #[allow(unused_variables)]
-    async fn upload_keys(&mut self, keys: &HashMap<String, Key>, require_ownership: bool) -> ColmenaResult<()> {
+    async fn upload_keys(
+        &mut self,
+        keys: &HashMap<String, Key>,
+        require_ownership: bool,
+    ) -> ColmenaResult<()> {
         Err(ColmenaError::Unsupported)
     }
 

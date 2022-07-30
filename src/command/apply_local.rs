@@ -1,17 +1,12 @@
 use regex::Regex;
 use std::collections::HashMap;
 
-use clap::{Arg, Command as ClapCommand, ArgMatches};
+use clap::{Arg, ArgMatches, Command as ClapCommand};
 use tokio::fs;
 
 use crate::error::ColmenaError;
-use crate::nix::deployment::{
-    Deployment,
-    Goal,
-    TargetNode,
-    Options,
-};
-use crate::nix::{NodeName, host::Local as LocalHost};
+use crate::nix::deployment::{Deployment, Goal, Options, TargetNode};
+use crate::nix::{host::Local as LocalHost, NodeName};
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
@@ -89,8 +84,10 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         let s = if local_args.is_present("node") {
             local_args.value_of("node").unwrap().to_owned()
         } else {
-            hostname::get().expect("Could not get hostname")
-                .to_string_lossy().into_owned()
+            hostname::get()
+                .expect("Could not get hostname")
+                .to_string_lossy()
+                .into_owned()
         };
 
         NodeName::new(s)?
@@ -101,7 +98,10 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         if let Some(info) = hive.deployment_info_single(&hostname).await.unwrap() {
             let nix_options = hive.nix_options_with_builders().await.unwrap();
             if !info.allows_local_deployment() {
-                log::error!("Local deployment is not enabled for host {}.", hostname.as_str());
+                log::error!(
+                    "Local deployment is not enabled for host {}.",
+                    hostname.as_str()
+                );
                 log::error!("Hint: Set deployment.allowLocalDeployment to true.");
                 quit::with_code(2);
             }
@@ -111,13 +111,12 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
                 host.set_privilege_escalation_command(Some(command));
             }
 
-            TargetNode::new(
-                hostname.clone(),
-                Some(host.upcast()),
-                info.clone(),
-            )
+            TargetNode::new(hostname.clone(), Some(host.upcast()), info.clone())
         } else {
-            log::error!("Host \"{}\" is not present in the Hive configuration.", hostname.as_str());
+            log::error!(
+                "Host \"{}\" is not present in the Hive configuration.",
+                hostname.as_str()
+            );
             quit::with_code(2);
         }
     };
@@ -138,12 +137,10 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
     deployment.set_options(options);
 
-    let (deployment, output) = tokio::join!(
-        deployment.execute(),
-        output.run_until_completion(),
-    );
+    let (deployment, output) = tokio::join!(deployment.execute(), output.run_until_completion(),);
 
-    deployment?; output?;
+    deployment?;
+    output?;
 
     Ok(())
 }

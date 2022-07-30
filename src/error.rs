@@ -6,7 +6,7 @@ use std::process::ExitStatus;
 use snafu::Snafu;
 use validator::ValidationErrors;
 
-use crate::nix::{key, StorePath, Profile};
+use crate::nix::{key, Profile, StorePath};
 
 pub type ColmenaResult<T> = Result<T, ColmenaError>;
 
@@ -87,7 +87,9 @@ impl From<ExitStatus> for ColmenaError {
     fn from(status: ExitStatus) -> Self {
         match status.code() {
             Some(exit_code) => Self::ChildFailure { exit_code },
-            None => Self::ChildKilled { signal: status.signal().unwrap() },
+            None => Self::ChildKilled {
+                signal: status.signal().unwrap(),
+            },
         }
     }
 }

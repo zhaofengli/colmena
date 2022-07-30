@@ -17,9 +17,9 @@ use std::result::Result as StdResult;
 use async_trait::async_trait;
 use futures::Stream;
 
+use super::{BuildResult, NixExpression, NixOptions, StoreDerivation, StorePath};
+use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::JobHandle;
-use crate::error::{ColmenaResult, ColmenaError};
-use super::{BuildResult, StorePath, StoreDerivation, NixExpression, NixOptions};
 
 /// The result of an evaluation.
 ///
@@ -58,7 +58,11 @@ pub struct AttributeError {
 #[async_trait]
 pub trait DrvSetEvaluator {
     /// Evaluates an attribute set of derivation, returning results as they come in.
-    async fn evaluate(&self, expression: &dyn NixExpression, options: NixOptions) -> ColmenaResult<Pin<Box<dyn Stream<Item = EvalResult>>>>;
+    async fn evaluate(
+        &self,
+        expression: &dyn NixExpression,
+        options: NixOptions,
+    ) -> ColmenaResult<Pin<Box<dyn Stream<Item = EvalResult>>>>;
 
     /// Sets the maximum number of attributes to evaluate at the same time.
     #[allow(unused_variables)]
@@ -77,7 +81,8 @@ impl AttributeOutput {
 
     /// Returns the derivation for this attribute.
     pub fn into_derivation<T>(self) -> ColmenaResult<StoreDerivation<T>>
-        where T: TryFrom<BuildResult<T>>,
+    where
+        T: TryFrom<BuildResult<T>>,
     {
         self.drv_path.into_derivation()
     }

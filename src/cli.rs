@@ -2,7 +2,7 @@
 
 use std::env;
 
-use clap::{Command as ClapCommand, Arg, ArgMatches, ColorChoice};
+use clap::{Arg, ArgMatches, ColorChoice, Command as ClapCommand};
 use clap_complete::Shell;
 use const_format::concatcp;
 use env_logger::fmt::WriteStyle;
@@ -18,7 +18,13 @@ const MANUAL_URL_BASE: &str = "https://colmena.cli.rs";
 /// We maintain CLI and Nix API stability for each minor version.
 /// This ensures that the user always sees accurate documentations, and we can
 /// easily perform updates to the manual after a release.
-const MANUAL_URL: &str = concatcp!(MANUAL_URL_BASE, "/", env!("CARGO_PKG_VERSION_MAJOR"), ".", env!("CARGO_PKG_VERSION_MINOR"));
+const MANUAL_URL: &str = concatcp!(
+    MANUAL_URL_BASE,
+    "/",
+    env!("CARGO_PKG_VERSION_MAJOR"),
+    ".",
+    env!("CARGO_PKG_VERSION_MINOR")
+);
 
 /// The note shown when the user is using a pre-release version.
 ///
@@ -29,12 +35,15 @@ const MANUAL_DISCREPANCY_NOTE: &str = "Note: You are using a pre-release version
 
 lazy_static! {
     static ref LONG_ABOUT: String = {
-        let mut message = format!(r#"NixOS deployment tool
+        let mut message = format!(
+            r#"NixOS deployment tool
 
 Colmena helps you deploy to multiple hosts running NixOS.
 For more details, read the manual at <{}>.
 
-"#, MANUAL_URL);
+"#,
+            MANUAL_URL
+        );
 
         if !env!("CARGO_PKG_VERSION_PRE").is_empty() {
             message += MANUAL_DISCREPANCY_NOTE;
@@ -42,12 +51,14 @@ For more details, read the manual at <{}>.
 
         message
     };
-
     static ref CONFIG_HELP: String = {
-        format!(r#"If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
+        format!(
+            r#"If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
 
 For a sample configuration, check the manual at <{}>.
-"#, MANUAL_URL)
+"#,
+            MANUAL_URL
+        )
     };
 }
 
@@ -68,19 +79,15 @@ macro_rules! register_command {
 macro_rules! handle_command {
     ($module:ident, $matches:ident) => {
         if let Some(sub_matches) = $matches.subcommand_matches(stringify!($module)) {
-            crate::troubleshooter::run_wrapped(
-                &$matches, &sub_matches,
-                command::$module::run,
-            ).await;
+            crate::troubleshooter::run_wrapped(&$matches, &sub_matches, command::$module::run)
+                .await;
             return;
         }
     };
     ($name:expr, $module:ident, $matches:ident) => {
         if let Some(sub_matches) = $matches.subcommand_matches($name) {
-            crate::troubleshooter::run_wrapped(
-                &$matches, &sub_matches,
-                command::$module::run,
-            ).await;
+            crate::troubleshooter::run_wrapped(&$matches, &sub_matches, command::$module::run)
+                .await;
             return;
         }
     };
@@ -131,14 +138,18 @@ It's also possible to specify the preference using environment variables. See <h
             .global(true));
 
     if include_internal {
-        app = app.subcommand(ClapCommand::new("gen-completions")
-            .about("Generate shell auto-completion files (Internal)")
-            .hide(true)
-            .arg(Arg::new("shell")
-                .index(1)
-                .possible_values(Shell::possible_values())
-                .required(true)
-                .takes_value(true)));
+        app = app.subcommand(
+            ClapCommand::new("gen-completions")
+                .about("Generate shell auto-completion files (Internal)")
+                .hide(true)
+                .arg(
+                    Arg::new("shell")
+                        .index(1)
+                        .possible_values(Shell::possible_values())
+                        .required(true)
+                        .takes_value(true),
+                ),
+        );
 
         // deprecated alias
         app = app.subcommand(command::eval::deprecated_alias());

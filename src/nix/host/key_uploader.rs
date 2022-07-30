@@ -19,24 +19,36 @@ use crate::util::capture_stream;
 
 const SCRIPT_TEMPLATE: &str = include_str!("./key_uploader.template.sh");
 
-pub fn generate_script<'a>(key: &'a Key, destination: &'a Path, require_ownership: bool) -> Cow<'a, str> {
-    let key_script = SCRIPT_TEMPLATE.to_string()
+pub fn generate_script<'a>(
+    key: &'a Key,
+    destination: &'a Path,
+    require_ownership: bool,
+) -> Cow<'a, str> {
+    let key_script = SCRIPT_TEMPLATE
+        .to_string()
         .replace("%DESTINATION%", destination.to_str().unwrap())
         .replace("%USER%", &escape(key.user().into()))
         .replace("%GROUP%", &escape(key.group().into()))
         .replace("%PERMISSIONS%", &escape(key.permissions().into()))
-        .replace("%REQUIRE_OWNERSHIP%", if require_ownership { "1" } else { "" })
-        .trim_end_matches('\n').to_string();
+        .replace(
+            "%REQUIRE_OWNERSHIP%",
+            if require_ownership { "1" } else { "" },
+        )
+        .trim_end_matches('\n')
+        .to_string();
 
     escape(key_script.into())
 }
 
-pub async fn feed_uploader(mut uploader: Child, key: &Key, job: Option<JobHandle>) -> ColmenaResult<()> {
-    let mut reader = key.reader().await
-        .map_err(|error| ColmenaError::KeyError {
-            name: key.name().to_owned(),
-            error,
-        })?;
+pub async fn feed_uploader(
+    mut uploader: Child,
+    key: &Key,
+    job: Option<JobHandle>,
+) -> ColmenaResult<()> {
+    let mut reader = key.reader().await.map_err(|error| ColmenaError::KeyError {
+        name: key.name().to_owned(),
+        error,
+    })?;
     let mut stdin = uploader.stdin.take().unwrap();
 
     tokio::io::copy(reader.as_mut(), &mut stdin).await?;
@@ -52,7 +64,8 @@ pub async fn feed_uploader(mut uploader: Child, key: &Key, job: Option<JobHandle
         uploader.wait(),
     );
     let (stdout, stderr, exit) = futures.await;
-    stdout?; stderr?;
+    stdout?;
+    stderr?;
 
     let exit = exit?;
 

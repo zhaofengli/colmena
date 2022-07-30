@@ -8,11 +8,7 @@ use std::{
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use snafu::Snafu;
-use tokio::{
-    fs::File,
-    io::AsyncRead,
-    process::Command,
-};
+use tokio::{fs::File, io::AsyncRead, process::Command};
 use validator::{Validate, ValidationError};
 
 #[non_exhaustive]
@@ -48,18 +44,13 @@ impl TryFrom<KeySources> for KeySource {
 
     fn try_from(ks: KeySources) -> Result<Self, Self::Error> {
         match (ks.text, ks.command, ks.file) {
-            (Some(text), None, None) => {
-                Ok(KeySource::Text(text))
-            }
-            (None, Some(command), None) => {
-                Ok(KeySource::Command(command))
-            }
-            (None, None, Some(file)) => {
-                Ok(KeySource::File(file))
-            }
-            x => {
-                Err(format!("Somehow 0 or more than 1 key source was specified: {:?}", x))
-            }
+            (Some(text), None, None) => Ok(KeySource::Text(text)),
+            (None, Some(command), None) => Ok(KeySource::Command(command)),
+            (None, None, Some(file)) => Ok(KeySource::File(file)),
+            x => Err(format!(
+                "Somehow 0 or more than 1 key source was specified: {:?}",
+                x
+            )),
         }
     }
 }
@@ -115,9 +106,7 @@ pub struct Key {
 impl Key {
     pub async fn reader(&'_ self) -> Result<Box<dyn AsyncRead + Send + Unpin + '_>, KeyError> {
         match &self.source {
-            KeySource::Text(content) => {
-                Ok(Box::new(Cursor::new(content)))
-            }
+            KeySource::Text(content) => Ok(Box::new(Cursor::new(content))),
             KeySource::Command(command) => {
                 let pathname = &command[0];
                 let argv = &command[1..];
@@ -128,7 +117,8 @@ impl Key {
                     .stdout(Stdio::piped())
                     .stderr(Stdio::piped())
                     .spawn()?
-                    .wait_with_output().await?;
+                    .wait_with_output()
+                    .await?;
 
                 if output.status.success() {
                     Ok(Box::new(Cursor::new(output.stdout)))
@@ -142,18 +132,28 @@ impl Key {
                     })
                 }
             }
-            KeySource::File(path) => {
-                Ok(Box::new(File::open(path).await?))
-            }
+            KeySource::File(path) => Ok(Box::new(File::open(path).await?)),
         }
     }
 
-    pub fn name(&self) -> &str { &self.name }
-    pub fn path(&self) -> &Path { &self.path }
-    pub fn user(&self) -> &str { &self.user }
-    pub fn group(&self) -> &str { &self.group }
-    pub fn permissions(&self) -> &str { &self.permissions }
-    pub fn upload_at(&self) -> UploadAt { self.upload_at }
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+    pub fn user(&self) -> &str {
+        &self.user
+    }
+    pub fn group(&self) -> &str {
+        &self.group
+    }
+    pub fn permissions(&self) -> &str {
+        &self.permissions
+    }
+    pub fn upload_at(&self) -> UploadAt {
+        self.upload_at
+    }
 }
 
 fn validate_unix_name(name: &str) -> Result<(), ValidationError> {
@@ -169,6 +169,8 @@ fn validate_dest_dir(dir: &Path) -> Result<(), ValidationError> {
     if dir.has_root() {
         Ok(())
     } else {
-        Err(ValidationError::new("Secret key destination directory must be absolute"))
+        Err(ValidationError::new(
+            "Secret key destination directory must be absolute",
+        ))
     }
 }

@@ -74,7 +74,7 @@
       packages = with pkgs; [
         bashInteractive
         editorconfig-checker
-        clippy rust-analyzer cargo-outdated
+        clippy rust-analyzer cargo-outdated rustfmt
         python3 python3Packages.flake8
       ];
     };

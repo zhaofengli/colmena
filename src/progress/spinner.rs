@@ -4,20 +4,13 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant};
 
 use async_trait::async_trait;
-use indicatif::{MultiProgress, ProgressStyle, ProgressBar};
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 
+use super::{
+    create_channel, Line, LineStyle, Message, ProgressOutput, Receiver, Sender, DEFAULT_LABEL_WIDTH,
+};
 use crate::error::ColmenaResult;
 use crate::job::JobId;
-use super::{
-    DEFAULT_LABEL_WIDTH,
-    ProgressOutput,
-    Sender,
-    Receiver,
-    Message,
-    Line,
-    LineStyle,
-    create_channel,
-};
 
 /// Progress spinner output.
 pub struct SpinnerOutput {
@@ -91,8 +84,7 @@ impl SpinnerOutput {
 
     /// Creates a new bar.
     fn create_bar(&self, style: LineStyle) -> ProgressBar {
-        let bar = ProgressBar::new(100)
-            .with_style(self.get_spinner_style(style));
+        let bar = ProgressBar::new(100).with_style(self.get_spinner_style(style));
 
         let bar = self.multi.add(bar);
         bar.enable_steady_tick(Duration::from_millis(100));
@@ -222,25 +214,27 @@ impl JobState {
     }
 
     fn configure_one_off(&self, bar: &ProgressBar) {
-        bar.clone().with_elapsed(Instant::now().duration_since(self.since));
+        bar.clone()
+            .with_elapsed(Instant::now().duration_since(self.since));
     }
 }
 
 fn get_spinner_style(label_width: usize, style: LineStyle) -> ProgressStyle {
-    let template = format!("{{prefix:>{}.bold.dim}} {{spinner}} {{elapsed}} {{wide_msg}}", label_width);
+    let template = format!(
+        "{{prefix:>{}.bold.dim}} {{spinner}} {{elapsed}} {{wide_msg}}",
+        label_width
+    );
 
     match style {
         LineStyle::Normal | LineStyle::Success | LineStyle::SuccessNoop => {
             ProgressStyle::default_spinner()
-            .tick_chars("🕛🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚✅")
-            .template(&template)
-            .unwrap()
+                .tick_chars("🕛🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚✅")
+                .template(&template)
+                .unwrap()
         }
-        LineStyle::Failure => {
-            ProgressStyle::default_spinner()
+        LineStyle::Failure => ProgressStyle::default_spinner()
             .tick_chars("❌❌")
             .template(&template)
-            .unwrap()
-        }
+            .unwrap(),
     }
 }

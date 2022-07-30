@@ -1,15 +1,15 @@
 use std::convert::{TryFrom, TryInto};
-use std::marker::PhantomData;
-use std::path::{Path, PathBuf};
-use std::ops::Deref;
 use std::fmt;
+use std::marker::PhantomData;
+use std::ops::Deref;
+use std::path::{Path, PathBuf};
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 use tokio::process::Command;
 
+use super::Host;
 use crate::error::{ColmenaError, ColmenaResult};
 use crate::util::CommandExt;
-use super::Host;
 
 /// A Nix store path.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -17,7 +17,7 @@ pub struct StorePath(PathBuf);
 
 /// A store derivation (.drv) that will result in a T when built.
 #[derive(Debug)]
-pub struct StoreDerivation<T: TryFrom<BuildResult<T>>>{
+pub struct StoreDerivation<T: TryFrom<BuildResult<T>>> {
     path: StorePath,
     _target: PhantomData<T>,
 }
@@ -48,9 +48,12 @@ impl StorePath {
         let references = Command::new("nix-store")
             .args(&["--query", "--references"])
             .arg(&self.0)
-            .capture_output().await?
-            .trim_end().split('\n')
-            .map(|p| StorePath(PathBuf::from(p))).collect();
+            .capture_output()
+            .await?
+            .trim_end()
+            .split('\n')
+            .map(|p| StorePath(PathBuf::from(p)))
+            .collect();
 
         Ok(references)
     }
@@ -114,7 +117,7 @@ impl<T: TryFrom<BuildResult<T>>> StoreDerivation<T> {
     }
 }
 
-impl<T: TryFrom<BuildResult<T>, Error=ColmenaError>> StoreDerivation<T> {
+impl<T: TryFrom<BuildResult<T>, Error = ColmenaError>> StoreDerivation<T> {
     /// Builds the store derivation on a host, resulting in a T.
     pub async fn realize(&self, host: &mut Box<dyn Host>) -> ColmenaResult<T> {
         let paths: Vec<StorePath> = host.realize(&self.path).await?;
@@ -144,7 +147,7 @@ impl<T: TryFrom<BuildResult<T>>> fmt::Display for StoreDerivation<T> {
     }
 }
 
-impl<T: TryFrom<BuildResult<T>, Error=ColmenaError>> BuildResult<T> {
+impl<T: TryFrom<BuildResult<T>, Error = ColmenaError>> BuildResult<T> {
     pub fn paths(&self) -> &[StorePath] {
         self.results.as_slice()
     }

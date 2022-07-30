@@ -2,11 +2,11 @@
 
 use std::collections::HashSet;
 use std::convert::AsRef;
-use std::iter::{Iterator, FromIterator};
+use std::iter::{FromIterator, Iterator};
 
 use glob::Pattern as GlobPattern;
 
-use super::{ColmenaError, ColmenaResult, NodeName, NodeConfig};
+use super::{ColmenaError, ColmenaResult, NodeConfig, NodeName};
 
 /// A node filter containing a list of rules.
 pub struct NodeFilter {
@@ -34,30 +34,29 @@ impl NodeFilter {
         if trimmed.is_empty() {
             log::warn!("Filter \"{}\" is blank and will match nothing", filter);
 
-            return Ok(Self {
-                rules: Vec::new(),
-            });
+            return Ok(Self { rules: Vec::new() });
         }
 
-        let rules = trimmed.split(',').map(|pattern| {
-            let pattern = pattern.trim();
+        let rules = trimmed
+            .split(',')
+            .map(|pattern| {
+                let pattern = pattern.trim();
 
-            if pattern.is_empty() {
-                return Err(ColmenaError::EmptyFilterRule);
-            }
+                if pattern.is_empty() {
+                    return Err(ColmenaError::EmptyFilterRule);
+                }
 
-            if let Some(tag_pattern) = pattern.strip_prefix('@') {
-                Ok(Rule::MatchTag(GlobPattern::new(tag_pattern).unwrap()))
-            } else {
-                Ok(Rule::MatchName(GlobPattern::new(pattern).unwrap()))
-            }
-        }).collect::<Vec<ColmenaResult<Rule>>>();
+                if let Some(tag_pattern) = pattern.strip_prefix('@') {
+                    Ok(Rule::MatchTag(GlobPattern::new(tag_pattern).unwrap()))
+                } else {
+                    Ok(Rule::MatchName(GlobPattern::new(pattern).unwrap()))
+                }
+            })
+            .collect::<Vec<ColmenaResult<Rule>>>();
 
         let rules = Result::from_iter(rules)?;
 
-        Ok(Self {
-            rules,
-        })
+        Ok(Self { rules })
     }
 
     /// Returns whether the filter has any rule matching NodeConfig information.
@@ -71,32 +70,36 @@ impl NodeFilter {
 
     /// Runs the filter against a set of NodeConfigs and returns the matched ones.
     pub fn filter_node_configs<'a, I>(&self, nodes: I) -> HashSet<NodeName>
-        where I: Iterator<Item = (&'a NodeName, &'a NodeConfig)>
+    where
+        I: Iterator<Item = (&'a NodeName, &'a NodeConfig)>,
     {
         if self.rules.is_empty() {
             return HashSet::new();
         }
 
-        nodes.filter_map(|(name, node)| {
-            for rule in self.rules.iter() {
-                match rule {
-                    Rule::MatchName(pat) => {
-                        if pat.matches(name.as_str()) {
-                            return Some(name);
-                        }
-                    }
-                    Rule::MatchTag(pat) => {
-                        for tag in node.tags() {
-                            if pat.matches(tag) {
+        nodes
+            .filter_map(|(name, node)| {
+                for rule in self.rules.iter() {
+                    match rule {
+                        Rule::MatchName(pat) => {
+                            if pat.matches(name.as_str()) {
                                 return Some(name);
+                            }
+                        }
+                        Rule::MatchTag(pat) => {
+                            for tag in node.tags() {
+                                if pat.matches(tag) {
+                                    return Some(name);
+                                }
                             }
                         }
                     }
                 }
-            }
 
-            None
-        }).cloned().collect()
+                None
+            })
+            .cloned()
+            .collect()
     }
 
     /// Runs the filter against a set of node names and returns the matched ones.
@@ -140,7 +143,7 @@ mod tests {
     macro_rules! node {
         ($n:expr) => {
             NodeName::new($n.to_string()).unwrap()
-        }
+        };
     }
 
     #[test]
@@ -186,16 +189,22 @@ mod tests {
 
     #[test]
     fn test_filter_node_names() {
-        let nodes = vec![ node!("lax-alpha"), node!("lax-beta"), node!("sfo-gamma") ];
+        let nodes = vec![node!("lax-alpha"), node!("lax-beta"), node!("sfo-gamma")];
 
         assert_eq!(
-            &HashSet::from_iter([ node!("lax-alpha") ]),
-            &NodeFilter::new("lax-alpha").unwrap().filter_node_names(&nodes).unwrap(),
+            &HashSet::from_iter([node!("lax-alpha")]),
+            &NodeFilter::new("lax-alpha")
+                .unwrap()
+                .filter_node_names(&nodes)
+                .unwrap(),
         );
 
         assert_eq!(
-            &HashSet::from_iter([ node!("lax-alpha"), node!("lax-beta") ]),
-            &NodeFilter::new("lax-*").unwrap().filter_node_names(&nodes).unwrap(),
+            &HashSet::from_iter([node!("lax-alpha"), node!("lax-beta")]),
+            &NodeFilter::new("lax-*")
+                .unwrap()
+                .filter_node_names(&nodes)
+                .unwrap(),
         );
     }
 
@@ -216,46 +225,66 @@ mod tests {
 
         let mut nodes = HashMap::new();
 
-        nodes.insert(node!("alpha"), NodeConfig {
-            tags: vec![ "web".to_string(), "infra-lax".to_string() ],
-            ..template.clone()
-        });
+        nodes.insert(
+            node!("alpha"),
+            NodeConfig {
+                tags: vec!["web".to_string(), "infra-lax".to_string()],
+                ..template.clone()
+            },
+        );
 
-        nodes.insert(node!("beta"), NodeConfig {
-            tags: vec![ "router".to_string(), "infra-sfo".to_string() ],
-            ..template.clone()
-        });
+        nodes.insert(
+            node!("beta"),
+            NodeConfig {
+                tags: vec!["router".to_string(), "infra-sfo".to_string()],
+                ..template.clone()
+            },
+        );
 
-        nodes.insert(node!("gamma-a"), NodeConfig {
-            tags: vec![ "controller".to_string() ],
-            ..template.clone()
-        });
+        nodes.insert(
+            node!("gamma-a"),
+            NodeConfig {
+                tags: vec!["controller".to_string()],
+                ..template.clone()
+            },
+        );
 
-        nodes.insert(node!("gamma-b"), NodeConfig {
-            tags: vec![ "ewaste".to_string() ],
-            ..template
-        });
+        nodes.insert(
+            node!("gamma-b"),
+            NodeConfig {
+                tags: vec!["ewaste".to_string()],
+                ..template
+            },
+        );
 
         assert_eq!(4, nodes.len());
 
         assert_eq!(
-            &HashSet::from_iter([ node!("alpha") ]),
-            &NodeFilter::new("@web").unwrap().filter_node_configs(nodes.iter()),
+            &HashSet::from_iter([node!("alpha")]),
+            &NodeFilter::new("@web")
+                .unwrap()
+                .filter_node_configs(nodes.iter()),
         );
 
         assert_eq!(
-            &HashSet::from_iter([ node!("alpha"), node!("beta") ]),
-            &NodeFilter::new("@infra-*").unwrap().filter_node_configs(nodes.iter()),
+            &HashSet::from_iter([node!("alpha"), node!("beta")]),
+            &NodeFilter::new("@infra-*")
+                .unwrap()
+                .filter_node_configs(nodes.iter()),
         );
 
         assert_eq!(
-            &HashSet::from_iter([ node!("beta"), node!("gamma-a") ]),
-            &NodeFilter::new("@router,@controller").unwrap().filter_node_configs(nodes.iter()),
+            &HashSet::from_iter([node!("beta"), node!("gamma-a")]),
+            &NodeFilter::new("@router,@controller")
+                .unwrap()
+                .filter_node_configs(nodes.iter()),
         );
 
         assert_eq!(
-            &HashSet::from_iter([ node!("beta"), node!("gamma-a"), node!("gamma-b") ]),
-            &NodeFilter::new("@router,gamma-*").unwrap().filter_node_configs(nodes.iter()),
+            &HashSet::from_iter([node!("beta"), node!("gamma-a"), node!("gamma-b")]),
+            &NodeFilter::new("@router,gamma-*")
+                .unwrap()
+                .filter_node_configs(nodes.iter()),
         );
     }
 }

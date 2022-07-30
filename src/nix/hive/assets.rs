@@ -32,9 +32,7 @@ impl Assets {
         create_file(&temp_dir, "options.nix", false, OPTIONS_NIX);
         create_file(&temp_dir, "modules.nix", false, MODULES_NIX);
 
-        Self {
-            temp_dir,
-        }
+        Self { temp_dir }
     }
 
     /// Returns the base expression from which the evaluated Hive can be used.
@@ -62,8 +60,12 @@ impl Assets {
     }
 
     fn get_path(&self, name: &str) -> String {
-        self.temp_dir.path().join(name)
-            .to_str().unwrap().to_string()
+        self.temp_dir
+            .path()
+            .join(name)
+            .to_str()
+            .unwrap()
+            .to_string()
     }
 }
 

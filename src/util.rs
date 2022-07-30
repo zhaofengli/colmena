@@ -3,16 +3,16 @@ use std::path::PathBuf;
 use std::process::Stdio;
 
 use async_trait::async_trait;
-use clap::{Command as ClapCommand, Arg, ArgMatches};
+use clap::{Arg, ArgMatches, Command as ClapCommand};
 use futures::future::join3;
 use serde::de::DeserializeOwned;
-use tokio::io::{AsyncRead, AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
 use tokio::process::Command;
 
-use super::error::{ColmenaResult, ColmenaError};
-use super::nix::{Flake, Hive, HivePath, StorePath};
-use super::nix::deployment::TargetNodeMap;
+use super::error::{ColmenaError, ColmenaResult};
 use super::job::JobHandle;
+use super::nix::deployment::TargetNodeMap;
+use super::nix::{Flake, Hive, HivePath, StorePath};
 
 const NEWLINE: u8 = 0xa;
 
@@ -35,7 +35,9 @@ pub trait CommandExt {
     async fn capture_output(&mut self) -> ColmenaResult<String>;
 
     /// Runs the command, capturing deserialized output from JSON.
-    async fn capture_json<T>(&mut self) -> ColmenaResult<T> where T: DeserializeOwned;
+    async fn capture_json<T>(&mut self) -> ColmenaResult<T>
+    where
+        T: DeserializeOwned;
 
     /// Runs the command, capturing a single store path.
     async fn capture_store_path(&mut self) -> ColmenaResult<StorePath>;
@@ -81,7 +83,11 @@ impl CommandExecution {
         let stdout = BufReader::new(child.stdout.take().unwrap());
         let stderr = BufReader::new(child.stderr.take().unwrap());
 
-        let stdout_job = if self.hide_stdout { None } else { self.job.clone() };
+        let stdout_job = if self.hide_stdout {
+            None
+        } else {
+            self.job.clone()
+        };
 
         let futures = join3(
             capture_stream(stdout, stdout_job, false),
@@ -107,10 +113,7 @@ impl CommandExecution {
 impl CommandExt for Command {
     /// Runs the command with stdout and stderr passed through to the user.
     async fn passthrough(&mut self) -> ColmenaResult<()> {
-        let exit = self
-            .spawn()?
-            .wait()
-            .await?;
+        let exit = self.spawn()?.wait().await?;
 
         if exit.success() {
             Ok(())
@@ -138,10 +141,13 @@ impl CommandExt for Command {
     }
 
     /// Captures deserialized output from JSON.
-    async fn capture_json<T>(&mut self) -> ColmenaResult<T> where T: DeserializeOwned {
+    async fn capture_json<T>(&mut self) -> ColmenaResult<T>
+    where
+        T: DeserializeOwned,
+    {
         let output = self.capture_output().await?;
         serde_json::from_str(&output).map_err(|_| ColmenaError::BadOutput {
-            output: output.clone()
+            output: output.clone(),
         })
     }
 
@@ -168,10 +174,13 @@ impl CommandExt for CommandExecution {
     }
 
     /// Captures deserialized output from JSON.
-    async fn capture_json<T>(&mut self) -> ColmenaResult<T> where T: DeserializeOwned {
+    async fn capture_json<T>(&mut self) -> ColmenaResult<T>
+    where
+        T: DeserializeOwned,
+    {
         let output = self.capture_output().await?;
         serde_json::from_str(&output).map_err(|_| ColmenaError::BadOutput {
-            output: output.clone()
+            output: output.clone(),
         })
     }
 
@@ -214,13 +223,19 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
             }
 
             if file_path.is_none() {
-                log::error!("Could not find `hive.nix` or `flake.nix` in {:?} or any parent directory", std::env::current_dir()?);
+                log::error!(
+                    "Could not find `hive.nix` or `flake.nix` in {:?} or any parent directory",
+                    std::env::current_dir()?
+                );
             }
 
             file_path.unwrap()
         }
         _ => {
-            let path = args.value_of("config").expect("The config arg should exist").to_owned();
+            let path = args
+                .value_of("config")
+                .expect("The config arg should exist")
+                .to_owned();
             let fpath = PathBuf::from(&path);
 
             if !fpath.exists() && path.contains(':') {
@@ -278,8 +293,13 @@ The list is comma-separated and globs are supported. To match tags, prepend the 
             .takes_value(true))
 }
 
-pub async fn capture_stream<R>(mut stream: BufReader<R>, job: Option<JobHandle>, stderr: bool) -> ColmenaResult<String>
-    where R: AsyncRead + Unpin
+pub async fn capture_stream<R>(
+    mut stream: BufReader<R>,
+    job: Option<JobHandle>,
+    stderr: bool,
+) -> ColmenaResult<String>
+where
+    R: AsyncRead + Unpin,
 {
     let mut log = String::new();
 
@@ -325,9 +345,7 @@ mod tests {
         let expected = "Hello\nWorld\n";
 
         let stream = BufReader::new(expected.as_bytes());
-        let captured = block_on(async {
-            capture_stream(stream, None, false).await.unwrap()
-        });
+        let captured = block_on(async { capture_stream(stream, None, false).await.unwrap() });
 
         assert_eq!(expected, captured);
     }
@@ -335,9 +353,7 @@ mod tests {
     #[test]
     fn test_capture_stream_with_invalid_utf8() {
         let stream = BufReader::new([0x80, 0xa].as_slice());
-        let captured = block_on(async {
-            capture_stream(stream, None, false).await.unwrap()
-        });
+        let captured = block_on(async { capture_stream(stream, None, false).await.unwrap() });
 
         assert_eq!("\u{fffd}\n", captured);
     }

@@ -1,17 +1,17 @@
 use std::time::Duration;
 
-use clap::{Command as ClapCommand, ArgMatches};
+use clap::{ArgMatches, Command as ClapCommand};
 use tokio::time;
 
 use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::{JobMonitor, JobType};
 use crate::nix::NodeName;
-use crate::progress::{ProgressOutput, spinner::SpinnerOutput};
+use crate::progress::{spinner::SpinnerOutput, ProgressOutput};
 
 macro_rules! node {
     ($n:expr) => {
         NodeName::new($n.to_string()).unwrap()
-    }
+    };
 }
 
 pub fn subcommand() -> ClapCommand<'static> {
@@ -44,7 +44,7 @@ pub async fn run(_global_args: &ArgMatches, _local_args: &ArgMatches) -> Result<
             Ok(())
         });
 
-        let build = meta.create_job(JobType::Build, vec![ node!("alpha"), node!("beta") ])?;
+        let build = meta.create_job(JobType::Build, vec![node!("alpha"), node!("beta")])?;
         let build = build.run(|_| async move {
             time::sleep(Duration::from_secs(5)).await;
 
@@ -62,7 +62,8 @@ pub async fn run(_global_args: &ArgMatches, _local_args: &ArgMatches) -> Result<
         meta_future,
     );
 
-    monitor?; output?;
+    monitor?;
+    output?;
 
     println!("Return Value -> {:?}", ret);
 
