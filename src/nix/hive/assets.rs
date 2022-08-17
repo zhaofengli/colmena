@@ -11,8 +11,10 @@ use std::os::unix::fs::OpenOptionsExt;
 
 use tempfile::TempDir;
 
-use super::HivePath;
+use super::{Flake, HivePath};
+use crate::error::ColmenaResult;
 
+const FLAKE_NIX: &[u8] = include_bytes!("flake.nix");
 const EVAL_NIX: &[u8] = include_bytes!("eval.nix");
 const OPTIONS_NIX: &[u8] = include_bytes!("options.nix");
 const MODULES_NIX: &[u8] = include_bytes!("modules.nix");
@@ -22,17 +24,37 @@ const MODULES_NIX: &[u8] = include_bytes!("modules.nix");
 pub(super) struct Assets {
     /// Temporary directory holding the files.
     temp_dir: TempDir,
+
+    /// Locked Flake URI of the assets flake.
+    assets_flake_uri: Option<String>,
 }
 
 impl Assets {
-    pub fn new() -> Self {
+    pub async fn new(flake: bool) -> ColmenaResult<Self> {
         let temp_dir = TempDir::new().unwrap();
 
-        create_file(&temp_dir, "eval.nix", false, EVAL_NIX);
-        create_file(&temp_dir, "options.nix", false, OPTIONS_NIX);
-        create_file(&temp_dir, "modules.nix", false, MODULES_NIX);
+        create_file(&temp_dir, "eval.nix", false, EVAL_NIX)?;
+        create_file(&temp_dir, "options.nix", false, OPTIONS_NIX)?;
+        create_file(&temp_dir, "modules.nix", false, MODULES_NIX)?;
 
-        Self { temp_dir }
+        let mut assets_flake_uri = None;
+
+        if flake {
+            // Emit a temporary flake, then resolve the locked URI
+            create_file(&temp_dir, "flake.nix", false, FLAKE_NIX)?;
+
+            // We explicitly specify `path:` instead of letting Nix resolve
+            // automatically, which would involve checking parent directories
+            // for a git repository.
+            let uri = format!("path:{}", temp_dir.path().to_str().unwrap());
+            let assets_flake = Flake::from_uri(uri).await?;
+            assets_flake_uri = Some(assets_flake.locked_uri().to_owned());
+        }
+
+        Ok(Self {
+            temp_dir,
+            assets_flake_uri,
+        })
     }
 
     /// Returns the base expression from which the evaluated Hive can be used.
@@ -49,11 +71,9 @@ impl Assets {
             }
             HivePath::Flake(flake) => {
                 format!(
-                    "with builtins; let eval = import {eval_nix}; hive = eval {{ flakeUri = \"{flake_uri}\"; colmenaOptions = import {options_nix}; colmenaModules = import {modules_nix}; }}; in ",
-                    flake_uri = flake.uri(),
-                    eval_nix = self.get_path("eval.nix"),
-                    options_nix = self.get_path("options.nix"),
-                    modules_nix = self.get_path("modules.nix"),
+                    "with builtins; let assets = getFlake \"{assets_flake_uri}\"; hive = assets.lib.colmenaEval {{ flakeUri = \"{flake_uri}\"; }}; in ",
+                    assets_flake_uri = self.assets_flake_uri.as_ref().expect("The assets flake must have been initialized"),
+                    flake_uri = flake.locked_uri(),
                 )
             }
         }
@@ -69,15 +89,16 @@ impl Assets {
     }
 }
 
-fn create_file(base: &TempDir, name: &str, executable: bool, contents: &[u8]) {
+fn create_file(base: &TempDir, name: &str, executable: bool, contents: &[u8]) -> ColmenaResult<()> {
     let mode = if executable { 0o700 } else { 0o600 };
     let path = base.path().join(name);
     let mut f = OpenOptions::new()
         .create_new(true)
         .write(true)
         .mode(mode)
-        .open(path)
-        .unwrap();
+        .open(path)?;
 
-    f.write_all(contents).unwrap();
+    f.write_all(contents)?;
+
+    Ok(())
 }

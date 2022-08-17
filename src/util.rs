@@ -244,7 +244,7 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
                 log::info!("Using flake: {}", flake.uri());
 
                 let hive_path = HivePath::Flake(flake);
-                let mut hive = Hive::new(hive_path)?;
+                let mut hive = Hive::new(hive_path).await?;
 
                 if args.is_present("show-trace") {
                     hive.set_show_trace(true);
@@ -267,7 +267,7 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
         }
     }
 
-    let mut hive = Hive::new(hive_path)?;
+    let mut hive = Hive::new(hive_path).await?;
 
     if args.is_present("show-trace") {
         hive.set_show_trace(true);

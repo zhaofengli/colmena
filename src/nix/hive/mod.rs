@@ -90,6 +90,10 @@ impl HivePath {
         Ok(Self::Legacy(path.canonicalize()?))
     }
 
+    fn is_flake(&self) -> bool {
+        matches!(self, Self::Flake(_))
+    }
+
     fn context_dir(&self) -> Option<PathBuf> {
         match self {
             Self::Legacy(p) => p.parent().map(|d| d.to_owned()),
@@ -99,13 +103,14 @@ impl HivePath {
 }
 
 impl Hive {
-    pub fn new(path: HivePath) -> ColmenaResult<Self> {
+    pub async fn new(path: HivePath) -> ColmenaResult<Self> {
         let context_dir = path.context_dir();
+        let assets = Assets::new(path.is_flake()).await?;
 
         Ok(Self {
             path,
             context_dir,
-            assets: Assets::new(),
+            assets,
             show_trace: false,
             meta_config: OnceCell::new(),
         })
