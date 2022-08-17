@@ -38,10 +38,14 @@ let
     # We include the input closure of a prebuilt system profile
     # so it can build system profiles for the targets without
     # network access.
-    deployerConfig = { lib, config, ... }: {
+    deployerConfig = { pkgs, lib, config, ... }: {
       imports = [
         extraDeployerConfig
       ];
+
+      nix.registry = lib.mkIf (pkgs ? _inputs) {
+        nixpkgs.flake = pkgs._inputs.nixpkgs;
+      };
 
       nix.nixPath = [
         "nixpkgs=${pkgs.path}"

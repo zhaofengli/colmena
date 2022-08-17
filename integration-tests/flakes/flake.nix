@@ -2,7 +2,7 @@
   description = "A simple deployment";
 
   inputs = {
-    nixpkgs.url = "path:@nixpkgs@";
+    nixpkgs.url = "@nixpkgs@";
   };
 
   outputs = { self, nixpkgs }: let

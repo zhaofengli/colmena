@@ -4,5 +4,10 @@ in import flake.inputs.nixpkgs.outPath {
   overlays = [
     flake._evalJobsOverlay
     flake.overlay
+
+    # Pass through original flake inputs
+    (final: prev: {
+      _inputs = flake.inputs;
+    })
   ];
 }

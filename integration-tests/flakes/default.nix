@@ -14,11 +14,10 @@ in tools.makeTest {
   testScript = ''
     import re
 
-    deployer.succeed("sed -i \"s @nixpkgs@ $(readlink /nixpkgs) g\" /tmp/bundle/flake.nix")
+    deployer.succeed("sed -i 's @nixpkgs@ path:${pkgs._inputs.nixpkgs.outPath}?narHash=${pkgs._inputs.nixpkgs.narHash} g' /tmp/bundle/flake.nix")
 
     with subtest("Lock flake dependencies"):
-        # --impure required for path:/nixpkgs which is a symlink to a store path
-        deployer.succeed("cd /tmp/bundle && nix --experimental-features \"nix-command flakes\" flake lock --impure")
+        deployer.succeed("cd /tmp/bundle && nix --experimental-features \"nix-command flakes\" flake lock")
 
     with subtest("Deploy with a plain flake without git"):
         deployer.succeed("cd /tmp/bundle && ${tools.colmenaExec} apply --on @target --evaluator ${evaluator}")
