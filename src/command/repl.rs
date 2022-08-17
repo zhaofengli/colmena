@@ -1,4 +1,7 @@
+use std::io::Write;
+
 use clap::{ArgMatches, Command as ClapCommand};
+use tempfile::Builder as TempFileBuilder;
 use tokio::process::Command;
 
 use crate::error::ColmenaError;
@@ -21,12 +24,19 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
     let expr = hive.get_repl_expression();
 
+    let mut expr_file = TempFileBuilder::new()
+        .prefix("colmena-repl-")
+        .suffix(".nix")
+        .tempfile()?;
+
+    expr_file.write_all(expr.as_bytes())?;
+
     let status = Command::new("nix")
         .arg("repl")
         // `nix repl` is expected to be marked as experimental:
         // <https://github.com/NixOS/nix/issues/5604>
         .args(&["--experimental-features", "nix-command flakes"])
-        .args(&["--expr", &expr])
+        .arg(expr_file.path())
         .status()
         .await?;
 
