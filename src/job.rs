@@ -4,7 +4,7 @@
 //! which coordinates the display of progress onto the terminal.
 
 use std::collections::HashMap;
-use std::fmt::{self, Display};
+use std::fmt::{self, Display, Write};
 use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
@@ -879,7 +879,7 @@ fn describe_node_list(nodes: &[NodeName]) -> Option<String> {
         let remaining = rough_limit - s.len();
 
         if next.len() + other_text.len() >= remaining {
-            s += &format!(", and {} other nodes", total - idx);
+            write!(s, ", and {} other nodes", total - idx).unwrap();
             break;
         }
     }

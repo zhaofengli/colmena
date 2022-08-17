@@ -147,7 +147,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
     let filter = local_args.value_of("on").map(NodeFilter::new).transpose()?;
 
-    if !filter.is_some() && goal != Goal::Build {
+    if filter.is_none() && goal != Goal::Build {
         // User did not specify node, we should check meta and see rules
         let meta = hive.get_meta_config().await?;
         if !meta.allow_apply_all {
