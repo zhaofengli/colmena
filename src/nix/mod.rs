@@ -39,6 +39,9 @@ pub use node_filter::NodeFilter;
 
 pub mod evaluator;
 
+pub mod expression;
+pub use expression::{NixExpression, SerializedNixExpression};
+
 /// Path to the main system profile.
 pub const SYSTEM_PROFILE: &str = "/nix/var/nix/profiles/system";
 
@@ -102,17 +105,6 @@ pub struct NixOptions {
     /// - `@/path/to/machines`
     /// - `builder@host.tld riscv64-linux /home/nix/.ssh/keys/builder.key 8 1 kvm`
     builders: Option<String>,
-}
-
-/// A Nix expression.
-pub trait NixExpression: Send + Sync {
-    /// Returns the full Nix expression to be evaluated.
-    fn expression(&self) -> String;
-
-    /// Returns whether this expression requires the use of flakes.
-    fn requires_flakes(&self) -> bool {
-        false
-    }
 }
 
 impl NodeName {
@@ -215,12 +207,6 @@ impl NixOptions {
         }
 
         options
-    }
-}
-
-impl NixExpression for String {
-    fn expression(&self) -> String {
-        self.clone()
     }
 }
 

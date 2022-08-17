@@ -5,11 +5,8 @@ mod tests;
 
 use std::collections::HashMap;
 use std::convert::AsRef;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use serde::Serialize;
-use tempfile::{NamedTempFile, TempPath};
 use tokio::process::Command;
 use tokio::sync::OnceCell;
 use validator::Validate;
@@ -17,7 +14,7 @@ use validator::Validate;
 use super::deployment::TargetNode;
 use super::{
     Flake, MetaConfig, NixExpression, NixOptions, NodeConfig, NodeFilter, NodeName,
-    ProfileDerivation, StorePath,
+    ProfileDerivation, SerializedNixExpression, StorePath,
 };
 use crate::error::ColmenaResult;
 use crate::job::JobHandle;
@@ -58,15 +55,6 @@ pub struct Hive {
 struct NixInstantiate<'hive> {
     hive: &'hive Hive,
     expression: String,
-}
-
-/// A serialized Nix expression.
-///
-/// Very hacky so should be avoided as much as possible. But I suppose it's
-/// more robust than attempting to generate Nix expressions directly or
-/// escaping a JSON string to strip off Nix interpolation.
-struct SerializedNixExpression {
-    json_file: TempPath,
 }
 
 /// An expression to evaluate the system profiles of selected nodes.
@@ -290,7 +278,7 @@ impl Hive {
         &self,
         nodes: &[NodeName],
     ) -> ColmenaResult<HashMap<NodeName, NodeConfig>> {
-        let nodes_expr = SerializedNixExpression::new(nodes)?;
+        let nodes_expr = SerializedNixExpression::new(nodes);
 
         let configs: HashMap<NodeName, NodeConfig> = self
             .nix_instantiate(&format!(
@@ -322,7 +310,7 @@ impl Hive {
         nodes: &[NodeName],
         job: Option<JobHandle>,
     ) -> ColmenaResult<HashMap<NodeName, ProfileDerivation>> {
-        let nodes_expr = SerializedNixExpression::new(nodes)?;
+        let nodes_expr = SerializedNixExpression::new(nodes);
 
         let expr = format!("hive.evalSelectedDrvPaths {}", nodes_expr.expression());
 
@@ -344,7 +332,7 @@ impl Hive {
 
     /// Returns the expression to evaluate selected nodes.
     pub fn eval_selected_expr(&self, nodes: &[NodeName]) -> ColmenaResult<impl NixExpression + '_> {
-        let nodes_expr = SerializedNixExpression::new(nodes)?;
+        let nodes_expr = SerializedNixExpression::new(nodes);
 
         Ok(EvalSelectedExpression {
             hive: self,
@@ -443,30 +431,6 @@ impl<'hive> NixInstantiate<'hive> {
         command.args(options.to_args());
 
         Ok(command)
-    }
-}
-
-impl SerializedNixExpression {
-    pub fn new<T>(data: T) -> ColmenaResult<Self>
-    where
-        T: Serialize,
-    {
-        let mut tmp = NamedTempFile::new()?;
-        let json = serde_json::to_vec(&data).expect("Could not serialize data");
-        tmp.write_all(&json)?;
-
-        Ok(Self {
-            json_file: tmp.into_temp_path(),
-        })
-    }
-}
-
-impl NixExpression for SerializedNixExpression {
-    fn expression(&self) -> String {
-        format!(
-            "(builtins.fromJSON (builtins.readFile {}))",
-            self.json_file.to_str().unwrap()
-        )
     }
 }
 
