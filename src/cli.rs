@@ -2,7 +2,7 @@
 
 use std::env;
 
-use clap::{Arg, ArgMatches, ColorChoice, Command as ClapCommand};
+use clap::{value_parser, Arg, ArgMatches, ColorChoice, Command as ClapCommand};
 use clap_complete::Shell;
 use const_format::concatcp;
 use env_logger::fmt::WriteStyle;
@@ -145,7 +145,7 @@ It's also possible to specify the preference using environment variables. See <h
                 .arg(
                     Arg::new("shell")
                         .index(1)
-                        .possible_values(Shell::possible_values())
+                        .value_parser(value_parser!(Shell))
                         .required(true)
                         .takes_value(true),
                 ),
@@ -208,7 +208,7 @@ pub async fn run() {
 
 fn gen_completions(args: &ArgMatches) {
     let mut app = build_cli(false);
-    let shell = args.value_of_t::<Shell>("shell").unwrap();
+    let shell = args.get_one::<Shell>("shell").unwrap().to_owned();
 
     clap_complete::generate(shell, &mut app, "colmena", &mut std::io::stdout());
 }

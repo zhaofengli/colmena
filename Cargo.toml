@@ -34,7 +34,7 @@ snafu = "0.7.0"
 tempfile = "3.1.0"
 tokio-stream = "0.1.8"
 uuid = { version = "1.0.0", features = ["serde", "v4"] }
-validator = { version = "0.15.0", features = ["derive"] }
+validator = { version = "0.16.0", features = ["derive"] }
 
 [dev-dependencies]
 ntest = "0.8.0"
