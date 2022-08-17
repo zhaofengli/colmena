@@ -7,7 +7,7 @@ use tokio::process::Command;
 
 use super::{ColmenaError, ColmenaResult};
 
-struct NixVersion {
+pub struct NixVersion {
     major: usize,
     minor: usize,
     string: String,
@@ -36,6 +36,10 @@ impl NixVersion {
 
     fn has_flakes(&self) -> bool {
         self.major > 2 || (self.major == 2 && self.minor >= 4)
+    }
+
+    pub fn at_least(&self, major: usize, minor: usize) -> bool {
+        self.major >= major && self.minor >= minor
     }
 }
 
@@ -146,5 +150,9 @@ impl NixCheck {
 
     pub fn flakes_supported(&self) -> bool {
         self.flakes_supported
+    }
+
+    pub fn version(&self) -> Option<&NixVersion> {
+        self.version.as_ref()
     }
 }
