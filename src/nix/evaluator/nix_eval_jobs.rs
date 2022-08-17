@@ -86,7 +86,6 @@ impl DrvSetEvaluator for NixEvalJobs {
 
         let mut command = Command::new(&self.executable);
         command
-            .arg("--impure")
             .arg("--workers")
             .arg(self.workers.to_string())
             .arg(&expr_file);
