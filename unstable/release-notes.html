@@ -144,6 +144,7 @@
 <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
 <h2 id="release-040-unreleased"><a class="header" href="#release-040-unreleased">Release 0.4.0 (Unreleased)</a></h2>
 <ul>
+<li>Flake evaluation is now actually pure by default. To enable impure expressions, pass <code>--impure</code>.</li>
 <li><code>--reboot</code> is added to trigger a reboot and wait for the node to come back up.</li>
 <li>The target user is no longer explicitly set when <code>deployment.targetUser</code> is null (<a href="https://github.com/zhaofengli/colmena/pull/91">#91</a>).</li>
 <li>In <code>apply-local</code>, we now only escalate privileges during activation (<a href="https://github.com/zhaofengli/colmena/issues/85">#85</a>).</li>
@@ -152,6 +153,7 @@
 <li>The <a href="./reference/meta.html#allowapplyall"><code>meta.allowApplyAll</code></a> option has been added. If set to false, deployments without a node filter (<code>--on</code>) are disallowed (<a href="https://github.com/zhaofengli/colmena/issues/95">#95</a>).</li>
 <li>The <code>--no-substitutes</code> option under the <code>apply</code> subcommand has been renamed to <code>--no-substitute</code> (<a href="https://github.com/zhaofengli/colmena/issues/59">#59</a>).</li>
 <li>The <a href="./reference/meta.html#nodespecialargs"><code>meta.nodeSpecialArgs</code></a> option has been added. It allows specifying node-specific <code>specialArgs</code> passed to NixOS modules (<a href="https://github.com/zhaofengli/colmena/pull/100">#100</a>).</li>
+<li>The <a href="./reference/cli.html#colmena-repl"><code>repl</code></a> subcommand has been added. It allows you to start an <a href="./features/eval.html#interactive-repl">interactive REPL</a> with access to the complete node configurations.</li>
 </ul>
 <h2 id="release-030-20220427"><a class="header" href="#release-030-20220427"><a href="https://github.com/zhaofengli/colmena/releases/tag/v0.3.0">Release 0.3.0</a> (2022/04/27)</a></h2>
 <ul>

@@ -158,7 +158,6 @@
 .ansi2html-content { display: inline; white-space: pre-wrap; word-wrap: break-word; }
 .body_foreground { color: #AAAAAA; }
 .body_background { background-color: #000000; }
-.body_foreground > .bold,.bold > .body_foreground, body.body_foreground > pre > .bold { color: #FFFFFF; font-weight: normal; }
 .inv_foreground { color: #000000; }
 .inv_background { background-color: #AAAAAA; }
 .ansi1 { font-weight: bold; }
@@ -201,36 +200,36 @@
 .inv46 { color: #00aaaa; }
 .ansi47 { background-color: #F5F1DE; }
 .inv47 { color: #F5F1DE; }
-.ansi90 { color: #404356; }
-.inv90 { background-color: #404356; }
-.ansi91 { color: #ea4040; }
-.inv91 { background-color: #ea4040; }
-.ansi92 { color: #40ea40; }
-.inv92 { background-color: #40ea40; }
-.ansi93 { color: #ea9540; }
-.inv93 { background-color: #ea9540; }
-.ansi94 { color: #4040ea; }
-.inv94 { background-color: #4040ea; }
-.ansi95 { color: #ff90e8; }
-.inv95 { background-color: #ff90e8; }
-.ansi96 { color: #40eaea; }
-.inv96 { background-color: #40eaea; }
+.ansi90 { color: #7f7f7f; }
+.inv90 { background-color: #7f7f7f; }
+.ansi91 { color: #ff0000; }
+.inv91 { background-color: #ff0000; }
+.ansi92 { color: #00ff00; }
+.inv92 { background-color: #00ff00; }
+.ansi93 { color: #ffff00; }
+.inv93 { background-color: #ffff00; }
+.ansi94 { color: #5c5cff; }
+.inv94 { background-color: #5c5cff; }
+.ansi95 { color: #ff00ff; }
+.inv95 { background-color: #ff00ff; }
+.ansi96 { color: #00ffff; }
+.inv96 { background-color: #00ffff; }
 .ansi97 { color: #ffffff; }
 .inv97 { background-color: #ffffff; }
-.ansi100 { background-color: #404356; }
-.inv100 { color: #404356; }
-.ansi101 { background-color: #ea4040; }
-.inv101 { color: #ea4040; }
-.ansi102 { background-color: #40ea40; }
-.inv102 { color: #40ea40; }
-.ansi103 { background-color: #ea9540; }
-.inv103 { color: #ea9540; }
-.ansi104 { background-color: #4040ea; }
-.inv104 { color: #4040ea; }
-.ansi105 { background-color: #ff90e8; }
-.inv105 { color: #ff90e8; }
-.ansi106 { background-color: #40eaea; }
-.inv106 { color: #40eaea; }
+.ansi100 { background-color: #7f7f7f; }
+.inv100 { color: #7f7f7f; }
+.ansi101 { background-color: #ff0000; }
+.inv101 { color: #ff0000; }
+.ansi102 { background-color: #00ff00; }
+.inv102 { color: #00ff00; }
+.ansi103 { background-color: #ffff00; }
+.inv103 { color: #ffff00; }
+.ansi104 { background-color: #5c5cff; }
+.inv104 { color: #5c5cff; }
+.ansi105 { background-color: #ff00ff; }
+.inv105 { color: #ff00ff; }
+.ansi106 { background-color: #00ffff; }
+.inv106 { color: #00ffff; }
 .ansi107 { background-color: #ffffff; }
 .inv107 { color: #ffffff; }
 .ansi38-0 { color: #000316; }
@@ -1286,6 +1285,9 @@ what's in the manual.
     <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
             Print help information
 
+        <span class="ansi32">--impure</span>
+            Passes --impure to Nix commands
+
         <span class="ansi32">--show-trace</span>
             Passes --show-trace to Nix commands
 
@@ -1318,6 +1320,8 @@ what's in the manual.
             Print this message or the help of the given subcommand(s)
     <span class="ansi32">nix-info</span>
             Show information about the current Nix installation
+    <span class="ansi32">repl</span>
+            Start an interactive REPL with the complete configuration
     <span class="ansi32">upload-keys</span>
             Upload keys to remote hosts
 </div></pre>
@@ -1383,6 +1387,9 @@ Apply configurations on remote machines
 
     <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
             Print help information
+
+        <span class="ansi32">--impure</span>
+            Passes --impure to Nix commands
 
         <span class="ansi32">--keep-result</span>
             Create GC roots for built profiles.
@@ -1474,6 +1481,9 @@ Apply configurations on the local machine
     <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
             Print help information
 
+        <span class="ansi32">--impure</span>
+            Passes --impure to Nix commands
+
         <span class="ansi32">--no-keys</span>
             Do not deploy secret keys set in `deployment.keys`.
             
@@ -1559,6 +1569,9 @@ This subcommand behaves as if you invoked `apply` with the `build` goal.
 
     <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
             Print help information
+
+        <span class="ansi32">--impure</span>
+            Passes --impure to Nix commands
 
         <span class="ansi32">--keep-result</span>
             Create GC roots for built profiles.
@@ -1678,6 +1691,9 @@ This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
     <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
             Print help information
 
+        <span class="ansi32">--impure</span>
+            Passes --impure to Nix commands
+
         <span class="ansi32">--keep-result</span>
             Create GC roots for built profiles.
             
@@ -1774,6 +1790,9 @@ For example, to retrieve the configuration of one node, you may write something 
     <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
             Print help information
 
+        <span class="ansi32">--impure</span>
+            Passes --impure to Nix commands
+
         <span class="ansi32">--instantiate</span>
             Actually instantiate the expression
 
@@ -1820,6 +1839,9 @@ Run a command on remote machines
 
     <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
             Print help information
+
+        <span class="ansi32">--impure</span>
+            Passes --impure to Nix commands
 
         <span class="ansi32">--on</span> <span class="ansi32">&lt;NODES&gt;</span>
             Select a list of nodes to deploy to.
@@ -1877,6 +1899,51 @@ Show information about the current Nix installation
 
     <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
             Print help information
+
+        <span class="ansi32">--impure</span>
+            Passes --impure to Nix commands
+
+        <span class="ansi32">--show-trace</span>
+            Passes --show-trace to Nix commands
+
+        <span class="ansi32">--color</span> <span class="ansi32">&lt;WHEN&gt;</span>
+            When to colorize the output. By default, Colmena enables colorized output when the
+            terminal supports it.
+            
+            It's also possible to specify the preference using environment variables. See
+            &lt;https://bixense.com/clicolors&gt;.
+            
+            
+            [default: auto]
+            [possible values: auto, always, never]
+</div></pre>
+<h2 id="colmena-repl"><a class="header" href="#colmena-repl"><code>colmena repl</code></a></h2>
+<pre><div class="hljs"><span class="ansi32">colmena-repl</span> 
+Start an interactive REPL with the complete configuration
+
+In the REPL, you can inspect the configuration interactively with tab
+completion. The node configurations are accessible under the `nodes`
+attribute set.
+
+<span class="ansi33">USAGE:</span>
+    colmena repl [OPTIONS]
+
+<span class="ansi33">OPTIONS:
+</span>    <span class="ansi32">-f</span>, <span class="ansi32">--config</span> <span class="ansi32">&lt;CONFIG&gt;</span>
+            If this argument is not specified, Colmena will search upwards from the current working
+            directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if
+            --config/-f is given explicitly.
+            
+            For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+            
+            
+            [default: hive.nix]
+
+    <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
+            Print help information
+
+        <span class="ansi32">--impure</span>
+            Passes --impure to Nix commands
 
         <span class="ansi32">--show-trace</span>
             Passes --show-trace to Nix commands
