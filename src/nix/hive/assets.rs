@@ -9,7 +9,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::os::unix::fs::OpenOptionsExt;
 
-use tempfile::TempDir;
+use tempfile::{Builder as TempFileBuilder, TempDir};
 
 use super::{Flake, HivePath};
 use crate::error::ColmenaResult;
@@ -35,7 +35,7 @@ pub(super) struct Assets {
 
 impl Assets {
     pub async fn new(hive_path: HivePath) -> ColmenaResult<Self> {
-        let temp_dir = TempDir::new().unwrap();
+        let temp_dir = TempFileBuilder::new().prefix("colmena-assets-").tempdir()?;
 
         create_file(&temp_dir, "eval.nix", false, EVAL_NIX)?;
         create_file(&temp_dir, "options.nix", false, OPTIONS_NIX)?;
