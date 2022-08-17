@@ -19,7 +19,6 @@ jobs:
             url: https://releases.nixos.org/nix/nix-2.10.3/install
 
     steps:
-      - uses: haya14busa/action-workflow_run-status@v1
       - uses: actions/checkout@v3.0.2
       - uses: cachix/install-nix-action@v17
         with:
