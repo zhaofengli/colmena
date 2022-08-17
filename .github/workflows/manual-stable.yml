@@ -10,21 +10,26 @@ on:
       - release-0.4.x
 jobs:
   deploy:
+    name: Deploy
+
     runs-on: ubuntu-latest
+    if: github.repository == 'zhaofengli/colmena'
 
     strategy:
       matrix:
         nix:
-          - name: 2.10.3
+          - version: 2.10.3
             url: https://releases.nixos.org/nix/nix-2.10.3/install
 
     steps:
       - uses: actions/checkout@v3.0.2
+
       - uses: cachix/install-nix-action@v17
         with:
           install_url: ${{ matrix.nix.url }}
           extra_nix_config: |
             experimental-features = nix-command flakes
+
       - uses: cachix/cachix-action@v10
         with:
           name: colmena

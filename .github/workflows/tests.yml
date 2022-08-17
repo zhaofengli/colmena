@@ -1,24 +1,26 @@
-name: Build
+name: Tests
 on:
   pull_request:
   push:
 jobs:
-  build:
+  tests:
     strategy:
       matrix:
         os:
           - label: Linux
             image: ubuntu-latest
-          - label: macOS
-            image: macos-11
         nix:
+          - version: 2.3.16
+            url: https://releases.nixos.org/nix/nix-2.3.16/install
+          - version: 2.4
+            url: https://releases.nixos.org/nix/nix-2.4/install
           - version: 2.10.3
             url: https://releases.nixos.org/nix/nix-2.10.3/install
 
     name: ${{ matrix.os.label }} + Nix ${{ matrix.nix.version }}
     runs-on: ${{ matrix.os.image }}
     steps:
-      - uses: actions/checkout@v3.0.2
+      - uses: actions/checkout@v2.3.5
 
       - uses: cachix/install-nix-action@v17
         with:
@@ -26,22 +28,15 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-      - name: Enable Binary Cache
-        uses: cachix/cachix-action@v10
+      - uses: cachix/cachix-action@v10
         with:
           name: colmena
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-      - run: nix flake check
-        if: ${{ !contains(matrix.nix.version, '2.3') && runner.os != 'macOS' }}
+      - name: Set up pinned nixpkgs
+        run: echo "NIX_PATH=nixpkgs=$(nix-instantiate --eval flake-compat.nix -A defaultNix.inputs.nixpkgs.outPath | sed 's|\"||g')" >> $GITHUB_ENV
 
-      - name: Build Colmena
-        run: nix build -L
+      - run: nix-shell --run "cargo test"
         if: ${{ !contains(matrix.nix.version, '2.3') }}
-
-      - name: Build and install Colmena with flake-compat
-        run: nix-env -if default.nix
-
-      - name: Build manual
-        run: nix build .#manual -L
-        if: ${{ !contains(matrix.nix.version, '2.3') && runner.os != 'macOS' }}
+      - run: nix-shell --run "cargo test -- --skip flake"
+        if: ${{ contains(matrix.nix.version, '2.3') }}
