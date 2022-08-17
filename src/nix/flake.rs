@@ -12,11 +12,22 @@ use super::{ColmenaError, ColmenaResult, NixCheck};
 /// A Nix Flake.
 #[derive(Debug)]
 pub struct Flake {
-    /// The Flake URI.
-    uri: String,
+    /// The flake metadata.
+    metadata: FlakeMetadata,
 
     /// The directory the flake lives in, if it's a local flake.
     local_dir: Option<PathBuf>,
+}
+
+/// A `nix flake metadata --json` invocation.
+#[derive(Deserialize, Debug)]
+struct FlakeMetadata {
+    /// The resolved URL of the flake.
+    #[serde(rename = "resolvedUrl")]
+    resolved_url: String,
+
+    /// The locked URL of the flake.
+    url: String,
 }
 
 impl Flake {
@@ -33,10 +44,10 @@ impl Flake {
             .to_str()
             .expect("Flake directory path contains non-UTF-8 characters");
 
-        let info = FlakeMetadata::resolve(flake).await?;
+        let metadata = FlakeMetadata::resolve(flake).await?;
 
         Ok(Self {
-            uri: info.resolved_url,
+            metadata,
             local_dir: Some(dir.as_ref().to_owned()),
         })
     }
@@ -45,29 +56,31 @@ impl Flake {
     pub async fn from_uri(uri: String) -> ColmenaResult<Self> {
         NixCheck::require_flake_support().await?;
 
+        let metadata = FlakeMetadata::resolve(&uri).await?;
+
         Ok(Self {
-            uri,
+            metadata,
             local_dir: None,
         })
     }
 
     /// Returns the URI.
     pub fn uri(&self) -> &str {
-        &self.uri
+        &self.metadata.resolved_url
+    }
+
+    /// Returns the locked URI.
+    ///
+    /// Note that the URI will not be locked if the git workspace
+    /// is dirty.
+    pub fn locked_uri(&self) -> &str {
+        &self.metadata.url
     }
 
     /// Returns the local directory, if it exists.
     pub fn local_dir(&self) -> Option<&Path> {
         self.local_dir.as_deref()
     }
-}
-
-/// A `nix flake metadata --json` invocation.
-#[derive(Deserialize, Debug)]
-struct FlakeMetadata {
-    /// The resolved URL of the flake.
-    #[serde(rename = "resolvedUrl")]
-    resolved_url: String,
 }
 
 impl FlakeMetadata {
