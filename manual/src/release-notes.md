@@ -11,6 +11,7 @@
 - The [`meta.allowApplyAll`](./reference/meta.md#allowapplyall) option has been added. If set to false, deployments without a node filter (`--on`) are disallowed ([#95](https://github.com/zhaofengli/colmena/issues/95)).
 - The `--no-substitutes` option under the `apply` subcommand has been renamed to `--no-substitute` ([#59](https://github.com/zhaofengli/colmena/issues/59)).
 - The [`meta.nodeSpecialArgs`](./reference/meta.md#nodespecialargs) option has been added. It allows specifying node-specific `specialArgs` passed to NixOS modules ([#100](https://github.com/zhaofengli/colmena/pull/100)).
+- The [`repl`](./reference/cli.html#colmena-repl) subcommand has been added. It allows you to start an [interactive REPL](./features/eval.md#interactive-repl) with access to the complete node configurations.
 
 ## [Release 0.3.0](https://github.com/zhaofengli/colmena/releases/tag/v0.3.0) (2022/04/27)
 

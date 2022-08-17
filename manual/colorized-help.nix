@@ -14,6 +14,7 @@ let
     "eval"
     "exec"
     "nix-info"
+    "repl"
   ];
   renderHelp = subcommand: let
     fullCommand = if subcommand == null then "colmena" else "colmena ${subcommand}";

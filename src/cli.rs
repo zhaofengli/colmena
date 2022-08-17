@@ -171,6 +171,7 @@ It's also possible to specify the preference using environment variables. See <h
     register_command!(eval, app);
     register_command!(upload_keys, app);
     register_command!(exec, app);
+    register_command!(repl, app);
     register_command!(nix_info, app);
 
     // This does _not_ take the --color flag into account (haven't
@@ -196,6 +197,7 @@ pub async fn run() {
     handle_command!(eval, matches);
     handle_command!("upload-keys", upload_keys, matches);
     handle_command!(exec, matches);
+    handle_command!(repl, matches);
     handle_command!("nix-info", nix_info, matches);
 
     #[cfg(debug_assertions)]

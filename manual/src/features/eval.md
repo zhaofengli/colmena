@@ -30,3 +30,18 @@ You may directly instantiate an expression that evaluates to a derivation:
 $ colmena eval --instantiate -E '{ nodes, ... }: nodes.alpha.config.boot.kernelPackages.kernel'
 /nix/store/7ggmhnwvywrqcd1z2sdpan8afz55sw7z-linux-5.14.14.drv
 ```
+
+## Interactive REPL
+
+To explore the configurations interactively, start a REPL session with `colmena repl`:
+
+```console
+$ colmena repl
+[INFO ] Using flake: git+file:///home/user/cluster
+Welcome to Nix 2.10.3. Type :? for help.
+
+Loading installable ''...
+Added 3 variables.
+nix-repl> nodes.alpha.config.deployment.targetHost
+"fd12:3456::1"
+```

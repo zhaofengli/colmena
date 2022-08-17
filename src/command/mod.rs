@@ -3,6 +3,7 @@ pub mod build;
 pub mod eval;
 pub mod exec;
 pub mod nix_info;
+pub mod repl;
 pub mod upload_keys;
 
 #[cfg(target_os = "linux")]

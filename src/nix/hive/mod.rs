@@ -369,6 +369,11 @@ impl Hive {
         }
     }
 
+    /// Returns the expression for a REPL session.
+    pub fn get_repl_expression(&self) -> String {
+        format!("{} hive.introspect (x: x)", self.get_base_expression())
+    }
+
     /// Returns the base expression from which the evaluated Hive can be used.
     fn get_base_expression(&self) -> String {
         self.assets.get_base_expression()
