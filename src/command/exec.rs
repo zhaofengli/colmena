@@ -95,7 +95,12 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
     let mut output = SimpleProgressOutput::new(local_args.is_present("verbose"));
 
-    let (monitor, meta) = JobMonitor::new(output.get_sender());
+    let (mut monitor, meta) = JobMonitor::new(output.get_sender());
+
+    if let Some(width) = util::get_label_width(&targets) {
+        monitor.set_label_width(width);
+    }
+
     let meta = meta.run(|meta| async move {
         let mut futures = Vec::new();
 
