@@ -5,7 +5,6 @@
 //! During build time, the nix-eval-jobs binary may be pinned by setting
 //! the `NIX_EVAL_JOBS` environment variable.
 
-use std::io::Write;
 use std::path::PathBuf;
 use std::pin::Pin;
 use std::process::Stdio;
@@ -14,7 +13,6 @@ use async_stream::stream;
 use async_trait::async_trait;
 use futures::Stream;
 use serde::Deserialize;
-use tempfile::NamedTempFile;
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 
@@ -78,17 +76,11 @@ impl DrvSetEvaluator for NixEvalJobs {
         expression: &dyn NixExpression,
         options: NixOptions,
     ) -> ColmenaResult<Pin<Box<dyn Stream<Item = EvalResult>>>> {
-        let expr_file = {
-            let mut f = NamedTempFile::new()?;
-            f.write_all(expression.expression().as_bytes())?;
-            f.into_temp_path()
-        };
-
         let mut command = Command::new(&self.executable);
         command
             .arg("--workers")
             .arg(self.workers.to_string())
-            .arg(&expr_file);
+            .args(&["--expr", &expression.expression()]);
 
         command.args(options.to_args());
 
@@ -158,8 +150,6 @@ impl DrvSetEvaluator for NixEvalJobs {
                     }
                 }
             }
-
-            drop(expr_file);
         }))
     }
 
