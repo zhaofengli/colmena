@@ -49,6 +49,9 @@ pub struct Hive {
     /// Whether to pass --show-trace in Nix commands.
     show_trace: bool,
 
+    /// Whether to pass --impure in Nix commands.
+    impure: bool,
+
     meta_config: OnceCell<MetaConfig>,
 }
 
@@ -100,6 +103,7 @@ impl Hive {
             context_dir,
             assets,
             show_trace: false,
+            impure: false,
             meta_config: OnceCell::new(),
         })
     }
@@ -123,11 +127,16 @@ impl Hive {
         self.show_trace = value;
     }
 
+    pub fn set_impure(&mut self, impure: bool) {
+        self.impure = impure;
+    }
+
     /// Returns Nix options to set for this Hive.
     pub fn nix_options(&self) -> NixOptions {
         let mut options = NixOptions::default();
         options.set_show_trace(self.show_trace);
         options.set_pure_eval(self.path.is_flake());
+        options.set_impure(self.impure);
         options
     }
 

@@ -197,6 +197,10 @@ impl NixOptions {
         self.pure_eval = pure_eval;
     }
 
+    pub fn set_impure(&mut self, impure: bool) {
+        self.impure = impure;
+    }
+
     pub fn set_builders(&mut self, builders: Option<String>) {
         self.builders = builders;
     }

@@ -250,6 +250,10 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
                     hive.set_show_trace(true);
                 }
 
+                if args.is_present("impure") {
+                    hive.set_impure(true);
+                }
+
                 return Ok(hive);
             }
 
@@ -271,6 +275,10 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
 
     if args.is_present("show-trace") {
         hive.set_show_trace(true);
+    }
+
+    if args.is_present("impure") {
+        hive.set_impure(true);
     }
 
     Ok(hive)
