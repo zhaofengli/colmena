@@ -2,6 +2,7 @@
 
 let
   tools = import ./tools.nix {
+    inherit pkgs;
     insideVm = true;
     targets = [ "alpha" ];
   };
