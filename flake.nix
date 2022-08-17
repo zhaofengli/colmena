@@ -7,19 +7,24 @@
 
     utils.url = "github:numtide/flake-utils";
 
+    # Temporary fork of nix-eval-job with changes to be upstreamed
+    nix-eval-jobs.url = "github:zhaofengli/nix-eval-jobs/colmena";
+    nix-eval-jobs.inputs.nixpkgs.follows = "nixpkgs";
+
     flake-compat = {
       url = "github:edolstra/flake-compat";
       flake = false;
     };
   };
 
-  outputs = { self, nixpkgs, utils, ... }: let
+  outputs = { self, nixpkgs, utils, nix-eval-jobs, ... }: let
     supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
     colmenaOptions = import ./src/nix/hive/options.nix;
     colmenaModules = import ./src/nix/hive/modules.nix;
   in utils.lib.eachSystem supportedSystems (system: let
     pkgs = import nixpkgs {
       inherit system;
+      overlays = [ self._evalJobsOverlay ];
     };
   in rec {
     # We still maintain the expression in a Nixpkgs-acceptable form
@@ -79,6 +84,15 @@
       ];
     };
   }) // {
+    # Temporary fork of nix-eval-job with changes to be upstreamed
+    _evalJobsOverlay = final: prev: let
+      patched = nix-eval-jobs.packages.${final.system}.nix-eval-jobs.overrideAttrs (old: {
+        version = "2.9.0-colmena";
+      });
+    in {
+      nix-eval-jobs = patched;
+    };
+
     overlay = final: prev: {
       colmena = final.callPackage ./package.nix { };
     };
