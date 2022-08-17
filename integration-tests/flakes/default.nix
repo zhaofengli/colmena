@@ -35,5 +35,14 @@ in tools.makeTest {
         deployer.succeed("cd /tmp/bundle && git add probe.nix")
         deployer.succeed("cd /tmp/bundle && ${tools.colmenaExec} apply --on @target --evaluator ${evaluator}")
         alpha.succeed("grep SECOND /etc/deployment")
+
+    with subtest("Check that impure expressions are forbidden"):
+        deployer.succeed("sed -i 's|SECOND|''${builtins.readFile /etc/hostname}|g' /tmp/bundle/probe.nix")
+        logs = deployer.fail("cd /tmp/bundle && run-copy-stderr ${tools.colmenaExec} apply --on @target --evaluator ${evaluator}")
+        assert re.search(r"access to absolute path.*forbidden in pure eval mode", logs)
+
+    with subtest("Check that impure expressions can be allowed with --impure"):
+        deployer.succeed("cd /tmp/bundle && ${tools.colmenaExec} apply --on @target --evaluator ${evaluator} --impure")
+        alpha.succeed("grep deployer /etc/deployment")
   '';
 }
