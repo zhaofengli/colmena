@@ -10,7 +10,7 @@ use tokio::process::Command;
 use super::{ColmenaError, ColmenaResult, NixCheck};
 
 /// A Nix Flake.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Flake {
     /// The flake metadata.
     metadata: FlakeMetadata,
@@ -20,7 +20,7 @@ pub struct Flake {
 }
 
 /// A `nix flake metadata --json` invocation.
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 struct FlakeMetadata {
     /// The resolved URL of the flake.
     #[serde(rename = "resolvedUrl")]
@@ -104,4 +104,21 @@ impl FlakeMetadata {
             ColmenaError::BadOutput { output }
         })
     }
+}
+
+/// Quietly locks the dependencies of a flake.
+pub async fn lock_flake_quiet(uri: &str) -> ColmenaResult<()> {
+    let status = Command::new("nix")
+        .args(&["flake", "lock"])
+        .args(&["--experimental-features", "nix-command flakes"])
+        .arg(uri)
+        .stderr(Stdio::null())
+        .status()
+        .await?;
+
+    if !status.success() {
+        return Err(status.into());
+    }
+
+    Ok(())
 }

@@ -21,7 +21,7 @@ use crate::job::JobHandle;
 use crate::util::{CommandExecution, CommandExt};
 use assets::Assets;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum HivePath {
     /// A Nix Flake.
     ///
@@ -93,7 +93,7 @@ impl HivePath {
 impl Hive {
     pub async fn new(path: HivePath) -> ColmenaResult<Self> {
         let context_dir = path.context_dir();
-        let assets = Assets::new(path.is_flake()).await?;
+        let assets = Assets::new(path.clone()).await?;
 
         Ok(Self {
             path,
@@ -127,6 +127,7 @@ impl Hive {
     pub fn nix_options(&self) -> NixOptions {
         let mut options = NixOptions::default();
         options.set_show_trace(self.show_trace);
+        options.set_pure_eval(self.path.is_flake());
         options
     }
 
@@ -361,7 +362,7 @@ impl Hive {
 
     /// Returns the base expression from which the evaluated Hive can be used.
     fn get_base_expression(&self) -> String {
-        self.assets.get_base_expression(self.path())
+        self.assets.get_base_expression()
     }
 
     /// Returns whether this Hive is a flake.

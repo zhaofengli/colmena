@@ -1,6 +1,6 @@
 { rawHive ? null               # Colmena Hive attrset
-, flakeUri ? null              # Nix Flake URI with `outputs.colmena`
-, hermetic ? flakeUri != null  # Whether we are allowed to use <nixpkgs>
+, rawFlake ? null              # Nix Flake attrset with `outputs.colmena`
+, hermetic ? rawFlake != null  # Whether we are allowed to use <nixpkgs>
 , colmenaOptions
 , colmenaModules
 }:
@@ -19,10 +19,8 @@ let
 
 
   uncheckedHive = let
-    flakeToHive = flakeUri: let
-      flake = builtins.getFlake flakeUri;
-      hive = if flake.outputs ? colmena then flake.outputs.colmena else throw "Flake must define outputs.colmena.";
-    in hive;
+    flakeToHive = rawFlake:
+      if rawFlake.outputs ? colmena then rawFlake.outputs.colmena else throw "Flake must define outputs.colmena.";
 
     rawToHive = rawHive:
       if typeOf rawHive == "lambda" || rawHive ? __functor then rawHive {}
@@ -30,8 +28,8 @@ let
       else throw "The config must evaluate to an attribute set.";
   in
     if rawHive != null then rawToHive rawHive
-    else if flakeUri != null then flakeToHive flakeUri
-    else throw "Either an attribute set or a flake URI must be specified.";
+    else if rawFlake != null then flakeToHive rawFlake
+    else throw "Either a plain Hive attribute set or a Nix Flake attribute set must be specified.";
 
   uncheckedUserMeta =
     if uncheckedHive ? meta && uncheckedHive ? network then

@@ -2,6 +2,7 @@
 
 ## Release 0.4.0 (Unreleased)
 
+- Flake evaluation is now actually pure by default. To enable impure expressions, pass `--impure`.
 - `--reboot` is added to trigger a reboot and wait for the node to come back up.
 - The target user is no longer explicitly set when `deployment.targetUser` is null ([#91](https://github.com/zhaofengli/colmena/pull/91)).
 - In `apply-local`, we now only escalate privileges during activation ([#85](https://github.com/zhaofengli/colmena/issues/85)).

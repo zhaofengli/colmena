@@ -97,6 +97,12 @@ pub struct NixOptions {
     /// Whether to pass --show-trace.
     show_trace: bool,
 
+    /// Whether to pass --pure-eval.
+    pure_eval: bool,
+
+    /// Whether to pass --impure.
+    impure: bool,
+
     /// Designated builders.
     ///
     /// See <https://nixos.org/manual/nix/stable/advanced-topics/distributed-builds.html>.
@@ -187,6 +193,10 @@ impl NixOptions {
         self.show_trace = show_trace;
     }
 
+    pub fn set_pure_eval(&mut self, pure_eval: bool) {
+        self.pure_eval = pure_eval;
+    }
+
     pub fn set_builders(&mut self, builders: Option<String>) {
         self.builders = builders;
     }
@@ -204,6 +214,14 @@ impl NixOptions {
 
         if self.show_trace {
             options.push("--show-trace".to_string());
+        }
+
+        if self.pure_eval {
+            options.push("--pure-eval".to_string());
+        }
+
+        if self.impure {
+            options.push("--impure".to_string());
         }
 
         options

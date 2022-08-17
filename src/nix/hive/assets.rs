@@ -13,8 +13,9 @@ use tempfile::TempDir;
 
 use super::{Flake, HivePath};
 use crate::error::ColmenaResult;
+use crate::nix::flake::lock_flake_quiet;
 
-const FLAKE_NIX: &[u8] = include_bytes!("flake.nix");
+const FLAKE_NIX: &str = include_str!("flake.nix");
 const EVAL_NIX: &[u8] = include_bytes!("eval.nix");
 const OPTIONS_NIX: &[u8] = include_bytes!("options.nix");
 const MODULES_NIX: &[u8] = include_bytes!("modules.nix");
@@ -22,6 +23,9 @@ const MODULES_NIX: &[u8] = include_bytes!("modules.nix");
 /// Static files required to evaluate a Hive configuration.
 #[derive(Debug)]
 pub(super) struct Assets {
+    /// Path to the hive being evaluated.
+    hive_path: HivePath,
+
     /// Temporary directory holding the files.
     temp_dir: TempDir,
 
@@ -30,7 +34,7 @@ pub(super) struct Assets {
 }
 
 impl Assets {
-    pub async fn new(flake: bool) -> ColmenaResult<Self> {
+    pub async fn new(hive_path: HivePath) -> ColmenaResult<Self> {
         let temp_dir = TempDir::new().unwrap();
 
         create_file(&temp_dir, "eval.nix", false, EVAL_NIX)?;
@@ -39,27 +43,30 @@ impl Assets {
 
         let mut assets_flake_uri = None;
 
-        if flake {
+        if let HivePath::Flake(hive_flake) = &hive_path {
             // Emit a temporary flake, then resolve the locked URI
-            create_file(&temp_dir, "flake.nix", false, FLAKE_NIX)?;
+            let flake_nix = FLAKE_NIX.replace("%hive%", hive_flake.locked_uri());
+            create_file(&temp_dir, "flake.nix", false, flake_nix.as_bytes())?;
 
             // We explicitly specify `path:` instead of letting Nix resolve
             // automatically, which would involve checking parent directories
             // for a git repository.
             let uri = format!("path:{}", temp_dir.path().to_str().unwrap());
+            let _ = lock_flake_quiet(&uri).await;
             let assets_flake = Flake::from_uri(uri).await?;
             assets_flake_uri = Some(assets_flake.locked_uri().to_owned());
         }
 
         Ok(Self {
+            hive_path,
             temp_dir,
             assets_flake_uri,
         })
     }
 
     /// Returns the base expression from which the evaluated Hive can be used.
-    pub fn get_base_expression(&self, hive_path: &HivePath) -> String {
-        match hive_path {
+    pub fn get_base_expression(&self) -> String {
+        match &self.hive_path {
             HivePath::Legacy(path) => {
                 format!(
                     "with builtins; let eval = import {eval_nix}; hive = eval {{ rawHive = import {path}; colmenaOptions = import {options_nix}; colmenaModules = import {modules_nix}; }}; in ",
@@ -69,11 +76,10 @@ impl Assets {
                     modules_nix = self.get_path("modules.nix"),
                 )
             }
-            HivePath::Flake(flake) => {
+            HivePath::Flake(_) => {
                 format!(
-                    "with builtins; let assets = getFlake \"{assets_flake_uri}\"; hive = assets.lib.colmenaEval {{ flakeUri = \"{flake_uri}\"; }}; in ",
+                    "with builtins; let assets = getFlake \"{assets_flake_uri}\"; hive = assets.colmenaEval; in ",
                     assets_flake_uri = self.assets_flake_uri.as_ref().expect("The assets flake must have been initialized"),
-                    flake_uri = flake.locked_uri(),
                 )
             }
         }
