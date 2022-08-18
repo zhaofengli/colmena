@@ -185,7 +185,11 @@ impl Default for NixEvalJobs {
 impl From<EvalLineDerivation> for AttributeOutput {
     fn from(eld: EvalLineDerivation) -> Self {
         Self {
-            attribute: eld.attribute,
+            // nix-eval-jobs adds surrounding quotes for attribute names
+            // with dots:
+            //
+            // <https://github.com/nix-community/nix-eval-jobs/commit/61c9f4cf>
+            attribute: eld.attribute.trim_matches('"').to_string(),
             drv_path: eld.drv_path,
         }
     }
