@@ -11,7 +11,7 @@ use lazy_static::lazy_static;
 use crate::command;
 
 /// Base URL of the manual, without the trailing slash.
-const MANUAL_URL_BASE: &str = "https://zhaofengli.github.io/colmena";
+const MANUAL_URL_BASE: &str = "https://colmena.cli.rs";
 
 /// URL to the manual.
 ///

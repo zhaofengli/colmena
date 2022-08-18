@@ -12,7 +12,7 @@ For this tutorial, use the following command to enter an ephemeral environment w
 nix-shell -p colmena
 ```
 
-If you are interested in trying out the bleeding-edge version of Colmena, Read [the unstable version](https://zhaofengli.github.io/colmena/unstable) of the Manual for instructions.
+If you are interested in trying out the bleeding-edge version of Colmena, Read [the unstable version](https://colmena.cli.rs/unstable) of the Manual for instructions.
 <!-- STABLE_END -->
 
 <!-- UNSTABLE_BEGIN -->
@@ -23,7 +23,7 @@ To install the latest development version to the user profile, use the following
 nix-env -if https://github.com/zhaofengli/colmena/tarball/main
 ```
 
-To install the latest stable version, read [the corresponding Manual](https://zhaofengli.github.io/colmena/stable) for instructions.
+To install the latest stable version, read [the corresponding Manual](https://colmena.cli.rs/stable) for instructions.
 
 ### Unstable Binary Cache
 

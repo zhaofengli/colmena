@@ -11,11 +11,11 @@ For this tutorial, use the following command to enter an ephemeral environment w
 nix shell nixpkgs#colmena
 ```
 
-If you are interested in trying out the bleeding-edge version of Colmena, Read [the unstable version](https://zhaofengli.github.io/colmena/unstable) of the Manual for instructions.
+If you are interested in trying out the bleeding-edge version of Colmena, Read [the unstable version](https://colmena.cli.rs/unstable) of the Manual for instructions.
 <!-- STABLE_END -->
 
 <!-- UNSTABLE_BEGIN -->
-<!-- To install the latest stable version, read [the corresponding Manual](https://zhaofengli.github.io/colmena/stable) for instructions. -->
+<!-- To install the latest stable version, read [the corresponding Manual](https://colmena.cli.rs/stable) for instructions. -->
 
 To quickly try Colmena out, use the following command to enter an ephemeral environment with the latest development version of `colmena`:
 
