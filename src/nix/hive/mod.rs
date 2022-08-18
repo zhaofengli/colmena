@@ -93,7 +93,7 @@ impl HivePath {
             }
         }
 
-        Ok(Self::Legacy(path.to_owned()))
+        Ok(Self::Legacy(path.canonicalize()?))
     }
 
     fn context_dir(&self) -> Option<PathBuf> {
