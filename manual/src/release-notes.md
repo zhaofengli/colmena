@@ -1,6 +1,6 @@
 # Release Notes
 
-## [Release 0.3.1](https://github.com/zhaofengli/colmena/releases/tag/v0.3.1) (2022/07/17)
+## [Release 0.3.1](https://github.com/zhaofengli/colmena/releases/tag/v0.3.1) (2022/08/18)
 
 - Fixed: Streaming evaluation fails for node names containing periods ([#92](https://github.com/zhaofengli/colmena/issues/92))
 - Fixed: Streaming evaluation fails in non-flake deployments with relative paths ([#107](https://github.com/zhaofengli/colmena/issues/107))
