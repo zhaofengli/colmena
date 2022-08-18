@@ -10,7 +10,7 @@ jobs:
           - label: Linux
             image: ubuntu-latest
           - label: macOS
-            image: macos-11
+            image: macos-12
         nix:
           - version: 2.10.3
             url: https://releases.nixos.org/nix/nix-2.10.3/install
