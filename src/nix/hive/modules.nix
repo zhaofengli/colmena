@@ -78,7 +78,6 @@ with builtins; {
       systemd.services = lib.mapAttrs' (name: val: {
         name = "${name}-key";
         value = {
-          bindsTo = [ "${name}-key.path" ];
           serviceConfig = {
             Restart = "on-failure";
           };
