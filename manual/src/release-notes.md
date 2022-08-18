@@ -1,5 +1,11 @@
 # Release Notes
 
+## [Release 0.3.1](https://github.com/zhaofengli/colmena/releases/tag/v0.3.1) (2022/07/17)
+
+- Fixed: Streaming evaluation fails for node names containing periods ([#92](https://github.com/zhaofengli/colmena/issues/92))
+- Fixed: Streaming evaluation fails in non-flake deployments with relative paths ([#107](https://github.com/zhaofengli/colmena/issues/107))
+- Fixed: `colmena apply-local` returning non-zero exit code when successful ([#111](https://github.com/zhaofengli/colmena/issues/111))
+
 ## [Release 0.3.0](https://github.com/zhaofengli/colmena/releases/tag/v0.3.0) (2022/04/27)
 
 - [Remote builds](https://colmena.cli.rs/0.3/features/remote-builds.html) are now supported ([#33](https://github.com/zhaofengli/colmena/issues/33)).
