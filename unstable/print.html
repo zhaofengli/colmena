@@ -2708,6 +2708,12 @@ attribute set.
 <li>The <a href="./reference/meta.html#nodespecialargs"><code>meta.nodeSpecialArgs</code></a> option has been added. It allows specifying node-specific <code>specialArgs</code> passed to NixOS modules (<a href="https://github.com/zhaofengli/colmena/pull/100">#100</a>).</li>
 <li>The <a href="./reference/cli.html#colmena-repl"><code>repl</code></a> subcommand has been added. It allows you to start an <a href="./features/eval.html#interactive-repl">interactive REPL</a> with access to the complete node configurations.</li>
 </ul>
+<h2 id="release-031-20220818"><a class="header" href="#release-031-20220818"><a href="https://github.com/zhaofengli/colmena/releases/tag/v0.3.1">Release 0.3.1</a> (2022/08/18)</a></h2>
+<ul>
+<li>Fixed: Streaming evaluation fails for node names containing periods (<a href="https://github.com/zhaofengli/colmena/issues/92">#92</a>)</li>
+<li>Fixed: Streaming evaluation fails in non-flake deployments with relative paths (<a href="https://github.com/zhaofengli/colmena/issues/107">#107</a>)</li>
+<li>Fixed: <code>colmena apply-local</code> returning non-zero exit code when successful (<a href="https://github.com/zhaofengli/colmena/issues/111">#111</a>)</li>
+</ul>
 <h2 id="release-030-20220427"><a class="header" href="#release-030-20220427"><a href="https://github.com/zhaofengli/colmena/releases/tag/v0.3.0">Release 0.3.0</a> (2022/04/27)</a></h2>
 <ul>
 <li><a href="https://colmena.cli.rs/0.3/features/remote-builds.html">Remote builds</a> are now supported (<a href="https://github.com/zhaofengli/colmena/issues/33">#33</a>).</li>
