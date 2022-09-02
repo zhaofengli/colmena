@@ -632,40 +632,8 @@ impl Deployment {
             Ok(target)
         }).await?;
 
-        // Upload post-activation keys
-        let mut target = if self.options.upload_keys {
-            let job = parent.create_job(JobType::UploadKeys, nodes.clone())?;
-            job.run_waiting(|job| async move {
-                let keys = target
-                    .config
-                    .keys
-                    .iter()
-                    .filter(|(_, v)| v.upload_at() == UploadKeyAt::PostActivation)
-                    .map(|(k, v)| (k.clone(), v.clone()))
-                    .collect::<HashMap<String, Key>>();
-
-                if keys.is_empty() {
-                    job.noop("No post-activation keys to upload".to_string())?;
-                    return Ok(target);
-                }
-
-                job.state(JobState::Running)?;
-                job.message("Uploading post-activation keys...".to_string())?;
-
-                let host = target.host.as_mut().unwrap();
-                host.set_job(Some(job.clone()));
-                host.upload_keys(&keys, true).await?;
-
-                job.success_with_message("Uploaded keys (post-activation)".to_string())?;
-                Ok(target)
-            })
-            .await?
-        } else {
-            target
-        };
-
         // Reboot
-        if self.options.reboot {
+        let mut target = if self.options.reboot {
             let job = parent.create_job(JobType::Reboot, nodes.clone())?;
             let arc_self = self.clone();
             job.run(|job| async move {
@@ -684,6 +652,38 @@ impl Deployment {
 
                 host.reboot(options).await?;
 
+                Ok(target)
+            })
+            .await?
+        } else {
+            target
+        };
+
+        // Upload post-activation keys
+        if self.options.upload_keys {
+            let job = parent.create_job(JobType::UploadKeys, nodes.clone())?;
+            job.run_waiting(|job| async move {
+                let keys = target
+                    .config
+                    .keys
+                    .iter()
+                    .filter(|(_, v)| v.upload_at() == UploadKeyAt::PostActivation)
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect::<HashMap<String, Key>>();
+
+                if keys.is_empty() {
+                    job.noop("No post-activation keys to upload".to_string())?;
+                    return Ok(());
+                }
+
+                job.state(JobState::Running)?;
+                job.message("Uploading post-activation keys...".to_string())?;
+
+                let host = target.host.as_mut().unwrap();
+                host.set_job(Some(job.clone()));
+                host.upload_keys(&keys, true).await?;
+
+                job.success_with_message("Uploaded keys (post-activation)".to_string())?;
                 Ok(())
             })
             .await?;
