@@ -154,6 +154,8 @@
 <li>The <code>--no-substitutes</code> option under the <code>apply</code> subcommand has been renamed to <code>--no-substitute</code> (<a href="https://github.com/zhaofengli/colmena/issues/59">#59</a>).</li>
 <li>The <a href="./reference/meta.html#nodespecialargs"><code>meta.nodeSpecialArgs</code></a> option has been added. It allows specifying node-specific <code>specialArgs</code> passed to NixOS modules (<a href="https://github.com/zhaofengli/colmena/pull/100">#100</a>).</li>
 <li>The <a href="./reference/cli.html#colmena-repl"><code>repl</code></a> subcommand has been added. It allows you to start an <a href="./features/eval.html#interactive-repl">interactive REPL</a> with access to the complete node configurations.</li>
+<li>The default goal for <code>colmena apply</code> is now <code>boot</code> if <code>--reboot</code> is specified, and <code>switch</code> otherwise (<a href="https://github.com/zhaofengli/colmena/issues/113">#113</a>).</li>
+<li>Post-activation keys are now uploaded after the reboot if <code>--reboot</code> is specified (<a href="https://github.com/zhaofengli/colmena/issues/113">#113</a>).</li>
 </ul>
 <h2 id="release-031-20220818"><a class="header" href="#release-031-20220818"><a href="https://github.com/zhaofengli/colmena/releases/tag/v0.3.1">Release 0.3.1</a> (2022/08/18)</a></h2>
 <ul>

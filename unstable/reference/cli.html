@@ -1334,8 +1334,17 @@ Apply configurations on remote machines
 
 <span class="ansi33">ARGS:
 </span>    <span class="ansi32">&lt;goal&gt;</span>
-            Same as the targets for switch-to-configuration.
-            "push" means only copying the closures to remote nodes.
+            The goal of the deployment.
+            
+            Same as the targets for switch-to-configuration, with the following extra pseudo-goals:
+            
+            - build: Only build the system profiles
+            - push: Only copy the closures to remote nodes
+            - keys: Only upload the keys to the remote nodes
+            
+            `switch` is the default goal unless `--reboot` is passed, in which case `boot` is the
+            default.
+            
             
             [default: switch]
             [possible values: build, push, switch, boot, test, dry-activate, keys]
