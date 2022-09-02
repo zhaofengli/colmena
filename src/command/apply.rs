@@ -127,7 +127,18 @@ pub fn subcommand() -> ClapCommand<'static> {
         .about("Apply configurations on remote machines")
         .arg(Arg::new("goal")
             .help("Deployment goal")
-            .long_help("Same as the targets for switch-to-configuration.\n\"push\" means only copying the closures to remote nodes.")
+            .long_help(r#"The goal of the deployment.
+
+Same as the targets for switch-to-configuration, with the following extra pseudo-goals:
+
+- build: Only build the system profiles
+- push: Only copy the closures to remote nodes
+- keys: Only upload the keys to the remote nodes
+
+`switch` is the default goal unless `--reboot` is passed, in which case `boot` is the default.
+"#)
+            .default_value("switch")
+            .default_value_if("reboot", None, Some("boot"))
             .default_value("switch")
             .index(1)
             .possible_values(&["build", "push", "switch", "boot", "test", "dry-activate", "keys"]))
