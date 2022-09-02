@@ -125,9 +125,11 @@ This is an experimental feature."#)
 pub fn subcommand() -> ClapCommand<'static> {
     let command = ClapCommand::new("apply")
         .about("Apply configurations on remote machines")
-        .arg(Arg::new("goal")
-            .help("Deployment goal")
-            .long_help(r#"The goal of the deployment.
+        .arg(
+            Arg::new("goal")
+                .help("Deployment goal")
+                .long_help(
+                    r#"The goal of the deployment.
 
 Same as the targets for switch-to-configuration, with the following extra pseudo-goals:
 
@@ -136,13 +138,22 @@ Same as the targets for switch-to-configuration, with the following extra pseudo
 - keys: Only upload the keys to the remote nodes
 
 `switch` is the default goal unless `--reboot` is passed, in which case `boot` is the default.
-"#)
-            .default_value("switch")
-            .default_value_if("reboot", None, Some("boot"))
-            .default_value("switch")
-            .index(1)
-            .possible_values(&["build", "push", "switch", "boot", "test", "dry-activate", "keys"]))
-    ;
+"#,
+                )
+                .default_value("switch")
+                .default_value_if("reboot", None, Some("boot"))
+                .default_value("switch")
+                .index(1)
+                .possible_values(&[
+                    "build",
+                    "push",
+                    "switch",
+                    "boot",
+                    "test",
+                    "dry-activate",
+                    "keys",
+                ]),
+        );
     let command = register_deploy_args(command);
 
     util::register_selector_args(command)
