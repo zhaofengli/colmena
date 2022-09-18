@@ -85,7 +85,7 @@ impl DrvSetEvaluator for NixEvalJobs {
         command.args(options.to_args());
 
         if expression.requires_flakes() {
-            command.args(&["--experimental-features", "flakes"]);
+            command.args(&["--extra-experimental-features", "flakes"]);
         }
 
         let mut child = command

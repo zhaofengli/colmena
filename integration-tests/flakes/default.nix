@@ -17,7 +17,7 @@ in tools.makeTest {
     deployer.succeed("sed -i 's @nixpkgs@ path:${pkgs._inputs.nixpkgs.outPath}?narHash=${pkgs._inputs.nixpkgs.narHash} g' /tmp/bundle/flake.nix")
 
     with subtest("Lock flake dependencies"):
-        deployer.succeed("cd /tmp/bundle && nix --experimental-features \"nix-command flakes\" flake lock")
+        deployer.succeed("cd /tmp/bundle && nix --extra-experimental-features \"nix-command flakes\" flake lock")
 
     with subtest("Deploy with a plain flake without git"):
         deployer.succeed("cd /tmp/bundle && ${tools.colmenaExec} apply --on @target --evaluator ${evaluator}")

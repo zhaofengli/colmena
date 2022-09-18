@@ -402,7 +402,7 @@ impl<'hive> NixInstantiate<'hive> {
         let mut command = Command::new("nix-instantiate");
 
         if self.hive.is_flake() {
-            command.args(&["--experimental-features", "flakes"]);
+            command.args(&["--extra-experimental-features", "flakes"]);
         }
 
         let mut full_expression = self.hive.get_base_expression();
