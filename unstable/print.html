@@ -484,6 +484,10 @@ To upload your secrets without performing a full deployment, use <code>colmena u
 <h2 id="key-services"><a class="header" href="#key-services">Key Services</a></h2>
 <p>For each secret file deployed using <code>deployment.keys</code>, a systemd service with the name of <code>${name}-key.service</code> is created (<code>acme-credentials.secret-key.service</code> for the example above).
 This unit is only active when the corresponding file is present, allowing you to set up dependencies for services requiring secret files to function.</p>
+<h2 id="flakes"><a class="header" href="#flakes">Flakes</a></h2>
+<p>If you are using flakes, Nix will copy the entire flake (everything tracked by git) into the Nix store during evaluation.
+This means the all file as checked out by git are world-readable, including the ones managed by filter-based encryption tools like <code>git-crypt</code>.
+To use <code>deployment.keys.&lt;name&gt;.keyFile</code> with flakes without having the secrets copied to the Nix store, a quoted absolute path can be used.</p>
 <div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.4.0-pre (apiVersion=0.4, unstable=True) -->
 <h1 id="ad-hoc-evaluation"><a class="header" href="#ad-hoc-evaluation">Ad Hoc Evaluation</a></h1>
 <p>Sometimes you may want to extract values from your Hive configuration for consumption in another program (e.g., <a href="https://github.com/octodns/octodns">OctoDNS</a>).
@@ -2718,6 +2722,7 @@ attribute set.
 <li>The <a href="./reference/cli.html#colmena-repl"><code>repl</code></a> subcommand has been added. It allows you to start an <a href="./features/eval.html#interactive-repl">interactive REPL</a> with access to the complete node configurations.</li>
 <li>The default goal for <code>colmena apply</code> is now <code>boot</code> if <code>--reboot</code> is specified, and <code>switch</code> otherwise (<a href="https://github.com/zhaofengli/colmena/issues/113">#113</a>).</li>
 <li>Post-activation keys are now uploaded after the reboot if <code>--reboot</code> is specified (<a href="https://github.com/zhaofengli/colmena/issues/113">#113</a>).</li>
+<li>Flake-enabled deployments now use the new SSH store protocol (<code>ssh-ng://</code>).</li>
 </ul>
 <h2 id="release-031-20220818"><a class="header" href="#release-031-20220818"><a href="https://github.com/zhaofengli/colmena/releases/tag/v0.3.1">Release 0.3.1</a> (2022/08/18)</a></h2>
 <ul>
