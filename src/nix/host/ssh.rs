@@ -32,6 +32,9 @@ pub struct Ssh {
     /// Command to elevate privileges with.
     privilege_escalation_command: Vec<String>,
 
+    /// Whether to use the experimental `nix copy` command.
+    use_nix3_copy: bool,
+
     job: Option<JobHandle>,
 }
 
@@ -187,6 +190,7 @@ impl Ssh {
             port: None,
             ssh_config: None,
             privilege_escalation_command: Vec::new(),
+            use_nix3_copy: false,
             job: None,
         }
     }
@@ -201,6 +205,10 @@ impl Ssh {
 
     pub fn set_privilege_escalation_command(&mut self, command: Vec<String>) {
         self.privilege_escalation_command = command;
+    }
+
+    pub fn set_use_nix3_copy(&mut self, enable: bool) {
+        self.use_nix3_copy = enable;
     }
 
     pub fn upcast(self) -> Box<dyn Host> {
@@ -252,31 +260,73 @@ impl Ssh {
         let ssh_options = self.ssh_options();
         let ssh_options_str = ssh_options.join(" ");
 
-        let mut command = Command::new("nix-copy-closure");
-        match direction {
-            CopyDirection::ToRemote => {
-                command.arg("--to");
-            }
-            CopyDirection::FromRemote => {
-                command.arg("--from");
-            }
-        }
+        let mut command = if self.use_nix3_copy {
+            // experimental `nix copy` command with ssh-ng://
+            let mut command = Command::new("nix");
 
-        // FIXME: Host-agnostic abstraction
-        if options.include_outputs {
-            command.arg("--include-outputs");
-        }
-        if options.use_substitutes {
-            command.arg("--use-substitutes");
-        }
-        if options.gzip {
-            command.arg("--gzip");
-        }
+            command.args(&[
+                "--extra-experimental-features",
+                "nix-command",
+                "copy",
+                "--no-check-sigs",
+            ]);
 
-        command
-            .arg(&self.ssh_target())
-            .arg(path.as_path())
-            .env("NIX_SSHOPTS", ssh_options_str);
+            if options.use_substitutes {
+                command.arg("--substitute-on-destination");
+            }
+
+            if path.ends_with(".drv") {
+                command.arg("--derivation");
+            }
+
+            match direction {
+                CopyDirection::ToRemote => {
+                    command.arg("--to");
+                }
+                CopyDirection::FromRemote => {
+                    command.arg("--from");
+                }
+            }
+
+            let mut store_uri = format!("ssh-ng://{}", self.ssh_target());
+            if options.gzip {
+                store_uri += "?compress=true";
+            }
+            command.arg(store_uri);
+
+            command.arg(path.as_path());
+
+            command
+        } else {
+            // nix-copy-closure (ssh://)
+            let mut command = Command::new("nix-copy-closure");
+
+            match direction {
+                CopyDirection::ToRemote => {
+                    command.arg("--to");
+                }
+                CopyDirection::FromRemote => {
+                    command.arg("--from");
+                }
+            }
+
+            // FIXME: Host-agnostic abstraction
+            if options.include_outputs {
+                command.arg("--include-outputs");
+            }
+            if options.use_substitutes {
+                command.arg("--use-substitutes");
+            }
+            if options.gzip {
+                command.arg("--gzip");
+            }
+
+            command.arg(&self.ssh_target()).arg(path.as_path());
+
+            command
+        };
+
+        command.env("NIX_SSHOPTS", ssh_options_str);
 
         command
     }

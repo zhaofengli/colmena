@@ -205,6 +205,11 @@ impl Hive {
                 if let Some(ssh_config) = &ssh_config {
                     host.set_ssh_config(ssh_config.clone());
                 }
+
+                if self.is_flake() {
+                    host.set_use_nix3_copy(true);
+                }
+
                 host.upcast()
             });
             let ssh_host = host.is_some();
