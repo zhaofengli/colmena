@@ -44,7 +44,14 @@ let
       modules = [ colmenaOptions.metaOptions uncheckedUserMeta ];
     }).config;
 
-    mergedHive = removeAttrs (defaultHive // uncheckedHive) [ "meta" "network" ];
+    mergedHive =
+      assert lib.assertMsg (!(uncheckedHive ? __schema)) ''
+        You cannot pass in an already-evaluated Hive into the evaluator.
+
+        Hint: Use the `colmenaHive` output instead of `colmena`.
+      '';
+      removeAttrs (defaultHive // uncheckedHive) [ "meta" "network" ];
+
     meta = {
       meta =
         if !hermetic && userMeta.nixpkgs == null
@@ -174,8 +181,8 @@ let
 
 in rec {
   # Exported attributes
-  #
-  # Functions are intended to be called with `nix-instantiate --eval --json`
+  __schema = "v0";
+
   nodes = listToAttrs (map (name: { inherit name; value = evalNode name (configsFor name); }) nodeNames);
   toplevel =         lib.mapAttrs (_: v: v.config.system.build.toplevel) nodes;
   deploymentConfig = lib.mapAttrs (_: v: v.config.deployment)            nodes;
