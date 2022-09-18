@@ -22,7 +22,7 @@
       # Uses an already-evaluated hive.
       #
       # This uses the `colmenaHive` output.
-      checkPreparedHive = hiveOutput: 
+      checkPreparedHive = hiveOutput:
         if !(hiveOutput ? __schema) then
           throw ''
             The colmenaHive output does not contain a valid evaluated hive.
