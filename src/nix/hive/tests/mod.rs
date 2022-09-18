@@ -3,13 +3,14 @@
 use super::*;
 
 use std::collections::HashSet;
+use std::fs;
 use std::hash::Hash;
 use std::io::Write;
 use std::iter::{FromIterator, Iterator};
 use std::ops::Deref;
 use std::path::PathBuf;
 
-use tempfile::NamedTempFile;
+use tempfile::{Builder as TempFileBuilder, NamedTempFile};
 use tokio_test::block_on;
 
 macro_rules! node {
@@ -165,6 +166,44 @@ fn test_parse_simple() {
 #[test]
 fn test_parse_flake() {
     let flake_dir = PathBuf::from("./src/nix/hive/tests/simple-flake");
+    let flake = block_on(Flake::from_dir(flake_dir)).unwrap();
+
+    let hive_path = HivePath::Flake(flake);
+    let mut hive = block_on(Hive::new(hive_path)).unwrap();
+
+    hive.set_show_trace(true);
+
+    let nodes = block_on(hive.deployment_info()).unwrap();
+    assert!(set_eq(
+        &["host-a", "host-b"],
+        &nodes.keys().map(NodeName::as_str).collect::<Vec<&str>>(),
+    ));
+}
+
+#[test]
+fn test_parse_makehive_flake() {
+    // make a copy of the flake so we can edit the colmena input
+    let src_dir = PathBuf::from("./src/nix/hive/tests/makehive-flake");
+    let flake_dir = TempFileBuilder::new()
+        .prefix("makehive-flake-")
+        .tempdir()
+        .unwrap();
+
+    for entry in fs::read_dir(src_dir).unwrap() {
+        let entry = entry.unwrap();
+        if entry.file_type().unwrap().is_file() {
+            fs::copy(entry.path(), flake_dir.as_ref().join(entry.file_name())).unwrap();
+        }
+    }
+
+    let flake_nix = flake_dir.as_ref().join("flake.nix");
+    let patched_flake = fs::read_to_string(&flake_nix)
+        .unwrap()
+        .replace("@repoPath@", env!("CARGO_MANIFEST_DIR"));
+
+    fs::write(flake_nix, patched_flake).unwrap();
+
+    // run the test
     let flake = block_on(Flake::from_dir(flake_dir)).unwrap();
 
     let hive_path = HivePath::Flake(flake);
