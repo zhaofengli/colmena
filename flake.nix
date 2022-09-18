@@ -97,8 +97,8 @@
       colmena = final.callPackage ./package.nix { };
     };
     nixosModules = {
-        inherit (colmenaOptions) deploymentOptions metaOptions;
-        inherit (colmenaModules) keyChownModule keyServiceModule;
+      inherit (colmenaOptions) deploymentOptions metaOptions;
+      inherit (colmenaModules) keyChownModule keyServiceModule;
     };
   };
 
