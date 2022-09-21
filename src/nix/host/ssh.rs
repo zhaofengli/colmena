@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::convert::TryInto;
+use std::ffi::OsStr;
 use std::path::PathBuf;
 use std::process::Stdio;
 use std::time::Duration;
@@ -275,7 +276,7 @@ impl Ssh {
                 command.arg("--substitute-on-destination");
             }
 
-            if path.ends_with(".drv") {
+            if let Some("drv") = path.extension().and_then(OsStr::to_str) {
                 command.arg("--derivation");
             }
 
