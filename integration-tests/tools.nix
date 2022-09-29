@@ -71,7 +71,7 @@ let
 
       environment.systemPackages = with pkgs; [
         git # for git flake tests
-        inotifyTools # for key services build
+        inotify-tools # for key services build
 
         # HACK: copy stderr to both stdout and stderr
         # (the test framework only captures stdout, and only stderr appears on screen during the build)
