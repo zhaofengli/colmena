@@ -16,6 +16,10 @@
 - Post-activation keys are now uploaded after the reboot if `--reboot` is specified ([#113](https://github.com/zhaofengli/colmena/issues/113)).
 - Flake-enabled deployments now use the new SSH store protocol (`ssh-ng://`).
 
+## [Release 0.3.2](https://github.com/zhaofengli/colmena/releases/tag/v0.3.1) (2022/09/29)
+
+- Fixed: [Key services](https://colmena.cli.rs/0.3/features/keys.html#key-services) were using the deprecated `inotifyTools` alias removed from `nixos-unstable` ([NixOS/nixpkgs#192681](https://github.com/NixOS/nixpkgs/pull/192681)).
+
 ## [Release 0.3.1](https://github.com/zhaofengli/colmena/releases/tag/v0.3.1) (2022/08/18)
 
 - Fixed: Streaming evaluation fails for node names containing periods ([#92](https://github.com/zhaofengli/colmena/issues/92))
