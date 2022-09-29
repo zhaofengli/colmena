@@ -495,7 +495,7 @@ let
           serviceConfig = {
             Restart = "on-failure";
           };
-          path = [ pkgs.inotifyTools ];
+          path = [ pkgs.inotify-tools ];
           script = ''
             if [[ ! -e "${val.path}" ]]; then
               >&2 echo "${val.path} does not exist"
