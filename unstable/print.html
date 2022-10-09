@@ -1996,715 +1996,636 @@ attribute set of unspecified</p>
 .inv48-255 { color: #eeeeee; }
 </style>
 <h2 id="colmena"><a class="header" href="#colmena"><code>colmena</code></a></h2>
-<pre><div class="hljs"><span class="ansi32">Colmena</span> 0.4.0-pre
-Zhaofeng Li &lt;hello@zhaofeng.li&gt;
-NixOS deployment tool
+<pre><div class="hljs">NixOS deployment tool
 
 Colmena helps you deploy to multiple hosts running NixOS.
 For more details, read the manual at &lt;https://colmena.cli.rs/0.4&gt;.
 
-Note: You are using a pre-release version of Colmena, so the supported options may be different from
-what's in the manual.
+Note: You are using a pre-release version of Colmena, so the supported options may be different from what's in the manual.
 
-<span class="ansi33">USAGE:</span>
-    colmena [OPTIONS] [SUBCOMMAND]
+<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena</span> [OPTIONS] [COMMAND]
 
-<span class="ansi33">OPTIONS:
-</span>    <span class="ansi32">-f</span>, <span class="ansi32">--config</span> <span class="ansi32">&lt;CONFIG&gt;</span>
-            If this argument is not specified, Colmena will search upwards from the current working
-            directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if
-            --config/-f is given explicitly.
-            
-            For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
-            
-            
-            [default: hive.nix]
+<span class="ansi1"></span><span class="ansi1 ansi4">Commands</span><span class="ansi1"></span><span class="ansi1 ansi4">:
+</span>  <span class="ansi1">apply</span>
+          Apply configurations on remote machines
+  <span class="ansi1">apply-local</span>
+          Apply configurations on the local machine
+  <span class="ansi1">build</span>
+          Build configurations but not push to remote machines
+  <span class="ansi1">eval</span>
+          Evaluate an expression using the complete configuration
+  <span class="ansi1">upload-keys</span>
+          Upload keys to remote hosts
+  <span class="ansi1">exec</span>
+          Run a command on remote machines
+  <span class="ansi1">repl</span>
+          Start an interactive REPL with the complete configuration
+  <span class="ansi1">nix-info</span>
+          Show information about the current Nix installation
+  <span class="ansi1">help</span>
+          Print this message or the help of the given subcommand(s)
 
-    <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
-            Print help information
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:
+</span>      <span class="ansi1">--show-trace</span>
+          Passes --show-trace to Nix commands
 
-        <span class="ansi32">--impure</span>
-            Passes --impure to Nix commands
+      <span class="ansi1">--impure</span>
+          Passes --impure to Nix commands
 
-        <span class="ansi32">--show-trace</span>
-            Passes --show-trace to Nix commands
+  <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
+          If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
+          
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          
+          
+          [default: hive.nix]
 
-    <span class="ansi32">-V</span>, <span class="ansi32">--version</span>
-            Print version information
+  <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
+          Print help information (use `-h` for a summary)
 
-        <span class="ansi32">--color</span> <span class="ansi32">&lt;WHEN&gt;</span>
-            When to colorize the output. By default, Colmena enables colorized output when the
-            terminal supports it.
-            
-            It's also possible to specify the preference using environment variables. See
-            &lt;https://bixense.com/clicolors&gt;.
-            
-            
-            [default: auto]
-            [possible values: auto, always, never]
+  <span class="ansi1">-V</span>, <span class="ansi1">--version</span>
+          Print version information
 
-<span class="ansi33">SUBCOMMANDS</span><span class="ansi33">:
-</span>    <span class="ansi32">apply</span>
-            Apply configurations on remote machines
-    <span class="ansi32">apply-local</span>
-            Apply configurations on the local machine
-    <span class="ansi32">build</span>
-            Build configurations but not push to remote machines
-    <span class="ansi32">eval</span>
-            Evaluate an expression using the complete configuration
-    <span class="ansi32">exec</span>
-            Run a command on remote machines
-    <span class="ansi32">help</span>
-            Print this message or the help of the given subcommand(s)
-    <span class="ansi32">nix-info</span>
-            Show information about the current Nix installation
-    <span class="ansi32">repl</span>
-            Start an interactive REPL with the complete configuration
-    <span class="ansi32">upload-keys</span>
-            Upload keys to remote hosts
+      <span class="ansi1">--color</span> &lt;WHEN&gt;
+          When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
+          
+          It's also possible to specify the preference using environment variables. See &lt;https://bixense.com/clicolors&gt;.
+          
+          
+          [default: auto]
+          [possible values: auto, always, never]
 </div></pre>
 <h2 id="colmena-apply"><a class="header" href="#colmena-apply"><code>colmena apply</code></a></h2>
-<pre><div class="hljs"><span class="ansi32">colmena-apply</span> 
-Apply configurations on remote machines
+<pre><div class="hljs">Apply configurations on remote machines
 
-<span class="ansi33">USAGE:</span>
-    colmena apply [OPTIONS] [goal]
+<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena apply</span> [OPTIONS] [goal]
 
-<span class="ansi33">ARGS:
-</span>    <span class="ansi32">&lt;goal&gt;</span>
-            The goal of the deployment.
-            
-            Same as the targets for switch-to-configuration, with the following extra pseudo-goals:
-            
-            - build: Only build the system profiles
-            - push: Only copy the closures to remote nodes
-            - keys: Only upload the keys to the remote nodes
-            
-            `switch` is the default goal unless `--reboot` is passed, in which case `boot` is the
-            default.
-            
-            
-            [default: switch]
-            [possible values: build, push, switch, boot, test, dry-activate, keys]
+<span class="ansi1"></span><span class="ansi1 ansi4">Arguments:
+</span>  [goal]
+          The goal of the deployment.
+          
+          Same as the targets for switch-to-configuration, with the following extra pseudo-goals:
+          
+          - build: Only build the system profiles
+          - push: Only copy the closures to remote nodes
+          - keys: Only upload the keys to the remote nodes
+          
+          `switch` is the default goal unless `--reboot` is passed, in which case `boot` is the default.
+          
+          
+          [default: switch]
+          [possible values: build, push, switch, boot, test, dry-activate, keys]
 
-<span class="ansi33">OPTIONS:
-</span>    <span class="ansi32">-f</span>, <span class="ansi32">--config</span> <span class="ansi32">&lt;CONFIG&gt;</span>
-            If this argument is not specified, Colmena will search upwards from the current working
-            directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if
-            --config/-f is given explicitly.
-            
-            For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
-            
-            
-            [default: hive.nix]
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:
+</span>      <span class="ansi1">--eval-node-limit</span> &lt;LIMIT&gt;
+          Limits the maximum number of hosts to be evaluated at once.
+          
+          The evaluation process is RAM-intensive. The default behavior is to limit the maximum number of host evaluated at the same time based on naive heuristics.
+          
+          Set to 0 to disable the limit.
+          
+          
+          [default: auto]
 
-        <span class="ansi32">--build-on-target</span>
-            Build the system profiles on the target nodes themselves.
-            
-            If enabled, the system profiles will be built on the target nodes themselves, not on the
-            host running Colmena itself.
-            This overrides per-node perferences set in `deployment.buildOnTarget`.
-            To temporarily disable remote build on all nodes, use `--no-build-on-target`.
+  <span class="ansi1">-p</span>, <span class="ansi1">--parallel</span> &lt;LIMIT&gt;
+          Limits the maximum number of hosts to be deployed in parallel.
+          
+          Set to 0 to disable parallemism limit.
+          
+          
+          [default: 10]
 
-        <span class="ansi32">--eval-node-limit</span> <span class="ansi32">&lt;LIMIT&gt;</span>
-            Limits the maximum number of hosts to be evaluated at once.
-            
-            The evaluation process is RAM-intensive. The default behavior is to limit the maximum
-            number of host evaluated at the same time based on naive heuristics.
-            
-            Set to 0 to disable the limit.
-            
-            
-            [default: auto]
+      <span class="ansi1">--show-trace</span>
+          Passes --show-trace to Nix commands
 
-        <span class="ansi32">--evaluator</span> <span class="ansi32">&lt;evaluator&gt;</span>
-            If set to `chunked` (default), evaluation of nodes will happen in batches. If set to
-            `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes
-            will be evaluated in parallel.
-            
-            This is an experimental feature.
-            
-            [default: chunked]
-            [possible values: chunked, streaming]
+      <span class="ansi1">--impure</span>
+          Passes --impure to Nix commands
 
-        <span class="ansi32">--force-replace-unknown-profiles</span>
-            If `deployment.replaceUnknownProfiles` is set for a target, using this switch
-            will treat deployment.replaceUnknownProfiles as though it was set true and perform
-            unknown profile replacement.
+      <span class="ansi1">--keep-result</span>
+          Create GC roots for built profiles.
+          
+          The built system profiles will be added as GC roots so that they will not be removed by the garbage collector.
+          The links will be created under .gcroots in the directory the Hive configuration is located.
+          
 
-    <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
-            Print help information
+  <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
+          Deactivates the progress spinner and prints every line of output.
 
-        <span class="ansi32">--impure</span>
-            Passes --impure to Nix commands
+      <span class="ansi1">--no-keys</span>
+          Do not upload secret keys set in `deployment.keys`.
+          
+          By default, Colmena will upload keys set in `deployment.keys` before deploying the new profile on a node.
+          To upload keys without building or deploying the rest of the configuration, use `colmena upload-keys`.
+          
 
-        <span class="ansi32">--keep-result</span>
-            Create GC roots for built profiles.
-            
-            The built system profiles will be added as GC roots so that they will not be removed by
-            the garbage collector.
-            The links will be created under .gcroots in the directory the Hive configuration is
-            located.
+      <span class="ansi1">--reboot</span>
+          Reboots nodes after activation and waits for them to come back up.
 
-        <span class="ansi32">--no-gzip</span>
-            Disables the use of gzip when copying closures to the remote host.
+      <span class="ansi1">--no-substitute</span>
+          Disables the use of substituters when copying closures to the remote host.
 
-        <span class="ansi32">--no-keys</span>
-            Do not upload secret keys set in `deployment.keys`.
-            
-            By default, Colmena will upload keys set in `deployment.keys` before deploying the new
-            profile on a node.
-            To upload keys without building or deploying the rest of the configuration, use `colmena
-            upload-keys`.
+      <span class="ansi1">--no-gzip</span>
+          Disables the use of gzip when copying closures to the remote host.
 
-        <span class="ansi32">--no-substitute</span>
-            Disables the use of substituters when copying closures to the remote host.
+      <span class="ansi1">--build-on-target</span>
+          Build the system profiles on the target nodes themselves.
+          
+          If enabled, the system profiles will be built on the target nodes themselves, not on the host running Colmena itself.
+          This overrides per-node perferences set in `deployment.buildOnTarget`.
+          To temporarily disable remote build on all nodes, use `--no-build-on-target`.
+          
 
-        <span class="ansi32">--on</span> <span class="ansi32">&lt;NODES&gt;</span>
-            Select a list of nodes to deploy to.
-            
-            The list is comma-separated and globs are supported. To match tags, prepend the filter
-            by @. Valid examples:
-            
-            - host1,host2,host3
-            - edge-*
-            - edge-*,core-*
-            - @a-tag,@tags-can-have-*
+      <span class="ansi1">--force-replace-unknown-profiles</span>
+          If `deployment.replaceUnknownProfiles` is set for a target, using this switch
+          will treat deployment.replaceUnknownProfiles as though it was set true and perform unknown profile replacement.
 
-    <span class="ansi32">-p</span>, <span class="ansi32">--parallel</span> <span class="ansi32">&lt;LIMIT&gt;</span>
-            Limits the maximum number of hosts to be deployed in parallel.
-            
-            Set to 0 to disable parallemism limit.
-            
-            
-            [default: 10]
+      <span class="ansi1">--evaluator</span> &lt;evaluator&gt;
+          If set to `chunked` (default), evaluation of nodes will happen in batches. If set to `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes will be evaluated in parallel.
+          
+          This is an experimental feature.
+          
+          [default: chunked]
+          [possible values: chunked, streaming]
 
-        <span class="ansi32">--reboot</span>
-            Reboots nodes after activation and waits for them to come back up.
+      <span class="ansi1">--on</span> &lt;NODES&gt;
+          Select a list of nodes to deploy to.
+          
+          The list is comma-separated and globs are supported. To match tags, prepend the filter by @. Valid examples:
+          
+          - host1,host2,host3
+          - edge-*
+          - edge-*,core-*
+          - @a-tag,@tags-can-have-*
 
-        <span class="ansi32">--show-trace</span>
-            Passes --show-trace to Nix commands
+  <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
+          If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
+          
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          
+          
+          [default: hive.nix]
 
-    <span class="ansi32">-v</span>, <span class="ansi32">--verbose</span>
-            Deactivates the progress spinner and prints every line of output.
+  <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
+          Print help information (use `-h` for a summary)
 
-        <span class="ansi32">--color</span> <span class="ansi32">&lt;WHEN&gt;</span>
-            When to colorize the output. By default, Colmena enables colorized output when the
-            terminal supports it.
-            
-            It's also possible to specify the preference using environment variables. See
-            &lt;https://bixense.com/clicolors&gt;.
-            
-            
-            [default: auto]
-            [possible values: auto, always, never]
+      <span class="ansi1">--color</span> &lt;WHEN&gt;
+          When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
+          
+          It's also possible to specify the preference using environment variables. See &lt;https://bixense.com/clicolors&gt;.
+          
+          
+          [default: auto]
+          [possible values: auto, always, never]
 </div></pre>
 <h2 id="colmena-apply-local"><a class="header" href="#colmena-apply-local"><code>colmena apply-local</code></a></h2>
-<pre><div class="hljs"><span class="ansi32">colmena-apply-local</span> 
-Apply configurations on the local machine
+<pre><div class="hljs">Apply configurations on the local machine
 
-<span class="ansi33">USAGE:</span>
-    colmena apply-local [OPTIONS] [goal]
+<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena apply-local</span> [OPTIONS] [goal]
 
-<span class="ansi33">ARGS:
-</span>    <span class="ansi32">&lt;goal&gt;</span>
-            Same as the targets for switch-to-configuration.
-            "push" is noop in apply-local.
-            
-            [default: switch]
-            [possible values: push, switch, boot, test, dry-activate, keys]
+<span class="ansi1"></span><span class="ansi1 ansi4">Arguments:
+</span>  [goal]
+          Same as the targets for switch-to-configuration.
+          "push" is noop in apply-local.
+          
+          [default: switch]
+          [possible values: push, switch, boot, test, dry-activate, keys]
 
-<span class="ansi33">OPTIONS:
-</span>    <span class="ansi32">-f</span>, <span class="ansi32">--config</span> <span class="ansi32">&lt;CONFIG&gt;</span>
-            If this argument is not specified, Colmena will search upwards from the current working
-            directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if
-            --config/-f is given explicitly.
-            
-            For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
-            
-            
-            [default: hive.nix]
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:
+</span>      <span class="ansi1">--sudo</span>
+          Attempt to escalate privileges if not run as root
 
-    <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
-            Print help information
+      <span class="ansi1">--show-trace</span>
+          Passes --show-trace to Nix commands
 
-        <span class="ansi32">--impure</span>
-            Passes --impure to Nix commands
+  <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
+          Deactivates the progress spinner and prints every line of output.
 
-        <span class="ansi32">--no-keys</span>
-            Do not deploy secret keys set in `deployment.keys`.
-            
-            By default, Colmena will deploy keys set in `deployment.keys` before activating the
-            profile on this host.
+      <span class="ansi1">--impure</span>
+          Passes --impure to Nix commands
 
-        <span class="ansi32">--node</span> <span class="ansi32">&lt;node&gt;</span>
-            Override the node name to use
+      <span class="ansi1">--no-keys</span>
+          Do not deploy secret keys set in `deployment.keys`.
+          
+          By default, Colmena will deploy keys set in `deployment.keys` before activating the profile on this host.
+          
 
-        <span class="ansi32">--show-trace</span>
-            Passes --show-trace to Nix commands
+      <span class="ansi1">--node</span> &lt;node&gt;
+          Override the node name to use
 
-        <span class="ansi32">--sudo</span>
-            Attempt to escalate privileges if not run as root
+  <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
+          If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
+          
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          
+          
+          [default: hive.nix]
 
-    <span class="ansi32">-v</span>, <span class="ansi32">--verbose</span>
-            Deactivates the progress spinner and prints every line of output.
+  <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
+          Print help information (use `-h` for a summary)
 
-        <span class="ansi32">--color</span> <span class="ansi32">&lt;WHEN&gt;</span>
-            When to colorize the output. By default, Colmena enables colorized output when the
-            terminal supports it.
-            
-            It's also possible to specify the preference using environment variables. See
-            &lt;https://bixense.com/clicolors&gt;.
-            
-            
-            [default: auto]
-            [possible values: auto, always, never]
+      <span class="ansi1">--color</span> &lt;WHEN&gt;
+          When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
+          
+          It's also possible to specify the preference using environment variables. See &lt;https://bixense.com/clicolors&gt;.
+          
+          
+          [default: auto]
+          [possible values: auto, always, never]
 </div></pre>
 <h2 id="colmena-build"><a class="header" href="#colmena-build"><code>colmena build</code></a></h2>
-<pre><div class="hljs"><span class="ansi32">colmena-build</span> 
-Build configurations but not push to remote machines
+<pre><div class="hljs">Build configurations but not push to remote machines
 
 This subcommand behaves as if you invoked `apply` with the `build` goal.
 
-<span class="ansi33">USAGE:</span>
-    colmena build [OPTIONS]
+<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena build</span> [OPTIONS]
 
-<span class="ansi33">OPTIONS:
-</span>    <span class="ansi32">-f</span>, <span class="ansi32">--config</span> <span class="ansi32">&lt;CONFIG&gt;</span>
-            If this argument is not specified, Colmena will search upwards from the current working
-            directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if
-            --config/-f is given explicitly.
-            
-            For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
-            
-            
-            [default: hive.nix]
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:
+</span>      <span class="ansi1">--eval-node-limit</span> &lt;LIMIT&gt;
+          Limits the maximum number of hosts to be evaluated at once.
+          
+          The evaluation process is RAM-intensive. The default behavior is to limit the maximum number of host evaluated at the same time based on naive heuristics.
+          
+          Set to 0 to disable the limit.
+          
+          
+          [default: auto]
 
-        <span class="ansi32">--build-on-target</span>
-            Build the system profiles on the target nodes themselves.
-            
-            If enabled, the system profiles will be built on the target nodes themselves, not on the
-            host running Colmena itself.
-            This overrides per-node perferences set in `deployment.buildOnTarget`.
-            To temporarily disable remote build on all nodes, use `--no-build-on-target`.
+  <span class="ansi1">-p</span>, <span class="ansi1">--parallel</span> &lt;LIMIT&gt;
+          Limits the maximum number of hosts to be deployed in parallel.
+          
+          Set to 0 to disable parallemism limit.
+          
+          
+          [default: 10]
 
-        <span class="ansi32">--eval-node-limit</span> <span class="ansi32">&lt;LIMIT&gt;</span>
-            Limits the maximum number of hosts to be evaluated at once.
-            
-            The evaluation process is RAM-intensive. The default behavior is to limit the maximum
-            number of host evaluated at the same time based on naive heuristics.
-            
-            Set to 0 to disable the limit.
-            
-            
-            [default: auto]
+      <span class="ansi1">--show-trace</span>
+          Passes --show-trace to Nix commands
 
-        <span class="ansi32">--evaluator</span> <span class="ansi32">&lt;evaluator&gt;</span>
-            If set to `chunked` (default), evaluation of nodes will happen in batches. If set to
-            `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes
-            will be evaluated in parallel.
-            
-            This is an experimental feature.
-            
-            [default: chunked]
-            [possible values: chunked, streaming]
+      <span class="ansi1">--impure</span>
+          Passes --impure to Nix commands
 
-        <span class="ansi32">--force-replace-unknown-profiles</span>
-            If `deployment.replaceUnknownProfiles` is set for a target, using this switch
-            will treat deployment.replaceUnknownProfiles as though it was set true and perform
-            unknown profile replacement.
+      <span class="ansi1">--keep-result</span>
+          Create GC roots for built profiles.
+          
+          The built system profiles will be added as GC roots so that they will not be removed by the garbage collector.
+          The links will be created under .gcroots in the directory the Hive configuration is located.
+          
 
-    <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
-            Print help information
+  <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
+          Deactivates the progress spinner and prints every line of output.
 
-        <span class="ansi32">--impure</span>
-            Passes --impure to Nix commands
+      <span class="ansi1">--no-keys</span>
+          Do not upload secret keys set in `deployment.keys`.
+          
+          By default, Colmena will upload keys set in `deployment.keys` before deploying the new profile on a node.
+          To upload keys without building or deploying the rest of the configuration, use `colmena upload-keys`.
+          
 
-        <span class="ansi32">--keep-result</span>
-            Create GC roots for built profiles.
-            
-            The built system profiles will be added as GC roots so that they will not be removed by
-            the garbage collector.
-            The links will be created under .gcroots in the directory the Hive configuration is
-            located.
+      <span class="ansi1">--reboot</span>
+          Reboots nodes after activation and waits for them to come back up.
 
-        <span class="ansi32">--no-gzip</span>
-            Disables the use of gzip when copying closures to the remote host.
+      <span class="ansi1">--no-substitute</span>
+          Disables the use of substituters when copying closures to the remote host.
 
-        <span class="ansi32">--no-keys</span>
-            Do not upload secret keys set in `deployment.keys`.
-            
-            By default, Colmena will upload keys set in `deployment.keys` before deploying the new
-            profile on a node.
-            To upload keys without building or deploying the rest of the configuration, use `colmena
-            upload-keys`.
+      <span class="ansi1">--no-gzip</span>
+          Disables the use of gzip when copying closures to the remote host.
 
-        <span class="ansi32">--no-substitute</span>
-            Disables the use of substituters when copying closures to the remote host.
+      <span class="ansi1">--build-on-target</span>
+          Build the system profiles on the target nodes themselves.
+          
+          If enabled, the system profiles will be built on the target nodes themselves, not on the host running Colmena itself.
+          This overrides per-node perferences set in `deployment.buildOnTarget`.
+          To temporarily disable remote build on all nodes, use `--no-build-on-target`.
+          
 
-        <span class="ansi32">--on</span> <span class="ansi32">&lt;NODES&gt;</span>
-            Select a list of nodes to deploy to.
-            
-            The list is comma-separated and globs are supported. To match tags, prepend the filter
-            by @. Valid examples:
-            
-            - host1,host2,host3
-            - edge-*
-            - edge-*,core-*
-            - @a-tag,@tags-can-have-*
+      <span class="ansi1">--force-replace-unknown-profiles</span>
+          If `deployment.replaceUnknownProfiles` is set for a target, using this switch
+          will treat deployment.replaceUnknownProfiles as though it was set true and perform unknown profile replacement.
 
-    <span class="ansi32">-p</span>, <span class="ansi32">--parallel</span> <span class="ansi32">&lt;LIMIT&gt;</span>
-            Limits the maximum number of hosts to be deployed in parallel.
-            
-            Set to 0 to disable parallemism limit.
-            
-            
-            [default: 10]
+      <span class="ansi1">--evaluator</span> &lt;evaluator&gt;
+          If set to `chunked` (default), evaluation of nodes will happen in batches. If set to `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes will be evaluated in parallel.
+          
+          This is an experimental feature.
+          
+          [default: chunked]
+          [possible values: chunked, streaming]
 
-        <span class="ansi32">--reboot</span>
-            Reboots nodes after activation and waits for them to come back up.
+      <span class="ansi1">--on</span> &lt;NODES&gt;
+          Select a list of nodes to deploy to.
+          
+          The list is comma-separated and globs are supported. To match tags, prepend the filter by @. Valid examples:
+          
+          - host1,host2,host3
+          - edge-*
+          - edge-*,core-*
+          - @a-tag,@tags-can-have-*
 
-        <span class="ansi32">--show-trace</span>
-            Passes --show-trace to Nix commands
+  <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
+          If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
+          
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          
+          
+          [default: hive.nix]
 
-    <span class="ansi32">-v</span>, <span class="ansi32">--verbose</span>
-            Deactivates the progress spinner and prints every line of output.
+  <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
+          Print help information (use `-h` for a summary)
 
-        <span class="ansi32">--color</span> <span class="ansi32">&lt;WHEN&gt;</span>
-            When to colorize the output. By default, Colmena enables colorized output when the
-            terminal supports it.
-            
-            It's also possible to specify the preference using environment variables. See
-            &lt;https://bixense.com/clicolors&gt;.
-            
-            
-            [default: auto]
-            [possible values: auto, always, never]
+      <span class="ansi1">--color</span> &lt;WHEN&gt;
+          When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
+          
+          It's also possible to specify the preference using environment variables. See &lt;https://bixense.com/clicolors&gt;.
+          
+          
+          [default: auto]
+          [possible values: auto, always, never]
 </div></pre>
 <h2 id="colmena-upload-keys"><a class="header" href="#colmena-upload-keys"><code>colmena upload-keys</code></a></h2>
-<pre><div class="hljs"><span class="ansi32">colmena-upload-keys</span> 
-Upload keys to remote hosts
+<pre><div class="hljs">Upload keys to remote hosts
 
 This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
 
-<span class="ansi33">USAGE:</span>
-    colmena upload-keys [OPTIONS]
+<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena upload-keys</span> [OPTIONS]
 
-<span class="ansi33">OPTIONS:
-</span>    <span class="ansi32">-f</span>, <span class="ansi32">--config</span> <span class="ansi32">&lt;CONFIG&gt;</span>
-            If this argument is not specified, Colmena will search upwards from the current working
-            directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if
-            --config/-f is given explicitly.
-            
-            For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
-            
-            
-            [default: hive.nix]
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:
+</span>      <span class="ansi1">--eval-node-limit</span> &lt;LIMIT&gt;
+          Limits the maximum number of hosts to be evaluated at once.
+          
+          The evaluation process is RAM-intensive. The default behavior is to limit the maximum number of host evaluated at the same time based on naive heuristics.
+          
+          Set to 0 to disable the limit.
+          
+          
+          [default: auto]
 
-        <span class="ansi32">--build-on-target</span>
-            Build the system profiles on the target nodes themselves.
-            
-            If enabled, the system profiles will be built on the target nodes themselves, not on the
-            host running Colmena itself.
-            This overrides per-node perferences set in `deployment.buildOnTarget`.
-            To temporarily disable remote build on all nodes, use `--no-build-on-target`.
+  <span class="ansi1">-p</span>, <span class="ansi1">--parallel</span> &lt;LIMIT&gt;
+          Limits the maximum number of hosts to be deployed in parallel.
+          
+          Set to 0 to disable parallemism limit.
+          
+          
+          [default: 10]
 
-        <span class="ansi32">--eval-node-limit</span> <span class="ansi32">&lt;LIMIT&gt;</span>
-            Limits the maximum number of hosts to be evaluated at once.
-            
-            The evaluation process is RAM-intensive. The default behavior is to limit the maximum
-            number of host evaluated at the same time based on naive heuristics.
-            
-            Set to 0 to disable the limit.
-            
-            
-            [default: auto]
+      <span class="ansi1">--show-trace</span>
+          Passes --show-trace to Nix commands
 
-        <span class="ansi32">--evaluator</span> <span class="ansi32">&lt;evaluator&gt;</span>
-            If set to `chunked` (default), evaluation of nodes will happen in batches. If set to
-            `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes
-            will be evaluated in parallel.
-            
-            This is an experimental feature.
-            
-            [default: chunked]
-            [possible values: chunked, streaming]
+      <span class="ansi1">--impure</span>
+          Passes --impure to Nix commands
 
-        <span class="ansi32">--force-replace-unknown-profiles</span>
-            If `deployment.replaceUnknownProfiles` is set for a target, using this switch
-            will treat deployment.replaceUnknownProfiles as though it was set true and perform
-            unknown profile replacement.
+      <span class="ansi1">--keep-result</span>
+          Create GC roots for built profiles.
+          
+          The built system profiles will be added as GC roots so that they will not be removed by the garbage collector.
+          The links will be created under .gcroots in the directory the Hive configuration is located.
+          
 
-    <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
-            Print help information
+  <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
+          Deactivates the progress spinner and prints every line of output.
 
-        <span class="ansi32">--impure</span>
-            Passes --impure to Nix commands
+      <span class="ansi1">--no-keys</span>
+          Do not upload secret keys set in `deployment.keys`.
+          
+          By default, Colmena will upload keys set in `deployment.keys` before deploying the new profile on a node.
+          To upload keys without building or deploying the rest of the configuration, use `colmena upload-keys`.
+          
 
-        <span class="ansi32">--keep-result</span>
-            Create GC roots for built profiles.
-            
-            The built system profiles will be added as GC roots so that they will not be removed by
-            the garbage collector.
-            The links will be created under .gcroots in the directory the Hive configuration is
-            located.
+      <span class="ansi1">--reboot</span>
+          Reboots nodes after activation and waits for them to come back up.
 
-        <span class="ansi32">--no-gzip</span>
-            Disables the use of gzip when copying closures to the remote host.
+      <span class="ansi1">--no-substitute</span>
+          Disables the use of substituters when copying closures to the remote host.
 
-        <span class="ansi32">--no-keys</span>
-            Do not upload secret keys set in `deployment.keys`.
-            
-            By default, Colmena will upload keys set in `deployment.keys` before deploying the new
-            profile on a node.
-            To upload keys without building or deploying the rest of the configuration, use `colmena
-            upload-keys`.
+      <span class="ansi1">--no-gzip</span>
+          Disables the use of gzip when copying closures to the remote host.
 
-        <span class="ansi32">--no-substitute</span>
-            Disables the use of substituters when copying closures to the remote host.
+      <span class="ansi1">--build-on-target</span>
+          Build the system profiles on the target nodes themselves.
+          
+          If enabled, the system profiles will be built on the target nodes themselves, not on the host running Colmena itself.
+          This overrides per-node perferences set in `deployment.buildOnTarget`.
+          To temporarily disable remote build on all nodes, use `--no-build-on-target`.
+          
 
-        <span class="ansi32">--on</span> <span class="ansi32">&lt;NODES&gt;</span>
-            Select a list of nodes to deploy to.
-            
-            The list is comma-separated and globs are supported. To match tags, prepend the filter
-            by @. Valid examples:
-            
-            - host1,host2,host3
-            - edge-*
-            - edge-*,core-*
-            - @a-tag,@tags-can-have-*
+      <span class="ansi1">--force-replace-unknown-profiles</span>
+          If `deployment.replaceUnknownProfiles` is set for a target, using this switch
+          will treat deployment.replaceUnknownProfiles as though it was set true and perform unknown profile replacement.
 
-    <span class="ansi32">-p</span>, <span class="ansi32">--parallel</span> <span class="ansi32">&lt;LIMIT&gt;</span>
-            Limits the maximum number of hosts to be deployed in parallel.
-            
-            Set to 0 to disable parallemism limit.
-            
-            
-            [default: 10]
+      <span class="ansi1">--evaluator</span> &lt;evaluator&gt;
+          If set to `chunked` (default), evaluation of nodes will happen in batches. If set to `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes will be evaluated in parallel.
+          
+          This is an experimental feature.
+          
+          [default: chunked]
+          [possible values: chunked, streaming]
 
-        <span class="ansi32">--reboot</span>
-            Reboots nodes after activation and waits for them to come back up.
+      <span class="ansi1">--on</span> &lt;NODES&gt;
+          Select a list of nodes to deploy to.
+          
+          The list is comma-separated and globs are supported. To match tags, prepend the filter by @. Valid examples:
+          
+          - host1,host2,host3
+          - edge-*
+          - edge-*,core-*
+          - @a-tag,@tags-can-have-*
 
-        <span class="ansi32">--show-trace</span>
-            Passes --show-trace to Nix commands
+  <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
+          If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
+          
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          
+          
+          [default: hive.nix]
 
-    <span class="ansi32">-v</span>, <span class="ansi32">--verbose</span>
-            Deactivates the progress spinner and prints every line of output.
+  <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
+          Print help information (use `-h` for a summary)
 
-        <span class="ansi32">--color</span> <span class="ansi32">&lt;WHEN&gt;</span>
-            When to colorize the output. By default, Colmena enables colorized output when the
-            terminal supports it.
-            
-            It's also possible to specify the preference using environment variables. See
-            &lt;https://bixense.com/clicolors&gt;.
-            
-            
-            [default: auto]
-            [possible values: auto, always, never]
+      <span class="ansi1">--color</span> &lt;WHEN&gt;
+          When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
+          
+          It's also possible to specify the preference using environment variables. See &lt;https://bixense.com/clicolors&gt;.
+          
+          
+          [default: auto]
+          [possible values: auto, always, never]
 </div></pre>
 <h2 id="colmena-eval"><a class="header" href="#colmena-eval"><code>colmena eval</code></a></h2>
-<pre><div class="hljs"><span class="ansi32">colmena-eval</span> 
-Evaluate an expression using the complete configuration
+<pre><div class="hljs">Evaluate an expression using the complete configuration
 
-Your expression should take an attribute set with keys `pkgs`, `lib` and `nodes` (like a NixOS
-module) and return a JSON-serializable value.
+Your expression should take an attribute set with keys `pkgs`, `lib` and `nodes` (like a NixOS module) and return a JSON-serializable value.
 
 For example, to retrieve the configuration of one node, you may write something like:
 
     { nodes, ... }: nodes.node-a.config.networking.hostName
 
-<span class="ansi33">USAGE:</span>
-    colmena eval [OPTIONS] [FILE]
 
-<span class="ansi33">ARGS:
-</span>    <span class="ansi32">&lt;FILE&gt;</span>
-            The .nix file containing the expression
+<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena eval</span> [OPTIONS] [FILE]
 
-<span class="ansi33">OPTIONS:
-</span>    <span class="ansi32">-f</span>, <span class="ansi32">--config</span> <span class="ansi32">&lt;CONFIG&gt;</span>
-            If this argument is not specified, Colmena will search upwards from the current working
-            directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if
-            --config/-f is given explicitly.
-            
-            For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
-            
-            
-            [default: hive.nix]
+<span class="ansi1"></span><span class="ansi1 ansi4">Arguments:
+</span>  [FILE]
+          The .nix file containing the expression
 
-    <span class="ansi32">-E</span> <span class="ansi32">&lt;EXPRESSION&gt;</span>
-            The Nix expression
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:
+</span>  <span class="ansi1">-E</span> &lt;EXPRESSION&gt;
+          The Nix expression
 
-    <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
-            Print help information
+      <span class="ansi1">--instantiate</span>
+          Actually instantiate the expression
 
-        <span class="ansi32">--impure</span>
-            Passes --impure to Nix commands
+      <span class="ansi1">--show-trace</span>
+          Passes --show-trace to Nix commands
 
-        <span class="ansi32">--instantiate</span>
-            Actually instantiate the expression
+      <span class="ansi1">--impure</span>
+          Passes --impure to Nix commands
 
-        <span class="ansi32">--show-trace</span>
-            Passes --show-trace to Nix commands
+  <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
+          If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
+          
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          
+          
+          [default: hive.nix]
 
-        <span class="ansi32">--color</span> <span class="ansi32">&lt;WHEN&gt;</span>
-            When to colorize the output. By default, Colmena enables colorized output when the
-            terminal supports it.
-            
-            It's also possible to specify the preference using environment variables. See
-            &lt;https://bixense.com/clicolors&gt;.
-            
-            
-            [default: auto]
-            [possible values: auto, always, never]
+  <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
+          Print help information (use `-h` for a summary)
+
+      <span class="ansi1">--color</span> &lt;WHEN&gt;
+          When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
+          
+          It's also possible to specify the preference using environment variables. See &lt;https://bixense.com/clicolors&gt;.
+          
+          
+          [default: auto]
+          [possible values: auto, always, never]
 </div></pre>
 <h2 id="colmena-exec"><a class="header" href="#colmena-exec"><code>colmena exec</code></a></h2>
-<pre><div class="hljs"><span class="ansi32">colmena-exec</span> 
-Run a command on remote machines
+<pre><div class="hljs">Run a command on remote machines
 
-<span class="ansi33">USAGE:</span>
-    colmena exec [OPTIONS] [--] &lt;COMMAND&gt;...
+<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena exec</span> [OPTIONS] &lt;COMMAND&gt;...
 
-<span class="ansi33">ARGS:
-</span>    <span class="ansi32">&lt;COMMAND&gt;</span><span class="ansi32">...</span>
-            Command to run
-            
-            It's recommended to use -- to separate Colmena options from the command to run. For
-            example:
-            
-                colmena exec --on @routers -- tcpdump -vni any ip[9] == 89
+<span class="ansi1"></span><span class="ansi1 ansi4">Arguments:
+</span>  &lt;COMMAND&gt;...
+          Command to run
+          
+          It's recommended to use -- to separate Colmena options from the command to run. For example:
+          
+              colmena exec --on @routers -- tcpdump -vni any ip[9] == 89
+          
 
-<span class="ansi33">OPTIONS:
-</span>    <span class="ansi32">-f</span>, <span class="ansi32">--config</span> <span class="ansi32">&lt;CONFIG&gt;</span>
-            If this argument is not specified, Colmena will search upwards from the current working
-            directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if
-            --config/-f is given explicitly.
-            
-            For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
-            
-            
-            [default: hive.nix]
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:
+</span>  <span class="ansi1">-p</span>, <span class="ansi1">--parallel</span> &lt;LIMIT&gt;
+          Limits the maximum number of hosts to run the command in parallel.
+          
+          In `colmena exec`, the parallelism limit is disabled (0) by default.
+          
+          
+          [default: 0]
 
-    <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
-            Print help information
+      <span class="ansi1">--show-trace</span>
+          Passes --show-trace to Nix commands
 
-        <span class="ansi32">--impure</span>
-            Passes --impure to Nix commands
+  <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
+          Deactivates the progress spinner and prints every line of output.
 
-        <span class="ansi32">--on</span> <span class="ansi32">&lt;NODES&gt;</span>
-            Select a list of nodes to deploy to.
-            
-            The list is comma-separated and globs are supported. To match tags, prepend the filter
-            by @. Valid examples:
-            
-            - host1,host2,host3
-            - edge-*
-            - edge-*,core-*
-            - @a-tag,@tags-can-have-*
+      <span class="ansi1">--impure</span>
+          Passes --impure to Nix commands
 
-    <span class="ansi32">-p</span>, <span class="ansi32">--parallel</span> <span class="ansi32">&lt;LIMIT&gt;</span>
-            Limits the maximum number of hosts to run the command in parallel.
-            
-            In `colmena exec`, the parallelism limit is disabled (0) by default.
-            
-            
-            [default: 0]
+      <span class="ansi1">--on</span> &lt;NODES&gt;
+          Select a list of nodes to deploy to.
+          
+          The list is comma-separated and globs are supported. To match tags, prepend the filter by @. Valid examples:
+          
+          - host1,host2,host3
+          - edge-*
+          - edge-*,core-*
+          - @a-tag,@tags-can-have-*
 
-        <span class="ansi32">--show-trace</span>
-            Passes --show-trace to Nix commands
+  <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
+          If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
+          
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          
+          
+          [default: hive.nix]
 
-    <span class="ansi32">-v</span>, <span class="ansi32">--verbose</span>
-            Deactivates the progress spinner and prints every line of output.
+  <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
+          Print help information (use `-h` for a summary)
 
-        <span class="ansi32">--color</span> <span class="ansi32">&lt;WHEN&gt;</span>
-            When to colorize the output. By default, Colmena enables colorized output when the
-            terminal supports it.
-            
-            It's also possible to specify the preference using environment variables. See
-            &lt;https://bixense.com/clicolors&gt;.
-            
-            
-            [default: auto]
-            [possible values: auto, always, never]
+      <span class="ansi1">--color</span> &lt;WHEN&gt;
+          When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
+          
+          It's also possible to specify the preference using environment variables. See &lt;https://bixense.com/clicolors&gt;.
+          
+          
+          [default: auto]
+          [possible values: auto, always, never]
 </div></pre>
 <h2 id="colmena-nix-info"><a class="header" href="#colmena-nix-info"><code>colmena nix-info</code></a></h2>
-<pre><div class="hljs"><span class="ansi32">colmena-nix-info</span> 
-Show information about the current Nix installation
+<pre><div class="hljs">Show information about the current Nix installation
 
-<span class="ansi33">USAGE:</span>
-    colmena nix-info [OPTIONS]
+<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena nix-info</span> [OPTIONS]
 
-<span class="ansi33">OPTIONS:
-</span>    <span class="ansi32">-f</span>, <span class="ansi32">--config</span> <span class="ansi32">&lt;CONFIG&gt;</span>
-            If this argument is not specified, Colmena will search upwards from the current working
-            directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if
-            --config/-f is given explicitly.
-            
-            For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
-            
-            
-            [default: hive.nix]
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:
+</span>      <span class="ansi1">--show-trace</span>
+          Passes --show-trace to Nix commands
 
-    <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
-            Print help information
+      <span class="ansi1">--impure</span>
+          Passes --impure to Nix commands
 
-        <span class="ansi32">--impure</span>
-            Passes --impure to Nix commands
+  <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
+          If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
+          
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          
+          
+          [default: hive.nix]
 
-        <span class="ansi32">--show-trace</span>
-            Passes --show-trace to Nix commands
+  <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
+          Print help information (use `-h` for a summary)
 
-        <span class="ansi32">--color</span> <span class="ansi32">&lt;WHEN&gt;</span>
-            When to colorize the output. By default, Colmena enables colorized output when the
-            terminal supports it.
-            
-            It's also possible to specify the preference using environment variables. See
-            &lt;https://bixense.com/clicolors&gt;.
-            
-            
-            [default: auto]
-            [possible values: auto, always, never]
+      <span class="ansi1">--color</span> &lt;WHEN&gt;
+          When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
+          
+          It's also possible to specify the preference using environment variables. See &lt;https://bixense.com/clicolors&gt;.
+          
+          
+          [default: auto]
+          [possible values: auto, always, never]
 </div></pre>
 <h2 id="colmena-repl"><a class="header" href="#colmena-repl"><code>colmena repl</code></a></h2>
-<pre><div class="hljs"><span class="ansi32">colmena-repl</span> 
-Start an interactive REPL with the complete configuration
+<pre><div class="hljs">Start an interactive REPL with the complete configuration
 
 In the REPL, you can inspect the configuration interactively with tab
 completion. The node configurations are accessible under the `nodes`
 attribute set.
 
-<span class="ansi33">USAGE:</span>
-    colmena repl [OPTIONS]
+<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena repl</span> [OPTIONS]
 
-<span class="ansi33">OPTIONS:
-</span>    <span class="ansi32">-f</span>, <span class="ansi32">--config</span> <span class="ansi32">&lt;CONFIG&gt;</span>
-            If this argument is not specified, Colmena will search upwards from the current working
-            directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if
-            --config/-f is given explicitly.
-            
-            For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
-            
-            
-            [default: hive.nix]
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:
+</span>      <span class="ansi1">--show-trace</span>
+          Passes --show-trace to Nix commands
 
-    <span class="ansi32">-h</span>, <span class="ansi32">--help</span>
-            Print help information
+      <span class="ansi1">--impure</span>
+          Passes --impure to Nix commands
 
-        <span class="ansi32">--impure</span>
-            Passes --impure to Nix commands
+  <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
+          If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
+          
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          
+          
+          [default: hive.nix]
 
-        <span class="ansi32">--show-trace</span>
-            Passes --show-trace to Nix commands
+  <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
+          Print help information (use `-h` for a summary)
 
-        <span class="ansi32">--color</span> <span class="ansi32">&lt;WHEN&gt;</span>
-            When to colorize the output. By default, Colmena enables colorized output when the
-            terminal supports it.
-            
-            It's also possible to specify the preference using environment variables. See
-            &lt;https://bixense.com/clicolors&gt;.
-            
-            
-            [default: auto]
-            [possible values: auto, always, never]
+      <span class="ansi1">--color</span> &lt;WHEN&gt;
+          When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
+          
+          It's also possible to specify the preference using environment variables. See &lt;https://bixense.com/clicolors&gt;.
+          
+          
+          [default: auto]
+          [possible values: auto, always, never]
 </div></pre>
 <div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.4.0-pre (apiVersion=0.4, unstable=True) -->
 <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
