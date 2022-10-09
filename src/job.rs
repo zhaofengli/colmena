@@ -367,7 +367,7 @@ impl JobMonitor {
         message: Option<String>,
         noop: bool,
     ) {
-        let mut metadata = self.jobs.remove(&job_id).unwrap();
+        let mut metadata = self.jobs.get_mut(&job_id).unwrap();
         let old_state = metadata.state;
 
         if old_state == new_state {
@@ -407,8 +407,6 @@ impl JobMonitor {
                 }
             }
         };
-
-        self.jobs.insert(job_id, metadata);
     }
 
     /// Updates the user-visible job statistics output.
