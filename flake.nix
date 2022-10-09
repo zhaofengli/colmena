@@ -7,9 +7,12 @@
 
     flake-utils.url = "github:numtide/flake-utils";
 
-    # Temporary fork of nix-eval-job with changes to be upstreamed
-    nix-eval-jobs.url = "github:zhaofengli/nix-eval-jobs/colmena";
-    nix-eval-jobs.inputs.nixpkgs.follows = "nixpkgs";
+    nix-eval-jobs = {
+      # Temporary fork of nix-eval-job with changes to be upstreamed
+      url = "github:zhaofengli/nix-eval-jobs/colmena";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
 
     flake-compat = {
       url = "github:edolstra/flake-compat";
