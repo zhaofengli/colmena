@@ -37,7 +37,7 @@ pub struct Options {
 }
 
 /// Which evaluator to use.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Evaluator {
     Chunked,
     Streaming,

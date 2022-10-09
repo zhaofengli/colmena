@@ -338,7 +338,7 @@ mod tests {
                     Err(e) => match e {
                         EvalError::Global(e) => {
                             let message = format!("{}", e);
-                            assert!(message.find("No such file or directory").is_some());
+                            assert!(message.contains("No such file or directory"));
                         }
                         _ => {
                             panic!("Expected a global error, got {:?}", e);

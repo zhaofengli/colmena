@@ -99,9 +99,7 @@ impl Host for Local {
 
         execution.set_job(self.job.clone());
 
-        let result = execution.run().await;
-
-        result
+        execution.run().await
     }
 
     async fn get_current_system_profile(&mut self) -> ColmenaResult<Profile> {

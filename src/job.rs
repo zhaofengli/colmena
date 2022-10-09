@@ -55,7 +55,7 @@ pub struct JobMonitor {
 }
 
 /// The state of a job.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JobState {
     /// Waiting to begin.
     ///
@@ -73,7 +73,7 @@ pub enum JobState {
 }
 
 /// The type of a job.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JobType {
     /// Meta.
     Meta,

@@ -80,7 +80,7 @@ pub struct Line {
 }
 
 /// Style of a line.
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LineStyle {
     Normal,
     Success,

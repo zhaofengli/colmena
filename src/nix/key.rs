@@ -67,7 +67,7 @@ struct KeySources {
 }
 
 /// When to upload a given key.
-#[derive(Debug, Copy, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum UploadAt {
     /// Before activating the system profile.
     #[serde(rename = "pre-activation")]

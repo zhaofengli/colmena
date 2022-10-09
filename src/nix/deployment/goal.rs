@@ -1,7 +1,7 @@
 //! Deployment goals.
 
 /// The goal of a deployment.
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum Goal {
     /// Build the configurations only.
     Build,
