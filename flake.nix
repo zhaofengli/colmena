@@ -5,7 +5,7 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     stable.url = "github:NixOS/nixpkgs/nixos-22.05";
 
-    utils.url = "github:numtide/flake-utils";
+    flake-utils.url = "github:numtide/flake-utils";
 
     # Temporary fork of nix-eval-job with changes to be upstreamed
     nix-eval-jobs.url = "github:zhaofengli/nix-eval-jobs/colmena";
@@ -17,11 +17,11 @@
     };
   };
 
-  outputs = { self, nixpkgs, utils, nix-eval-jobs, ... }: let
+  outputs = { self, nixpkgs, flake-utils, nix-eval-jobs, ... }: let
     supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
     colmenaOptions = import ./src/nix/hive/options.nix;
     colmenaModules = import ./src/nix/hive/modules.nix;
-  in utils.lib.eachSystem supportedSystems (system: let
+  in flake-utils.lib.eachSystem supportedSystems (system: let
     pkgs = import nixpkgs {
       inherit system;
       overlays = [ self._evalJobsOverlay ];
