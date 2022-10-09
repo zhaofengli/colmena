@@ -1,8 +1,7 @@
 //! Deployment options.
 
-use std::str::FromStr;
+use clap::{builder::PossibleValue, ValueEnum};
 
-use crate::error::{ColmenaError, ColmenaResult};
 use crate::nix::CopyOptions;
 
 /// Options for a deployment.
@@ -33,12 +32,12 @@ pub struct Options {
     pub(super) force_replace_unknown_profiles: bool,
 
     /// Which evaluator to use (experimental).
-    pub(super) evaluator: Evaluator,
+    pub(super) evaluator: EvaluatorType,
 }
 
 /// Which evaluator to use.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub enum Evaluator {
+pub enum EvaluatorType {
     Chunked,
     Streaming,
 }
@@ -72,7 +71,7 @@ impl Options {
         self.force_replace_unknown_profiles = enable;
     }
 
-    pub fn set_evaluator(&mut self, evaluator: Evaluator) {
+    pub fn set_evaluator(&mut self, evaluator: EvaluatorType) {
         self.evaluator = evaluator;
     }
 
@@ -95,27 +94,20 @@ impl Default for Options {
             create_gc_roots: false,
             force_build_on_target: None,
             force_replace_unknown_profiles: false,
-            evaluator: Evaluator::Chunked,
+            evaluator: EvaluatorType::Chunked,
         }
     }
 }
 
-impl FromStr for Evaluator {
-    type Err = ColmenaError;
-
-    fn from_str(s: &str) -> ColmenaResult<Self> {
-        match s {
-            "chunked" => Ok(Self::Chunked),
-            "streaming" => Ok(Self::Streaming),
-            _ => Err(ColmenaError::Unknown {
-                message: "Valid values are 'chunked' and 'streaming'".to_string(),
-            }),
-        }
+impl ValueEnum for EvaluatorType {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[Self::Chunked, Self::Streaming]
     }
-}
 
-impl Evaluator {
-    pub fn possible_values() -> &'static [&'static str] {
-        &["chunked", "streaming"]
+    fn to_possible_value<'a>(&self) -> Option<PossibleValue> {
+        match self {
+            Self::Chunked => Some(PossibleValue::new("chunked")),
+            Self::Streaming => Some(PossibleValue::new("streaming")),
+        }
     }
 }

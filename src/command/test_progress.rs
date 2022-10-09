@@ -14,7 +14,7 @@ macro_rules! node {
     };
 }
 
-pub fn subcommand() -> ClapCommand<'static> {
+pub fn subcommand() -> ClapCommand {
     ClapCommand::new("test-progress")
         .about("Run progress spinner tests")
         .hide(true)

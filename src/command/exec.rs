@@ -2,7 +2,7 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use clap::{Arg, ArgMatches, Command as ClapCommand};
+use clap::{value_parser, Arg, ArgMatches, Command as ClapCommand};
 use futures::future::join_all;
 use tokio::sync::Semaphore;
 
@@ -12,10 +12,9 @@ use crate::nix::NodeFilter;
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
-pub fn subcommand() -> ClapCommand<'static> {
+pub fn subcommand() -> ClapCommand {
     let command = ClapCommand::new("exec")
         .about("Run a command on remote machines")
-        .trailing_var_arg(true)
         .arg(
             Arg::new("parallel")
                 .short('p')
@@ -29,11 +28,8 @@ In `colmena exec`, the parallelism limit is disabled (0) by default.
 "#,
                 )
                 .default_value("0")
-                .takes_value(true)
-                .validator(|s| match s.parse::<usize>() {
-                    Ok(_) => Ok(()),
-                    Err(_) => Err(String::from("The value must be a valid number")),
-                }),
+                .num_args(1)
+                .value_parser(value_parser!(usize)),
         )
         .arg(
             Arg::new("verbose")
@@ -41,15 +37,15 @@ In `colmena exec`, the parallelism limit is disabled (0) by default.
                 .long("verbose")
                 .help("Be verbose")
                 .long_help("Deactivates the progress spinner and prints every line of output.")
-                .takes_value(false),
+                .num_args(0),
         )
         .arg(
             Arg::new("command")
                 .value_name("COMMAND")
-                .last(true)
+                .trailing_var_arg(true)
                 .help("Command")
                 .required(true)
-                .multiple_occurrences(true)
+                .num_args(1..)
                 .long_help(
                     r#"Command to run
 
@@ -67,16 +63,16 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     let hive = util::hive_from_args(local_args).await?;
     let ssh_config = env::var("SSH_CONFIG_FILE").ok().map(PathBuf::from);
 
-    let filter = local_args.value_of("on").map(NodeFilter::new).transpose()?;
+    // FIXME: Just get_one::<NodeFilter>
+    let filter = local_args
+        .get_one::<String>("on")
+        .map(NodeFilter::new)
+        .transpose()?;
 
     let mut targets = hive.select_nodes(filter, ssh_config, true).await?;
 
     let parallel_sp = Arc::new({
-        let limit = local_args
-            .value_of("parallel")
-            .unwrap()
-            .parse::<usize>()
-            .unwrap();
+        let limit = local_args.get_one::<usize>("parallel").unwrap().to_owned();
 
         if limit > 0 {
             Some(Semaphore::new(limit))
@@ -87,13 +83,13 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
     let command: Arc<Vec<String>> = Arc::new(
         local_args
-            .values_of("command")
+            .get_many::<String>("command")
             .unwrap()
-            .map(|s| s.to_string())
+            .cloned()
             .collect(),
     );
 
-    let mut output = SimpleProgressOutput::new(local_args.is_present("verbose"));
+    let mut output = SimpleProgressOutput::new(local_args.get_flag("verbose"));
 
     let (mut monitor, meta) = JobMonitor::new(output.get_sender());
 

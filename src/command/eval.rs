@@ -5,15 +5,15 @@ use clap::{Arg, ArgMatches, Command as ClapCommand};
 use crate::error::ColmenaError;
 use crate::util;
 
-pub fn subcommand() -> ClapCommand<'static> {
+pub fn subcommand() -> ClapCommand {
     subcommand_gen("eval")
 }
 
-pub fn deprecated_alias() -> ClapCommand<'static> {
+pub fn deprecated_alias() -> ClapCommand {
     subcommand_gen("introspect").hide(true)
 }
 
-fn subcommand_gen(name: &str) -> ClapCommand<'static> {
+fn subcommand_gen(name: &'static str) -> ClapCommand {
     ClapCommand::new(name)
         .about("Evaluate an expression using the complete configuration")
         .long_about(r#"Evaluate an expression using the complete configuration
@@ -28,16 +28,16 @@ For example, to retrieve the configuration of one node, you may write something 
             .index(1)
             .value_name("FILE")
             .help("The .nix file containing the expression")
-            .takes_value(true))
+            .num_args(1))
         .arg(Arg::new("expression")
             .short('E')
             .value_name("EXPRESSION")
             .help("The Nix expression")
-            .takes_value(true))
+            .num_args(1))
         .arg(Arg::new("instantiate")
             .long("instantiate")
             .help("Actually instantiate the expression")
-            .takes_value(false))
+            .num_args(0))
 }
 
 pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
@@ -49,15 +49,21 @@ pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<()
 
     let hive = util::hive_from_args(local_args).await?;
 
-    if !(local_args.is_present("expression") ^ local_args.is_present("expression_file")) {
+    if !(local_args.contains_id("expression") ^ local_args.contains_id("expression_file")) {
         log::error!("Either an expression (-E) or a .nix file containing an expression should be specified, not both.");
         quit::with_code(1);
     }
 
-    let expression = if local_args.is_present("expression") {
-        local_args.value_of("expression").unwrap().to_string()
+    let expression = if local_args.contains_id("expression") {
+        local_args
+            .get_one::<String>("expression")
+            .unwrap()
+            .to_owned()
     } else {
-        let path: PathBuf = local_args.value_of("expression_file").unwrap().into();
+        let path = local_args
+            .get_one::<PathBuf>("expression_file")
+            .unwrap()
+            .to_owned();
         format!(
             "import {}",
             path.canonicalize()
@@ -67,7 +73,7 @@ pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<()
         )
     };
 
-    let instantiate = local_args.is_present("instantiate");
+    let instantiate = local_args.get_flag("instantiate");
     let result = hive.introspect(expression, instantiate).await?;
 
     if instantiate {

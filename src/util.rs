@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use std::process::Stdio;
 
 use async_trait::async_trait;
-use clap::{Arg, ArgMatches, Command as ClapCommand};
+use clap::{parser::ValueSource as ClapValueSource, Arg, ArgMatches, Command as ClapCommand};
 use futures::future::join3;
 use serde::de::DeserializeOwned;
 use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
@@ -193,8 +193,8 @@ impl CommandExt for CommandExecution {
 }
 
 pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
-    let path = match args.occurrences_of("config") {
-        0 => {
+    let path = match args.value_source("config").unwrap() {
+        ClapValueSource::DefaultValue => {
             // traverse upwards until we find hive.nix
             let mut cur = std::env::current_dir()?;
             let mut file_path = None;
@@ -231,9 +231,9 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
 
             file_path.unwrap()
         }
-        _ => {
+        ClapValueSource::CommandLine => {
             let path = args
-                .value_of("config")
+                .get_one::<String>("config")
                 .expect("The config arg should exist")
                 .to_owned();
             let fpath = PathBuf::from(&path);
@@ -246,11 +246,11 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
                 let hive_path = HivePath::Flake(flake);
                 let mut hive = Hive::new(hive_path).await?;
 
-                if args.is_present("show-trace") {
+                if args.get_flag("show-trace") {
                     hive.set_show_trace(true);
                 }
 
-                if args.is_present("impure") {
+                if args.get_flag("impure") {
                     hive.set_impure(true);
                 }
 
@@ -259,6 +259,7 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
 
             fpath
         }
+        x => panic!("Unexpected value source for config: {:?}", x),
     };
 
     let hive_path = HivePath::from_path(path).await?;
@@ -273,11 +274,11 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
 
     let mut hive = Hive::new(hive_path).await?;
 
-    if args.is_present("show-trace") {
+    if args.get_flag("show-trace") {
         hive.set_show_trace(true);
     }
 
-    if args.is_present("impure") {
+    if args.get_flag("impure") {
         hive.set_impure(true);
     }
 
@@ -298,7 +299,7 @@ The list is comma-separated and globs are supported. To match tags, prepend the 
 - edge-*
 - edge-*,core-*
 - @a-tag,@tags-can-have-*"#)
-            .takes_value(true))
+            .num_args(1))
 }
 
 pub async fn capture_stream<R>(

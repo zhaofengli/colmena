@@ -1,11 +1,14 @@
 use std::env;
 use std::path::PathBuf;
 
-use clap::{Arg, ArgMatches, Command as ClapCommand};
+use clap::{
+    builder::{ArgPredicate, PossibleValuesParser, ValueParser},
+    value_parser, Arg, ArgMatches, Command as ClapCommand,
+};
 
 use crate::error::ColmenaError;
 use crate::nix::deployment::{
-    Deployment, EvaluationNodeLimit, Evaluator, Goal, Options, ParallelismLimit,
+    Deployment, EvaluationNodeLimit, EvaluatorType, Goal, Options, ParallelismLimit,
 };
 use crate::nix::NodeFilter;
 use crate::progress::SimpleProgressOutput;
@@ -24,17 +27,18 @@ The evaluation process is RAM-intensive. The default behavior is to limit the ma
 Set to 0 to disable the limit.
 "#)
             .default_value("auto")
-            .takes_value(true)
-            .validator(|s| {
+            .num_args(1)
+            .value_parser(ValueParser::new(|s: &str| -> Result<EvaluationNodeLimit, String> {
                 if s == "auto" {
-                    return Ok(());
+                    return Ok(EvaluationNodeLimit::Heuristic);
                 }
 
                 match s.parse::<usize>() {
-                    Ok(_) => Ok(()),
+                    Ok(0) => Ok(EvaluationNodeLimit::None),
+                    Ok(n) => Ok(EvaluationNodeLimit::Manual(n)),
                     Err(_) => Err(String::from("The value must be a valid number")),
                 }
-            }))
+            })))
         .arg(Arg::new("parallel")
             .short('p')
             .long("parallel")
@@ -45,13 +49,8 @@ Set to 0 to disable the limit.
 Set to 0 to disable parallemism limit.
 "#)
             .default_value("10")
-            .takes_value(true)
-            .validator(|s| {
-                match s.parse::<usize>() {
-                    Ok(_) => Ok(()),
-                    Err(_) => Err(String::from("The value must be a valid number")),
-                }
-            }))
+            .num_args(1)
+            .value_parser(value_parser!(usize)))
         .arg(Arg::new("keep-result")
             .long("keep-result")
             .help("Create GC roots for built profiles")
@@ -60,13 +59,13 @@ Set to 0 to disable parallemism limit.
 The built system profiles will be added as GC roots so that they will not be removed by the garbage collector.
 The links will be created under .gcroots in the directory the Hive configuration is located.
 "#)
-            .takes_value(false))
+            .num_args(0))
         .arg(Arg::new("verbose")
             .short('v')
             .long("verbose")
             .help("Be verbose")
             .long_help("Deactivates the progress spinner and prints every line of output.")
-            .takes_value(false))
+            .num_args(0))
         .arg(Arg::new("no-keys")
             .long("no-keys")
             .help("Do not upload keys")
@@ -75,23 +74,23 @@ The links will be created under .gcroots in the directory the Hive configuration
 By default, Colmena will upload keys set in `deployment.keys` before deploying the new profile on a node.
 To upload keys without building or deploying the rest of the configuration, use `colmena upload-keys`.
 "#)
-            .takes_value(false))
+            .num_args(0))
         .arg(Arg::new("reboot")
             .long("reboot")
             .help("Reboot nodes after activation")
             .long_help("Reboots nodes after activation and waits for them to come back up.")
-            .takes_value(false))
+            .num_args(0))
         .arg(Arg::new("no-substitute")
             .long("no-substitute")
             .alias("no-substitutes")
             .help("Do not use substitutes")
             .long_help("Disables the use of substituters when copying closures to the remote host.")
-            .takes_value(false))
+            .num_args(0))
         .arg(Arg::new("no-gzip")
             .long("no-gzip")
             .help("Do not use gzip")
             .long_help("Disables the use of gzip when copying closures to the remote host.")
-            .takes_value(false))
+            .num_args(0))
         .arg(Arg::new("build-on-target")
             .long("build-on-target")
             .help("Build the system profiles on the target nodes")
@@ -101,17 +100,17 @@ If enabled, the system profiles will be built on the target nodes themselves, no
 This overrides per-node perferences set in `deployment.buildOnTarget`.
 To temporarily disable remote build on all nodes, use `--no-build-on-target`.
 "#)
-            .takes_value(false))
+            .num_args(0))
         .arg(Arg::new("no-build-on-target")
             .long("no-build-on-target")
             .hide(true)
-            .takes_value(false))
+            .num_args(0))
         .arg(Arg::new("force-replace-unknown-profiles")
             .long("force-replace-unknown-profiles")
             .help("Ignore all targeted nodes deployment.replaceUnknownProfiles setting")
             .long_help(r#"If `deployment.replaceUnknownProfiles` is set for a target, using this switch
 will treat deployment.replaceUnknownProfiles as though it was set true and perform unknown profile replacement."#)
-            .takes_value(false))
+            .num_args(0))
         .arg(Arg::new("evaluator")
             .long("evaluator")
             .help("The evaluator to use (experimental)")
@@ -119,10 +118,10 @@ will treat deployment.replaceUnknownProfiles as though it was set true and perfo
 
 This is an experimental feature."#)
             .default_value("chunked")
-            .possible_values(Evaluator::possible_values()))
+            .value_parser(value_parser!(EvaluatorType)))
 }
 
-pub fn subcommand() -> ClapCommand<'static> {
+pub fn subcommand() -> ClapCommand {
     let command = ClapCommand::new("apply")
         .about("Apply configurations on remote machines")
         .arg(
@@ -141,10 +140,10 @@ Same as the targets for switch-to-configuration, with the following extra pseudo
 "#,
                 )
                 .default_value("switch")
-                .default_value_if("reboot", None, Some("boot"))
+                .default_value_if("reboot", ArgPredicate::IsPresent, Some("boot"))
                 .default_value("switch")
                 .index(1)
-                .possible_values(&[
+                .value_parser(PossibleValuesParser::new([
                     "build",
                     "push",
                     "switch",
@@ -152,7 +151,7 @@ Same as the targets for switch-to-configuration, with the following extra pseudo
                     "test",
                     "dry-activate",
                     "keys",
-                ]),
+                ])),
         );
     let command = register_deploy_args(command);
 
@@ -164,10 +163,15 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
     let ssh_config = env::var("SSH_CONFIG_FILE").ok().map(PathBuf::from);
 
-    let goal_arg = local_args.value_of("goal").unwrap();
+    // FIXME: Just get_one::<Goal>
+    let goal_arg = local_args.get_one::<String>("goal").unwrap();
     let goal = Goal::from_str(goal_arg).unwrap();
 
-    let filter = local_args.value_of("on").map(NodeFilter::new).transpose()?;
+    // FIXME: Just get_one::<NodeFilter>
+    let filter = local_args
+        .get_one::<String>("on")
+        .map(NodeFilter::new)
+        .transpose()?;
 
     if filter.is_none() && goal != Goal::Build {
         // User did not specify node, we should check meta and see rules
@@ -184,7 +188,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         .await?;
     let n_targets = targets.len();
 
-    let verbose = local_args.is_present("verbose") || goal == Goal::DryActivate;
+    let verbose = local_args.get_flag("verbose") || goal == Goal::DryActivate;
     let mut output = SimpleProgressOutput::new(verbose);
     let progress = output.get_sender();
 
@@ -193,22 +197,27 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     // FIXME: Configure limits
     let options = {
         let mut options = Options::default();
-        options.set_substituters_push(!local_args.is_present("no-substitute"));
-        options.set_gzip(!local_args.is_present("no-gzip"));
-        options.set_upload_keys(!local_args.is_present("no-keys"));
-        options.set_reboot(local_args.is_present("reboot"));
+        options.set_substituters_push(!local_args.get_flag("no-substitute"));
+        options.set_gzip(!local_args.get_flag("no-gzip"));
+        options.set_upload_keys(!local_args.get_flag("no-keys"));
+        options.set_reboot(local_args.get_flag("reboot"));
         options.set_force_replace_unknown_profiles(
-            local_args.is_present("force-replace-unknown-profiles"),
+            local_args.get_flag("force-replace-unknown-profiles"),
         );
-        options.set_evaluator(local_args.value_of_t("evaluator").unwrap());
+        options.set_evaluator(
+            local_args
+                .get_one::<EvaluatorType>("evaluator")
+                .unwrap()
+                .to_owned(),
+        );
 
-        if local_args.is_present("keep-result") {
+        if local_args.get_flag("keep-result") {
             options.set_create_gc_roots(true);
         }
 
-        if local_args.is_present("no-build-on-target") {
+        if local_args.get_flag("no-build-on-target") {
             options.set_force_build_on_target(false);
-        } else if local_args.is_present("build-on-target") {
+        } else if local_args.get_flag("build-on-target") {
             options.set_force_build_on_target(true);
         }
 
@@ -217,7 +226,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
     deployment.set_options(options);
 
-    if local_args.is_present("no-keys") && goal == Goal::UploadKeys {
+    if local_args.get_flag("no-keys") && goal == Goal::UploadKeys {
         log::error!("--no-keys cannot be used when the goal is to upload keys");
         quit::with_code(1);
     }
@@ -225,11 +234,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     let parallelism_limit = {
         let mut limit = ParallelismLimit::default();
         limit.set_apply_limit({
-            let limit = local_args
-                .value_of("parallel")
-                .unwrap()
-                .parse::<usize>()
-                .unwrap();
+            let limit = local_args.get_one::<usize>("parallel").unwrap().to_owned();
             if limit == 0 {
                 n_targets
             } else {
@@ -239,17 +244,10 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         limit
     };
 
-    let evaluation_node_limit = match local_args.value_of("eval-node-limit").unwrap() {
-        "auto" => EvaluationNodeLimit::Heuristic,
-        number => {
-            let number = number.parse::<usize>().unwrap();
-            if number == 0 {
-                EvaluationNodeLimit::None
-            } else {
-                EvaluationNodeLimit::Manual(number)
-            }
-        }
-    };
+    let evaluation_node_limit = local_args
+        .get_one::<EvaluationNodeLimit>("eval-node-limit")
+        .unwrap()
+        .to_owned();
 
     deployment.set_parallelism_limit(parallelism_limit);
     deployment.set_evaluation_node_limit(evaluation_node_limit);

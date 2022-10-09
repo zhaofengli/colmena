@@ -5,7 +5,7 @@
 use std::env;
 use std::future::Future;
 
-use clap::ArgMatches;
+use clap::{parser::ValueSource as ClapValueSource, ArgMatches};
 
 use crate::error::ColmenaError;
 
@@ -48,7 +48,7 @@ fn troubleshoot(
         // in their Colmena checkout, and encounter NoFlakesSupport
         // because Colmena always prefers flake.nix when it exists.
 
-        if global_args.occurrences_of("config") == 0 {
+        if let Some(ClapValueSource::DefaultValue) = global_args.value_source("config") {
             let cwd = env::current_dir()?;
             if cwd.join("flake.nix").is_file() && cwd.join("hive.nix").is_file() {
                 eprintln!(

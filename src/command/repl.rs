@@ -8,7 +8,7 @@ use crate::error::ColmenaError;
 use crate::nix::info::NixCheck;
 use crate::util;
 
-pub fn subcommand() -> ClapCommand<'static> {
+pub fn subcommand() -> ClapCommand {
     ClapCommand::new("repl")
         .about("Start an interactive REPL with the complete configuration")
         .long_about(

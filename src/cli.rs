@@ -2,7 +2,10 @@
 
 use std::env;
 
-use clap::{value_parser, Arg, ArgMatches, ColorChoice, Command as ClapCommand};
+use clap::{
+    builder::PossibleValue, value_parser, Arg, ArgMatches, ColorChoice, Command as ClapCommand,
+    ValueEnum,
+};
 use clap_complete::Shell;
 use const_format::concatcp;
 use env_logger::fmt::WriteStyle;
@@ -93,7 +96,34 @@ macro_rules! handle_command {
     };
 }
 
-pub fn build_cli(include_internal: bool) -> ClapCommand<'static> {
+/// When to display color.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+enum ColorWhen {
+    /// Detect automatically.
+    Auto,
+
+    /// Always display colors.
+    Always,
+
+    /// Never display colors.
+    Never,
+}
+
+impl ValueEnum for ColorWhen {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[Self::Auto, Self::Always, Self::Never]
+    }
+
+    fn to_possible_value<'a>(&self) -> Option<PossibleValue> {
+        match self {
+            Self::Auto => Some(PossibleValue::new("auto")),
+            Self::Always => Some(PossibleValue::new("always")),
+            Self::Never => Some(PossibleValue::new("never")),
+        }
+    }
+}
+
+pub fn build_cli(include_internal: bool) -> ClapCommand {
     let version = env!("CARGO_PKG_VERSION");
     let mut app = ClapCommand::new("Colmena")
         .bin_name("colmena")
@@ -123,13 +153,13 @@ pub fn build_cli(include_internal: bool) -> ClapCommand<'static> {
             .help("Show debug information for Nix commands")
             .long_help("Passes --show-trace to Nix commands")
             .global(true)
-            .takes_value(false))
+            .num_args(0))
         .arg(Arg::new("impure")
             .long("impure")
             .help("Allow impure expressions")
             .long_help("Passes --impure to Nix commands")
             .global(true)
-            .takes_value(false))
+            .num_args(0))
         .arg(Arg::new("color")
             .long("color")
             .help("When to colorize the output")
@@ -139,7 +169,7 @@ It's also possible to specify the preference using environment variables. See <h
 "#)
             .display_order(HELP_ORDER_LOW)
             .value_name("WHEN")
-            .possible_values(&["auto", "always", "never"])
+            .value_parser(value_parser!(ColorWhen))
             .default_value("auto")
             .global(true));
 
@@ -153,7 +183,7 @@ It's also possible to specify the preference using environment variables. See <h
                         .index(1)
                         .value_parser(value_parser!(Shell))
                         .required(true)
-                        .takes_value(true),
+                        .num_args(1),
                 ),
         );
 
@@ -187,7 +217,7 @@ pub async fn run() {
     let mut app = build_cli(true);
     let matches = app.clone().get_matches();
 
-    set_color_pref(matches.value_of("color").unwrap());
+    set_color_pref(matches.get_one("color").unwrap());
     init_logging();
 
     handle_command!(apply, matches);
@@ -221,9 +251,9 @@ fn gen_completions(args: &ArgMatches) {
     clap_complete::generate(shell, &mut app, "colmena", &mut std::io::stdout());
 }
 
-fn set_color_pref(cli: &str) {
-    if cli != "auto" {
-        clicolors_control::set_colors_enabled(cli == "always");
+fn set_color_pref(when: &ColorWhen) {
+    if when != &ColorWhen::Auto {
+        clicolors_control::set_colors_enabled(when == &ColorWhen::Always);
     }
 }
 
@@ -246,4 +276,14 @@ fn init_logging() {
         .format_target(false)
         .write_style(style)
         .init();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cli_debug_assert() {
+        build_cli(true).debug_assert()
+    }
 }

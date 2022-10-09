@@ -4,7 +4,7 @@ use crate::error::ColmenaError;
 use crate::nix::evaluator::nix_eval_jobs::get_pinned_nix_eval_jobs;
 use crate::nix::NixCheck;
 
-pub fn subcommand() -> ClapCommand<'static> {
+pub fn subcommand() -> ClapCommand {
     ClapCommand::new("nix-info").about("Show information about the current Nix installation")
 }
 

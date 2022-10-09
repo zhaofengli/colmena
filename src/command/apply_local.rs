@@ -1,7 +1,7 @@
 use regex::Regex;
 use std::collections::HashMap;
 
-use clap::{Arg, ArgMatches, Command as ClapCommand};
+use clap::{builder::PossibleValuesParser, Arg, ArgMatches, Command as ClapCommand};
 use tokio::fs;
 
 use crate::error::ColmenaError;
@@ -10,7 +10,7 @@ use crate::nix::{host::Local as LocalHost, NodeName};
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
-pub fn subcommand() -> ClapCommand<'static> {
+pub fn subcommand() -> ClapCommand {
     ClapCommand::new("apply-local")
         .about("Apply configurations on the local machine")
         .arg(Arg::new("goal")
@@ -18,16 +18,24 @@ pub fn subcommand() -> ClapCommand<'static> {
             .long_help("Same as the targets for switch-to-configuration.\n\"push\" is noop in apply-local.")
             .default_value("switch")
             .index(1)
-            .possible_values(&["push", "switch", "boot", "test", "dry-activate", "keys"]))
+            .value_parser(PossibleValuesParser::new([
+                "push",
+                "switch",
+                "boot",
+                "test",
+                "dry-activate",
+                "keys",
+            ])))
         .arg(Arg::new("sudo")
             .long("sudo")
-            .help("Attempt to escalate privileges if not run as root"))
+            .help("Attempt to escalate privileges if not run as root")
+            .num_args(0))
         .arg(Arg::new("verbose")
             .short('v')
             .long("verbose")
             .help("Be verbose")
             .long_help("Deactivates the progress spinner and prints every line of output.")
-            .takes_value(false))
+            .num_args(0))
         .arg(Arg::new("no-keys")
             .long("no-keys")
             .help("Do not deploy keys")
@@ -35,11 +43,11 @@ pub fn subcommand() -> ClapCommand<'static> {
 
 By default, Colmena will deploy keys set in `deployment.keys` before activating the profile on this host.
 "#)
-            .takes_value(false))
+            .num_args(0))
         .arg(Arg::new("node")
             .long("node")
             .help("Override the node name to use")
-            .takes_value(true))
+            .num_args(1))
 
         // Removed
         .arg(Arg::new("sudo-command")
@@ -47,11 +55,11 @@ By default, Colmena will deploy keys set in `deployment.keys` before activating 
             .value_name("COMMAND")
             .help("Removed: Configure deployment.privilegeEscalationCommand in node configuration")
             .hide(true)
-            .takes_value(true))
+            .num_args(1))
 }
 
 pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
-    if local_args.occurrences_of("sudo-command") > 0 {
+    if local_args.contains_id("sudo-command") {
         log::error!("--sudo-command has been removed. Please configure it in deployment.privilegeEscalationCommand in the node configuration.");
         quit::with_code(1);
     }
@@ -68,8 +76,8 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         quit::with_code(5);
     }
 
-    let escalate_privileges = local_args.is_present("sudo");
-    let verbose = local_args.is_present("verbose") || escalate_privileges; // cannot use spinners with interactive sudo
+    let escalate_privileges = local_args.get_flag("sudo");
+    let verbose = local_args.get_flag("verbose") || escalate_privileges; // cannot use spinners with interactive sudo
 
     {
         let euid: u32 = unsafe { libc::geteuid() };
@@ -81,8 +89,8 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
     let hive = util::hive_from_args(local_args).await.unwrap();
     let hostname = {
-        let s = if local_args.is_present("node") {
-            local_args.value_of("node").unwrap().to_owned()
+        let s = if local_args.contains_id("node") {
+            local_args.get_one::<String>("node").unwrap().to_owned()
         } else {
             hostname::get()
                 .expect("Could not get hostname")
@@ -92,7 +100,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
         NodeName::new(s)?
     };
-    let goal = Goal::from_str(local_args.value_of("goal").unwrap()).unwrap();
+    let goal = Goal::from_str(local_args.get_one::<String>("goal").unwrap()).unwrap();
 
     let target = {
         if let Some(info) = hive.deployment_info_single(&hostname).await.unwrap() {
@@ -131,7 +139,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
     let options = {
         let mut options = Options::default();
-        options.set_upload_keys(!local_args.is_present("no-keys"));
+        options.set_upload_keys(!local_args.get_flag("no-keys"));
         options
     };
 

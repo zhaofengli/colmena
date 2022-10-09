@@ -8,7 +8,7 @@ pub mod limits;
 pub use limits::{EvaluationNodeLimit, ParallelismLimit};
 
 pub mod options;
-pub use options::{Evaluator, Options};
+pub use options::{EvaluatorType, Options};
 
 use std::collections::HashMap;
 use std::mem;
@@ -162,10 +162,10 @@ impl Deployment {
             let deployment = DeploymentHandle::new(self);
             let meta_future = meta.run(|meta| async move {
                 match deployment.options.evaluator {
-                    Evaluator::Chunked => {
+                    EvaluatorType::Chunked => {
                         deployment.execute_chunked(meta.clone(), targets).await?;
                     }
-                    Evaluator::Streaming => {
+                    EvaluatorType::Streaming => {
                         log::warn!("Streaming evaluation is an experimental feature");
                         deployment.execute_streaming(meta.clone(), targets).await?;
                     }
