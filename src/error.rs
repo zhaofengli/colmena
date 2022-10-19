@@ -34,6 +34,9 @@ pub enum ColmenaError {
     #[snafu(display("Validation error"))]
     ValidationError { errors: ValidationErrors },
 
+    #[snafu(display("Some attributes failed to evaluate"))]
+    AttributeEvaluationError,
+
     #[snafu(display("Error processing key \"{}\": {}", name, error))]
     KeyError { name: String, error: key::KeyError },
 

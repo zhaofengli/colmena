@@ -239,7 +239,7 @@ impl Deployment {
 
         let job = parent.create_job(JobType::Evaluate, nodes.clone())?;
 
-        let futures = job
+        let (futures, failed_attributes) = job
             .run(|job| async move {
                 let mut evaluator = NixEvalJobs::default();
                 let eval_limit = self
@@ -254,6 +254,7 @@ impl Deployment {
                 let mut stream = evaluator.evaluate(&expr, options).await?;
 
                 let mut futures: Vec<tokio::task::JoinHandle<ColmenaResult<()>>> = Vec::new();
+                let mut failed_attributes = Vec::new();
 
                 while let Some(item) = stream.next().await {
                     match item {
@@ -308,13 +309,12 @@ impl Deployment {
                                 EvalError::Attribute(e) => {
                                     // Attribute-level error
                                     //
-                                    // Here the eventual non-zero exit code of the evaluator
-                                    // will translate into an `EvalError::Global`, causing
-                                    // the entire future to resolve to an Err.
+                                    // We still let the rest of the evaluation finish but
+                                    // mark the whole Evaluate job as failed.
 
                                     let node_name =
                                         NodeName::new(e.attribute().to_string()).unwrap();
-                                    let nodes = vec![node_name];
+                                    let nodes = vec![node_name.clone()];
                                     let job = parent.create_job(JobType::Evaluate, nodes)?;
 
                                     job.state(JobState::Running)?;
@@ -322,13 +322,20 @@ impl Deployment {
                                         job.stderr(line.to_string())?;
                                     }
                                     job.state(JobState::Failed)?;
+
+                                    failed_attributes.push(node_name);
                                 }
                             }
                         }
                     }
                 }
 
-                Ok(futures)
+                // HACK: Still return Ok() because we need to wait for existing jobs to finish
+                if !failed_attributes.is_empty() {
+                    job.failure(&ColmenaError::AttributeEvaluationError)?;
+                }
+
+                Ok((futures, failed_attributes))
             })
             .await?;
 
@@ -338,7 +345,11 @@ impl Deployment {
             .map(|r| r.unwrap()) // panic on JoinError (future panicked)
             .collect::<ColmenaResult<Vec<()>>>()?;
 
-        Ok(())
+        if !failed_attributes.is_empty() {
+            Err(ColmenaError::AttributeEvaluationError)
+        } else {
+            Ok(())
+        }
     }
 
     /// Executes the deployment against a portion of nodes.
