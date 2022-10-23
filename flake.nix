@@ -101,7 +101,7 @@
     };
     nixosModules = {
       inherit (colmenaOptions) deploymentOptions metaOptions;
-      inherit (colmenaModules) keyChownModule keyServiceModule;
+      inherit (colmenaModules) keyChownModule keyServiceModule assertionModule;
     };
 
     lib.makeHive = rawHive: import ./src/nix/hive/eval.nix {
