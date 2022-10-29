@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{Arg, ArgMatches, Command as ClapCommand, value_parser};
+use clap::{value_parser, Arg, ArgMatches, Command as ClapCommand};
 
 use crate::error::ColmenaError;
 use crate::util;
