@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use clap::{Arg, ArgMatches, Command as ClapCommand};
+use clap::{Arg, ArgMatches, Command as ClapCommand, value_parser};
 
 use crate::error::ColmenaError;
 use crate::util;
@@ -28,7 +28,8 @@ For example, to retrieve the configuration of one node, you may write something 
             .index(1)
             .value_name("FILE")
             .help("The .nix file containing the expression")
-            .num_args(1))
+            .num_args(1)
+            .value_parser(value_parser!(PathBuf)))
         .arg(Arg::new("expression")
             .short('E')
             .value_name("EXPRESSION")
