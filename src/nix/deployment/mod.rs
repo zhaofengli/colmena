@@ -434,12 +434,13 @@ impl Deployment {
     ) -> ColmenaResult<()> {
         let nodes = vec![target.name.clone()];
         let job = parent.create_job(JobType::UploadKeys, nodes)?;
-        job.run(|_| async move {
+        job.run(|job| async move {
             if target.host.is_none() {
                 return Err(ColmenaError::Unsupported);
             }
 
             let host = target.host.as_mut().unwrap();
+            host.set_job(Some(job));
             host.upload_keys(&target.config.keys, true).await?;
 
             Ok(())
