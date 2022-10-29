@@ -30,7 +30,7 @@ serde = { version = "1.0.118", features = ["derive"] }
 serde_json = "1.0"
 shell-escape = "0.1.5"
 sys-info = "0.9.0"
-snafu = "0.7.0"
+snafu = { version = "0.7.0", features = ["backtrace", "backtraces-impl-backtrace-crate"] }
 tempfile = "3.1.0"
 tokio-stream = "0.1.8"
 uuid = { version = "1.0.0", features = ["serde", "v4"] }

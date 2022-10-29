@@ -398,7 +398,7 @@ impl Ssh {
         match self.run_command(self.ssh(&["reboot"])).await {
             Ok(()) => Ok(()),
             Err(e) => {
-                if let ColmenaError::ChildFailure { exit_code: 255 } = e {
+                if let ColmenaError::ChildFailure { exit_code: 255, .. } = e {
                     // Assume it's "Connection closed by remote host"
                     Ok(())
                 } else {

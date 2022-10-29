@@ -6,6 +6,7 @@ use std::env;
 use std::future::Future;
 
 use clap::{parser::ValueSource as ClapValueSource, ArgMatches};
+use snafu::ErrorCompat;
 
 use crate::error::ColmenaError;
 
@@ -61,5 +62,21 @@ fn troubleshoot(
         };
     }
 
+    if let Some(bt) = ErrorCompat::backtrace(error) {
+        if backtrace_enabled() {
+            eprintln!("Backtrace:");
+            eprint!("{:?}", bt);
+        } else {
+            eprintln!("Hint: Backtrace available - Use `RUST_BACKTRACE=1` environment variable to display a backtrace");
+        }
+    }
+
     Ok(())
+}
+
+fn backtrace_enabled() -> bool {
+    match env::var("RUST_BACKTRACE") {
+        Ok(backtrace_conf) => backtrace_conf != "0",
+        _ => false,
+    }
 }

@@ -3,7 +3,7 @@
 use std::os::unix::process::ExitStatusExt;
 use std::process::ExitStatus;
 
-use snafu::Snafu;
+use snafu::{Backtrace, Snafu};
 use validator::ValidationErrors;
 
 use crate::nix::{key, Profile, StorePath};
@@ -20,10 +20,13 @@ pub enum ColmenaError {
     BadOutput { output: String },
 
     #[snafu(display("Child process exited with error code: {}", exit_code))]
-    ChildFailure { exit_code: i32 },
+    ChildFailure {
+        exit_code: i32,
+        backtrace: Backtrace,
+    },
 
     #[snafu(display("Child process was killed by signal {}", signal))]
-    ChildKilled { signal: i32 },
+    ChildKilled { signal: i32, backtrace: Backtrace },
 
     #[snafu(display("This operation is not supported"))]
     Unsupported,
@@ -89,10 +92,11 @@ impl From<ValidationErrors> for ColmenaError {
 impl From<ExitStatus> for ColmenaError {
     fn from(status: ExitStatus) -> Self {
         match status.code() {
-            Some(exit_code) => Self::ChildFailure { exit_code },
-            None => Self::ChildKilled {
+            Some(exit_code) => ChildFailureSnafu { exit_code }.build(),
+            None => ChildKilledSnafu {
                 signal: status.signal().unwrap(),
-            },
+            }
+            .build(),
         }
     }
 }
