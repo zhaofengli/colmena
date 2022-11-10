@@ -111,6 +111,9 @@ pub struct NixOptions {
     /// - `@/path/to/machines`
     /// - `builder@host.tld riscv64-linux /home/nix/.ssh/keys/builder.key 8 1 kvm`
     builders: Option<String>,
+
+    /// Options to pass as --option name value.
+    options: HashMap<String, String>,
 }
 
 impl NodeName {
@@ -205,6 +208,10 @@ impl NixOptions {
         self.builders = builders;
     }
 
+    pub fn set_options(&mut self, options: HashMap<String, String>) {
+        self.options = options;
+    }
+
     pub fn to_args(&self) -> Vec<String> {
         let mut options = Vec::new();
 
@@ -226,6 +233,12 @@ impl NixOptions {
 
         if self.impure {
             options.push("--impure".to_string());
+        }
+
+        for (name, value) in self.options.iter() {
+            options.push("--option".to_string());
+            options.push(name.to_string());
+            options.push(value.to_string());
         }
 
         options

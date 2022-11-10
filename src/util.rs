@@ -244,17 +244,8 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
                 log::info!("Using flake: {}", flake.uri());
 
                 let hive_path = HivePath::Flake(flake);
-                let mut hive = Hive::new(hive_path).await?;
 
-                if args.get_flag("show-trace") {
-                    hive.set_show_trace(true);
-                }
-
-                if args.get_flag("impure") {
-                    hive.set_impure(true);
-                }
-
-                return Ok(hive);
+                return hive_from_path(hive_path, args).await;
             }
 
             fpath
@@ -263,6 +254,11 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
     };
 
     let hive_path = HivePath::from_path(path).await?;
+
+    hive_from_path(hive_path, args).await
+}
+
+pub async fn hive_from_path(hive_path: HivePath, args: &ArgMatches) -> ColmenaResult<Hive> {
     match &hive_path {
         HivePath::Legacy(p) => {
             log::info!("Using configuration: {}", p.to_string_lossy());
@@ -280,6 +276,17 @@ pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
 
     if args.get_flag("impure") {
         hive.set_impure(true);
+    }
+
+    if let Some(opts) = args.get_many::<String>("nix-option") {
+        let iter = opts.into_iter();
+
+        let names = iter.clone().step_by(2);
+        let values = iter.clone().skip(1).step_by(2);
+
+        for (name, value) in names.zip(values) {
+            hive.add_nix_option(name.to_owned(), value.to_owned());
+        }
     }
 
     Ok(hive)

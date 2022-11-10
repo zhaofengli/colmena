@@ -3,8 +3,8 @@
 use std::env;
 
 use clap::{
-    builder::PossibleValue, value_parser, Arg, ArgMatches, ColorChoice, Command as ClapCommand,
-    ValueEnum,
+    builder::PossibleValue, value_parser, Arg, ArgAction, ArgMatches, ColorChoice,
+    Command as ClapCommand, ValueEnum,
 };
 use clap_complete::Shell;
 use const_format::concatcp;
@@ -160,6 +160,17 @@ pub fn build_cli(include_internal: bool) -> ClapCommand {
             .long_help("Passes --impure to Nix commands")
             .global(true)
             .num_args(0))
+        .arg(Arg::new("nix-option")
+            .long("nix-option")
+            .help("Passes an arbitrary option to Nix commands")
+            .long_help(r#"Passes arbitrary options to Nix commands
+
+This only works when building locally.
+"#)
+            .global(true)
+            .num_args(2)
+            .value_names(["NAME", "VALUE"])
+            .action(ArgAction::Append))
         .arg(Arg::new("color")
             .long("color")
             .help("When to colorize the output")

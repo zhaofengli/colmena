@@ -52,6 +52,9 @@ pub struct Hive {
     /// Whether to pass --impure in Nix commands.
     impure: bool,
 
+    /// Options to pass as --option name value.
+    nix_options: HashMap<String, String>,
+
     meta_config: OnceCell<MetaConfig>,
 }
 
@@ -104,6 +107,7 @@ impl Hive {
             assets,
             show_trace: false,
             impure: false,
+            nix_options: HashMap::new(),
             meta_config: OnceCell::new(),
         })
     }
@@ -131,12 +135,17 @@ impl Hive {
         self.impure = impure;
     }
 
+    pub fn add_nix_option(&mut self, name: String, value: String) {
+        self.nix_options.insert(name, value);
+    }
+
     /// Returns Nix options to set for this Hive.
     pub fn nix_options(&self) -> NixOptions {
         let mut options = NixOptions::default();
         options.set_show_trace(self.show_trace);
         options.set_pure_eval(self.path.is_flake());
         options.set_impure(self.impure);
+        options.set_options(self.nix_options.clone());
         options
     }
 
