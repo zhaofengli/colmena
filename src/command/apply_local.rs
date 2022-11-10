@@ -46,6 +46,7 @@ By default, Colmena will deploy keys set in `deployment.keys` before activating 
             .num_args(0))
         .arg(Arg::new("node")
             .long("node")
+            .value_name("NODE")
             .help("Override the node name to use")
             .num_args(1))
 
