@@ -8,7 +8,7 @@ use tokio::process::Command;
 use super::{key_uploader, CopyDirection, CopyOptions, Host};
 use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::JobHandle;
-use crate::nix::{Goal, Key, NixOptions, Profile, StorePath, CURRENT_PROFILE, SYSTEM_PROFILE};
+use crate::nix::{Goal, Key, NixFlags, Profile, StorePath, CURRENT_PROFILE, SYSTEM_PROFILE};
 use crate::util::{CommandExecution, CommandExt};
 
 /// The local machine running Colmena.
@@ -18,12 +18,12 @@ use crate::util::{CommandExecution, CommandExt};
 #[derive(Debug)]
 pub struct Local {
     job: Option<JobHandle>,
-    nix_options: NixOptions,
+    nix_options: NixFlags,
     privilege_escalation_command: Option<Vec<String>>,
 }
 
 impl Local {
-    pub fn new(nix_options: NixOptions) -> Self {
+    pub fn new(nix_options: NixFlags) -> Self {
         Self {
             job: None,
             nix_options,

@@ -91,9 +91,9 @@ pub struct MetaConfig {
     pub machines_file: Option<String>,
 }
 
-/// Nix options.
+/// Nix CLI flags.
 #[derive(Debug, Clone, Default)]
-pub struct NixOptions {
+pub struct NixFlags {
     /// Whether to pass --show-trace.
     show_trace: bool,
 
@@ -191,7 +191,7 @@ impl NodeConfig {
     }
 }
 
-impl NixOptions {
+impl NixFlags {
     pub fn set_show_trace(&mut self, show_trace: bool) {
         self.show_trace = show_trace;
     }
@@ -213,10 +213,10 @@ impl NixOptions {
     }
 
     pub fn to_args(&self) -> Vec<String> {
-        let mut options = Vec::new();
+        let mut args = Vec::new();
 
         if let Some(builders) = &self.builders {
-            options.append(&mut vec![
+            args.append(&mut vec![
                 "--option".to_string(),
                 "builders".to_string(),
                 builders.clone(),
@@ -224,24 +224,24 @@ impl NixOptions {
         }
 
         if self.show_trace {
-            options.push("--show-trace".to_string());
+            args.push("--show-trace".to_string());
         }
 
         if self.pure_eval {
-            options.push("--pure-eval".to_string());
+            args.push("--pure-eval".to_string());
         }
 
         if self.impure {
-            options.push("--impure".to_string());
+            args.push("--impure".to_string());
         }
 
         for (name, value) in self.options.iter() {
-            options.push("--option".to_string());
-            options.push(name.to_string());
-            options.push(value.to_string());
+            args.push("--option".to_string());
+            args.push(name.to_string());
+            args.push(value.to_string());
         }
 
-        options
+        args
     }
 }
 
