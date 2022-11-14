@@ -2032,6 +2032,12 @@ Note: You are using a pre-release version of Colmena, so the supported options m
       <span class="ansi1">--impure</span>
           Passes --impure to Nix commands
 
+      <span class="ansi1">--nix-option</span> &lt;NAME&gt; &lt;VALUE&gt;
+          Passes arbitrary options to Nix commands
+          
+          This only works when building locally.
+          
+
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
@@ -2106,6 +2112,12 @@ Note: You are using a pre-release version of Colmena, so the supported options m
           
           The built system profiles will be added as GC roots so that they will not be removed by the garbage collector.
           The links will be created under .gcroots in the directory the Hive configuration is located.
+          
+
+      <span class="ansi1">--nix-option</span> &lt;NAME&gt; &lt;VALUE&gt;
+          Passes arbitrary options to Nix commands
+          
+          This only works when building locally.
           
 
   <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
@@ -2209,7 +2221,13 @@ Note: You are using a pre-release version of Colmena, so the supported options m
           By default, Colmena will deploy keys set in `deployment.keys` before activating the profile on this host.
           
 
-      <span class="ansi1">--node</span> &lt;node&gt;
+      <span class="ansi1">--nix-option</span> &lt;NAME&gt; &lt;VALUE&gt;
+          Passes arbitrary options to Nix commands
+          
+          This only works when building locally.
+          
+
+      <span class="ansi1">--node</span> &lt;NODE&gt;
           Override the node name to use
 
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
@@ -2269,6 +2287,12 @@ This subcommand behaves as if you invoked `apply` with the `build` goal.
           
           The built system profiles will be added as GC roots so that they will not be removed by the garbage collector.
           The links will be created under .gcroots in the directory the Hive configuration is located.
+          
+
+      <span class="ansi1">--nix-option</span> &lt;NAME&gt; &lt;VALUE&gt;
+          Passes arbitrary options to Nix commands
+          
+          This only works when building locally.
           
 
   <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
@@ -2379,6 +2403,12 @@ This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
           The links will be created under .gcroots in the directory the Hive configuration is located.
           
 
+      <span class="ansi1">--nix-option</span> &lt;NAME&gt; &lt;VALUE&gt;
+          Passes arbitrary options to Nix commands
+          
+          This only works when building locally.
+          
+
   <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
           Deactivates the progress spinner and prints every line of output.
 
@@ -2477,6 +2507,12 @@ For example, to retrieve the configuration of one node, you may write something 
       <span class="ansi1">--impure</span>
           Passes --impure to Nix commands
 
+      <span class="ansi1">--nix-option</span> &lt;NAME&gt; &lt;VALUE&gt;
+          Passes arbitrary options to Nix commands
+          
+          This only works when building locally.
+          
+
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
@@ -2539,6 +2575,12 @@ For example, to retrieve the configuration of one node, you may write something 
           - edge-*,core-*
           - @a-tag,@tags-can-have-*
 
+      <span class="ansi1">--nix-option</span> &lt;NAME&gt; &lt;VALUE&gt;
+          Passes arbitrary options to Nix commands
+          
+          This only works when building locally.
+          
+
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
@@ -2570,6 +2612,12 @@ For example, to retrieve the configuration of one node, you may write something 
 
       <span class="ansi1">--impure</span>
           Passes --impure to Nix commands
+
+      <span class="ansi1">--nix-option</span> &lt;NAME&gt; &lt;VALUE&gt;
+          Passes arbitrary options to Nix commands
+          
+          This only works when building locally.
+          
 
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
@@ -2606,6 +2654,12 @@ attribute set.
 
       <span class="ansi1">--impure</span>
           Passes --impure to Nix commands
+
+      <span class="ansi1">--nix-option</span> &lt;NAME&gt; &lt;VALUE&gt;
+          Passes arbitrary options to Nix commands
+          
+          This only works when building locally.
+          
 
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
