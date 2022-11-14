@@ -17,7 +17,7 @@ use std::result::Result as StdResult;
 use async_trait::async_trait;
 use futures::Stream;
 
-use super::{BuildResult, NixExpression, NixOptions, StoreDerivation, StorePath};
+use super::{BuildResult, NixExpression, NixFlags, StoreDerivation, StorePath};
 use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::JobHandle;
 
@@ -61,7 +61,7 @@ pub trait DrvSetEvaluator {
     async fn evaluate(
         &self,
         expression: &dyn NixExpression,
-        options: NixOptions,
+        flags: NixFlags,
     ) -> ColmenaResult<Pin<Box<dyn Stream<Item = EvalResult>>>>;
 
     /// Sets the maximum number of attributes to evaluate at the same time.

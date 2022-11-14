@@ -46,6 +46,7 @@ By default, Colmena will deploy keys set in `deployment.keys` before activating 
             .num_args(0))
         .arg(Arg::new("node")
             .long("node")
+            .value_name("NODE")
             .help("Override the node name to use")
             .num_args(1))
 
@@ -104,7 +105,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
     let target = {
         if let Some(info) = hive.deployment_info_single(&hostname).await.unwrap() {
-            let nix_options = hive.nix_options_with_builders().await.unwrap();
+            let nix_options = hive.nix_flags_with_builders().await.unwrap();
             if !info.allows_local_deployment() {
                 log::error!(
                     "Local deployment is not enabled for host {}.",

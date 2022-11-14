@@ -19,7 +19,7 @@ use tokio::process::Command;
 use super::{AttributeError, AttributeOutput, DrvSetEvaluator, EvalError, EvalResult};
 use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::{null_job_handle, JobHandle};
-use crate::nix::{NixExpression, NixOptions, StorePath};
+use crate::nix::{NixExpression, NixFlags, StorePath};
 use crate::util::capture_stream;
 
 /// The pinned nix-eval-jobs binary.
@@ -74,7 +74,7 @@ impl DrvSetEvaluator for NixEvalJobs {
     async fn evaluate(
         &self,
         expression: &dyn NixExpression,
-        options: NixOptions,
+        flags: NixFlags,
     ) -> ColmenaResult<Pin<Box<dyn Stream<Item = EvalResult>>>> {
         let mut command = Command::new(&self.executable);
         command
@@ -82,7 +82,7 @@ impl DrvSetEvaluator for NixEvalJobs {
             .arg(self.workers.to_string())
             .args(&["--expr", &expression.expression()]);
 
-        command.args(options.to_args());
+        command.args(flags.to_args());
 
         if expression.requires_flakes() {
             command.args(&["--extra-experimental-features", "flakes"]);
@@ -235,7 +235,7 @@ mod tests {
 
         block_on(async move {
             let mut stream = evaluator
-                .evaluate(&expr, NixOptions::default())
+                .evaluate(&expr, NixFlags::default())
                 .await
                 .unwrap();
             let mut count = 0;
@@ -259,7 +259,7 @@ mod tests {
 
         block_on(async move {
             let mut stream = evaluator
-                .evaluate(&expr, NixOptions::default())
+                .evaluate(&expr, NixFlags::default())
                 .await
                 .unwrap();
             let mut count = 0;
@@ -283,7 +283,7 @@ mod tests {
 
         block_on(async move {
             let mut stream = evaluator
-                .evaluate(&expr, NixOptions::default())
+                .evaluate(&expr, NixFlags::default())
                 .await
                 .unwrap();
             let mut count = 0;
@@ -323,7 +323,7 @@ mod tests {
 
         block_on(async move {
             let mut stream = evaluator
-                .evaluate(&expr, NixOptions::default())
+                .evaluate(&expr, NixFlags::default())
                 .await
                 .unwrap();
             let mut count = 0;

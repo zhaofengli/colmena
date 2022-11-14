@@ -13,7 +13,7 @@ use validator::Validate;
 
 use super::deployment::TargetNode;
 use super::{
-    Flake, MetaConfig, NixExpression, NixOptions, NodeConfig, NodeFilter, NodeName,
+    Flake, MetaConfig, NixExpression, NixFlags, NodeConfig, NodeFilter, NodeName,
     ProfileDerivation, SerializedNixExpression, StorePath,
 };
 use crate::error::ColmenaResult;
@@ -51,6 +51,9 @@ pub struct Hive {
 
     /// Whether to pass --impure in Nix commands.
     impure: bool,
+
+    /// Options to pass as --option name value.
+    nix_options: HashMap<String, String>,
 
     meta_config: OnceCell<MetaConfig>,
 }
@@ -104,6 +107,7 @@ impl Hive {
             assets,
             show_trace: false,
             impure: false,
+            nix_options: HashMap::new(),
             meta_config: OnceCell::new(),
         })
     }
@@ -131,25 +135,30 @@ impl Hive {
         self.impure = impure;
     }
 
-    /// Returns Nix options to set for this Hive.
-    pub fn nix_options(&self) -> NixOptions {
-        let mut options = NixOptions::default();
-        options.set_show_trace(self.show_trace);
-        options.set_pure_eval(self.path.is_flake());
-        options.set_impure(self.impure);
-        options
+    pub fn add_nix_option(&mut self, name: String, value: String) {
+        self.nix_options.insert(name, value);
     }
 
-    /// Returns Nix options to set for this Hive, with configured remote builders.
-    pub async fn nix_options_with_builders(&self) -> ColmenaResult<NixOptions> {
-        let mut options = NixOptions::default();
-        options.set_show_trace(self.show_trace);
+    /// Returns Nix options to set for this Hive.
+    pub fn nix_flags(&self) -> NixFlags {
+        let mut flags = NixFlags::default();
+        flags.set_show_trace(self.show_trace);
+        flags.set_pure_eval(self.path.is_flake());
+        flags.set_impure(self.impure);
+        flags.set_options(self.nix_options.clone());
+        flags
+    }
+
+    /// Returns Nix flags to set for this Hive, with configured remote builders.
+    pub async fn nix_flags_with_builders(&self) -> ColmenaResult<NixFlags> {
+        let mut flags = NixFlags::default();
+        flags.set_show_trace(self.show_trace);
 
         if let Some(machines_file) = &self.get_meta_config().await?.machines_file {
-            options.set_builders(Some(format!("@{}", machines_file)));
+            flags.set_builders(Some(format!("@{}", machines_file)));
         }
 
-        Ok(options)
+        Ok(flags)
     }
 
     /// Convenience wrapper to filter nodes for CLI actions.
@@ -423,7 +432,7 @@ impl<'hive> NixInstantiate<'hive> {
 
     fn eval(self) -> Command {
         let mut command = self.instantiate();
-        let options = self.hive.nix_options();
+        let flags = self.hive.nix_flags();
         command
             .arg("--eval")
             .arg("--json")
@@ -431,24 +440,24 @@ impl<'hive> NixInstantiate<'hive> {
             // Ensures the derivations are instantiated
             // Required for system profile evaluation and IFD
             .arg("--read-write-mode")
-            .args(options.to_args());
+            .args(flags.to_args());
         command
     }
 
     async fn instantiate_with_builders(self) -> ColmenaResult<Command> {
-        let options = self.hive.nix_options_with_builders().await?;
+        let flags = self.hive.nix_flags_with_builders().await?;
         let mut command = self.instantiate();
 
-        command.args(options.to_args());
+        command.args(flags.to_args());
 
         Ok(command)
     }
 
     async fn eval_with_builders(self) -> ColmenaResult<Command> {
-        let options = self.hive.nix_options_with_builders().await?;
+        let flags = self.hive.nix_flags_with_builders().await?;
         let mut command = self.eval();
 
-        command.args(options.to_args());
+        command.args(flags.to_args());
 
         Ok(command)
     }

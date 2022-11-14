@@ -18,7 +18,7 @@ use futures::future::join_all;
 use itertools::Itertools;
 use tokio_stream::StreamExt;
 
-use super::NixOptions;
+use super::NixFlags;
 use crate::job::{JobHandle, JobMonitor, JobState, JobType};
 use crate::progress::Sender as ProgressSender;
 use crate::util;
@@ -50,7 +50,7 @@ pub struct Deployment {
     options: Options,
 
     /// Options passed to Nix invocations.
-    nix_options: NixOptions,
+    nix_options: NixFlags,
 
     /// Handle to send messages to the ProgressOutput.
     progress: Option<ProgressSender>,
@@ -103,7 +103,7 @@ impl Deployment {
             hive,
             goal,
             options: Options::default(),
-            nix_options: NixOptions::default(),
+            nix_options: NixFlags::default(),
             progress,
             targets,
             parallelism_limit: ParallelismLimit::default(),
@@ -129,7 +129,7 @@ impl Deployment {
             monitor.set_label_width(width);
         }
 
-        let nix_options = self.hive.nix_options_with_builders().await?;
+        let nix_options = self.hive.nix_flags_with_builders().await?;
         self.nix_options = nix_options;
 
         if self.goal == Goal::UploadKeys {
@@ -250,7 +250,7 @@ impl Deployment {
                 evaluator.set_job(job.clone());
 
                 // FIXME: nix-eval-jobs currently does not support IFD with builders
-                let options = self.hive.nix_options();
+                let options = self.hive.nix_flags();
                 let mut stream = evaluator.evaluate(&expr, options).await?;
 
                 let mut futures: Vec<tokio::task::JoinHandle<ColmenaResult<()>>> = Vec::new();
