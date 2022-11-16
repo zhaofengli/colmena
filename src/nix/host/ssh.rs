@@ -354,6 +354,10 @@ impl Ssh {
             options.push(ssh_config.to_str().unwrap().to_string());
         }
 
+        if let Ok(custom_ssh_opts) = std::env::var("COLMENA_SSHOPTS") {
+            options.push(custom_ssh_opts)
+        }
+
         options
     }
 
