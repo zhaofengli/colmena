@@ -2,7 +2,7 @@
 
 let
   tools = pkgs.callPackage ../tools.nix {};
-in tools.makeTest {
+in tools.runTest {
   name = "colmena-parallel";
 
   colmena.test = {
