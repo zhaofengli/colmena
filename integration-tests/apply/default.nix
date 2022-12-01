@@ -4,13 +4,14 @@
 
 let
   tools = pkgs.callPackage ../tools.nix {};
-in tools.makeTest {
+in tools.runTest {
   name = "colmena-apply-${evaluator}";
 
-  bundle = ./.;
-
-  testScript = ''
-    colmena = "${tools.colmenaExec}"
-    evaluator = "${evaluator}"
-  '' + builtins.readFile ./test-script.py;
+  colmena.test = {
+    bundle = ./.;
+    testScript = ''
+      colmena = "${tools.colmenaExec}"
+      evaluator = "${evaluator}"
+    '' + builtins.readFile ./test-script.py;
+  };
 }

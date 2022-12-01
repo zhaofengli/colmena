@@ -12,14 +12,16 @@ let
       security.sudo.wheelNeedsPassword = false;
     };
   };
-in tools.makeTest {
+in tools.runTest {
   name = "colmena-apply-local";
 
-  bundle = ./.;
+  colmena.test = {
+    bundle = ./.;
 
-  testScript = ''
-    deployer.succeed("cd /tmp/bundle && sudo -u colmena ${tools.colmenaExec} apply-local --sudo")
-    deployer.succeed("grep SUCCESS /etc/deployment")
-    deployer.succeed("grep SECRET /run/keys/key-text")
-  '';
+    testScript = ''
+      deployer.succeed("cd /tmp/bundle && sudo -u colmena ${tools.colmenaExec} apply-local --sudo")
+      deployer.succeed("grep SUCCESS /etc/deployment")
+      deployer.succeed("grep SECRET /run/keys/key-text")
+    '';
+  };
 }

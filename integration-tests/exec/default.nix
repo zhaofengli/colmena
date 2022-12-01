@@ -2,16 +2,18 @@
 
 let
   tools = pkgs.callPackage ../tools.nix {};
-in tools.makeTest {
+in tools.runTest {
   name = "colmena-exec";
 
-  bundle = ./.;
+  colmena.test = {
+    bundle = ./.;
 
-  testScript = ''
-    logs = deployer.succeed("cd /tmp/bundle && ${tools.colmenaExec} exec --on @target -- echo output from '$(hostname)' 2>&1")
+    testScript = ''
+      logs = deployer.succeed("cd /tmp/bundle && ${tools.colmenaExec} exec --on @target -- echo output from '$(hostname)' 2>&1")
 
-    assert "output from alpha" in logs
-    assert "output from beta" in logs
-    assert "output from gamma" in logs
-  '';
+      assert "output from alpha" in logs
+      assert "output from beta" in logs
+      assert "output from gamma" in logs
+    '';
+  };
 }
