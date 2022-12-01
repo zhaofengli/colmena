@@ -209,59 +209,9 @@ let
 
     deployment.tags = lib.optional (config.networking.hostName != "deployer") "target";
   };
-
-  makeTest = test: let
-    customArgs = [ "bundle" ];
-
-    targetList = "[${concatStringsSep ", " targets}]";
-
-    fullScript = ''
-      start_all()
-    '' + lib.optionalString (prebuiltTarget != null) ''
-      deployer.succeed("nix-store -qR ${prebuiltSystem}")
-    '' + ''
-      deployer.succeed("nix-store -qR ${pkgs.path}")
-      deployer.succeed("ln -sf ${pkgs.path} /nixpkgs")
-      deployer.succeed("mkdir -p /root/.ssh && touch /root/.ssh/id_rsa && chmod 600 /root/.ssh/id_rsa && cat ${sshKeys.snakeOilPrivateKey} > /root/.ssh/id_rsa")
-
-      ${lib.optionalString (length targets != 0) ''
-      for node in ${targetList}:
-          node.wait_for_unit("sshd.service")
-          deployer.succeed(f"ssh -o StrictHostKeyChecking=accept-new {node.name} true", timeout=30)
-      ''}
-
-      deployer.succeed("cp --no-preserve=mode -r ${bundle} /tmp/bundle && chmod u+w /tmp/bundle")
-
-      orig_store_paths = set(deployer.succeed("ls /nix/store").strip().split("\n"))
-      def get_new_store_paths():
-          cur_store_paths = set(deployer.succeed("ls /nix/store").strip().split("\n"))
-          new_store_paths = cur_store_paths.difference(orig_store_paths)
-          deployer.log(f"{len(new_store_paths)} store paths were created")
-
-          l = list(map(lambda n: f"/nix/store/{n}", new_store_paths))
-          return l
-    '' + test.testScript;
-
-    bundle = pkgs.stdenv.mkDerivation {
-      name = "${test.name}-bundle";
-      dontUnpack = true;
-      dontInstall = true;
-      buildPhase = ''
-        cp -r ${test.bundle} $out
-        chmod u+w $out
-        cp ${./tools.nix} $out/tools.nix
-      '';
-    };
-
-    combined = {
-      inherit nodes;
-    } // (removeAttrs test customArgs) // {
-      testScript = fullScript;
-    };
-  in lib.makeOverridable pkgs.nixosTest combined;
 in {
   inherit pkgs nodes colmena colmenaExec
-    getStandaloneConfigFor inputClosureOf makeTest;
+    getStandaloneConfigFor inputClosureOf;
 
   runTest = module: (evalTest ({ config, ... }: {
     imports = [ module { inherit nodes; } ];
