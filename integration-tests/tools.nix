@@ -137,7 +137,7 @@ let
       "nixpkgs=${pkgs.path}"
     ];
 
-    nix.binaryCaches = lib.mkForce [];
+    nix.settings.substituters = lib.mkForce [];
 
     virtualisation = {
       memorySize = 3072;
@@ -171,7 +171,7 @@ let
   #
   # Kept as minimal as possible.
   targetConfig = { lib, ... }: {
-    nix.binaryCaches = lib.mkForce [];
+    nix.settings.substituters = lib.mkForce [];
 
     documentation.nixos.enable = lib.mkOverride 60 true;
 
