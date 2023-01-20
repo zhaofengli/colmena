@@ -25,6 +25,8 @@ pub struct Options {
     /// directory if it exists.
     pub(super) create_gc_roots: bool,
 
+    pub(super) create_gc_roots_dir: String,
+
     /// Whether to override per-node setting to build on the nodes themselves.
     pub(super) force_build_on_target: Option<bool>,
 
@@ -63,6 +65,10 @@ impl Options {
         self.create_gc_roots = enable;
     }
 
+    pub fn set_create_gc_roots_dir(&mut self, dir: String) {
+        self.create_gc_roots_dir = dir;
+    }
+
     pub fn set_force_build_on_target(&mut self, enable: bool) {
         self.force_build_on_target = Some(enable);
     }
@@ -92,6 +98,7 @@ impl Default for Options {
             upload_keys: true,
             reboot: false,
             create_gc_roots: false,
+            create_gc_roots_dir: String::from(".gcroots"),
             force_build_on_target: None,
             force_replace_unknown_profiles: false,
             evaluator: EvaluatorType::Chunked,

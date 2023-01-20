@@ -523,7 +523,9 @@ impl Deployment {
             job.run_waiting(|job| async move {
                 if let Some(dir) = arc_self.hive.context_dir() {
                     job.state(JobState::Running)?;
-                    let path = dir.join(".gcroots").join(format!("node-{}", &*target.name));
+                    let path = dir
+                        .join(self.options.create_gc_roots_dir.to_owned())
+                        .join(format!("node-{}", &*target.name));
 
                     profile_r.create_gc_root(&path).await?;
                 } else {
