@@ -68,11 +68,14 @@ with subtest("Check that key files have correct permissions"):
         for path, permission in permissions.items():
             node.succeed(f"if [[ \"{permission}\" != \"$(stat -c '%a %U %G' '{path}')\" ]]; then ls -lah '{path}'; exit 1; fi")
 
+with subtest("Check that the key service is started for post-activation keys"):
+    alpha.wait_for_unit("post-activation-key.service")
+
 with subtest("Check that key services respond to key file changes"):
-    alpha.require_unit_state("key-text-key.service", "active")
+    alpha.wait_for_unit("key-text-key.service")
 
     alpha.succeed("rm /run/keys/key-text")
-    alpha.wait_until_succeeds("systemctl --no-pager show key-text-key.service | grep ActiveState=inactive", timeout=10)
+    alpha.require_unit_state("key-text-key.service", "activating")
 
     alpha.succeed("touch /run/keys/key-text")
     alpha.wait_for_unit("key-text-key.service")
