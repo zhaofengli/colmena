@@ -78,19 +78,30 @@ with builtins; {
       systemd.services = lib.mapAttrs' (name: val: {
         name = "${name}-key";
         value = {
-          bindsTo = [ "${name}-key.path" ];
+          enable = true;
           serviceConfig = {
-            Restart = "on-failure";
+            TimeoutStartSec = "infinity";
+            Restart = "always";
+            RestartSec = "100ms";
           };
           path = [ pkgs.inotify-tools ];
-          script = ''
-            if [[ ! -e "${val.path}" ]]; then
-              >&2 echo "${val.path} does not exist"
+          preStart = ''
+            (while read f; do if [ "$f" = "${val.name}" ]; then break; fi; done \
+              < <(inotifywait -qm --format '%f' -e create,move ${val.destDir}) ) &
+            if [[ -e "${val.path}" ]]; then
+              echo 'flapped down'
+              kill %1
               exit 0
             fi
-
-            inotifywait -qq -e delete_self "${val.path}"
-            >&2 echo "${val.path} disappeared"
+            wait %1
+          '';
+          script = ''
+            inotifywait -qq -e delete_self "${val.path}" &
+            if [[ ! -e "${val.path}" ]]; then
+              echo 'flapped up'
+              exit 0
+            fi
+            wait %1
           '';
         };
       }) config.deployment.keys;
