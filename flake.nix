@@ -13,7 +13,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, ... }: let
+  outputs = { self, nixpkgs, stable, flake-utils, ... } @ inputs: let
     supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
     colmenaOptions = import ./src/nix/hive/options.nix;
     colmenaModules = import ./src/nix/hive/modules.nix;
@@ -79,8 +79,23 @@
         python3 python3Packages.flake8
       ];
     };
+    checks = let
+      inputsOverlay = final: prev: {
+        _inputs = inputs;
+      };
+    in if pkgs.stdenv.isLinux then import ./integration-tests {
+      pkgs = import nixpkgs {
+        inherit system;
+        overlays = [ self.overlays.default inputsOverlay ];
+      };
+      pkgsStable = import stable {
+        inherit system;
+        overlays = [ self.overlays.default inputsOverlay ];
+      };
+    } else {};
   }) // {
-    overlay = final: prev: {
+    overlay = self.overlays.default;
+    overlays.default = final: prev: {
       colmena = final.callPackage ./package.nix { };
     };
     nixosModules = {
