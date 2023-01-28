@@ -4,8 +4,10 @@
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>Meta Options - Colmena (Unstable)</title>
+
+
         <!-- Custom HTML head -->
-        <meta content="text/html; charset=utf-8" http-equiv="Content-Type">
+        
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff" />
@@ -16,25 +18,28 @@
         <link rel="stylesheet" href="../css/general.css">
         <link rel="stylesheet" href="../css/chrome.css">
         <link rel="stylesheet" href="../css/print.css" media="print">
+
         <!-- Fonts -->
         <link rel="stylesheet" href="../FontAwesome/css/font-awesome.css">
         <link rel="stylesheet" href="../fonts/fonts.css">
+
         <!-- Highlight.js Stylesheets -->
         <link rel="stylesheet" href="../highlight.css">
         <link rel="stylesheet" href="../tomorrow-night.css">
         <link rel="stylesheet" href="../ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
+
     </head>
     <body>
         <!-- Provide site root to javascript -->
-        <script type="text/javascript">
+        <script>
             var path_to_root = "../";
             var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
         </script>
 
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
-        <script type="text/javascript">
+        <script>
             try {
                 var theme = localStorage.getItem('mdbook-theme');
                 var sidebar = localStorage.getItem('mdbook-sidebar');
@@ -50,7 +55,7 @@
         </script>
 
         <!-- Set the theme before any content is loaded, prevents flash -->
-        <script type="text/javascript">
+        <script>
             var theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
@@ -62,7 +67,7 @@
         </script>
 
         <!-- Hide / unhide sidebar before it is displayed -->
-        <script type="text/javascript">
+        <script>
             var html = document.querySelector('html');
             var sidebar = 'hidden';
             if (document.body.clientWidth >= 1080) {
@@ -83,7 +88,7 @@
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                <div id="menu-bar-hover-placeholder"></div>
+                                <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky bordered">
                     <div class="left-buttons">
                         <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
@@ -93,7 +98,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
-                            <li role="none"><button role="menuitem" class="theme" id="light">Light (default)</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
@@ -116,6 +121,7 @@
                         <a href="https://github.com/zhaofengli/colmena/edit/main/manual/src/reference/meta.md" title="Suggest an edit" aria-label="Suggest an edit">
                             <i id="git-edit-button" class="fa fa-edit"></i>
                         </a>
+
                     </div>
                 </div>
 
@@ -129,8 +135,9 @@
                         </ul>
                     </div>
                 </div>
+
                 <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
-                <script type="text/javascript">
+                <script>
                     document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
                     document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
                     Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
@@ -154,25 +161,29 @@ However, you cannot specify both at the same time.</p>
     Looking to improve the descriptions? Head to `src/nix/hive/eval.nix` in the repo :)
 -->
 <h2 id="allowapplyall"><a class="header" href="#allowapplyall">allowApplyAll</a></h2>
-<p>Whether to allow deployments without a node filter set.</p>
+<p><a href="nixos:option-description">nixos:option-description</a><para>Whether to allow deployments without a node filter set.</p>
 <p>If set to false, a node filter must be specified with <code>--on</code> when
 deploying.</p>
 <p>It helps prevent accidental deployments to the entire cluster
-when tags are used (e.g., <code>@production</code> and <code>@staging</code>).</p>
-<p><em><em>Type</em></em>:
-boolean</p>
+when tags are used (e.g., <code>@production</code> and <code>@staging</code>).
+</para>&lt;/nixos:option-description&gt;</p>
+<p><em><em>Type</em></em></p>
+<pre><code>boolean
+</code></pre>
 <p><em><em>Default</em></em></p>
 <pre><code>true
 </code></pre>
 <h2 id="description"><a class="header" href="#description">description</a></h2>
-<p>A short description for the configuration.</p>
-<p><em><em>Type</em></em>:
-string</p>
+<p><a href="nixos:option-description">nixos:option-description</a><para>A short description for the configuration.
+</para>&lt;/nixos:option-description&gt;</p>
+<p><em><em>Type</em></em></p>
+<pre><code>string
+</code></pre>
 <p><em><em>Default</em></em></p>
 <pre><code>&quot;A Colmena Hive&quot;
 </code></pre>
 <h2 id="machinesfile"><a class="header" href="#machinesfile">machinesFile</a></h2>
-<p>Use the machines listed in this file when building this hive configuration.</p>
+<p><a href="nixos:option-description">nixos:option-description</a><para>Use the machines listed in this file when building this hive configuration.</p>
 <p>If your Colmena host has nix configured to allow for remote builds
 (for nix-daemon, your user being included in trusted-users)
 you can set a machines file that will be passed to the underlying
@@ -185,54 +196,66 @@ for the machine specification format.</p>
 <p>This option is ignored when builds are initiated on the remote nodes
 themselves via <code>deployment.buildOnTarget</code> or <code>--build-on-target</code>. To
 still use the Nix distributed build functionality, configure the
-builders on the target nodes with <code>nix.buildMachines</code>.</p>
-<p><em><em>Type</em></em>:
-null or path</p>
+builders on the target nodes with <code>nix.buildMachines</code>.
+</para>&lt;/nixos:option-description&gt;</p>
+<p><em><em>Type</em></em></p>
+<pre><code>null or path
+</code></pre>
 <p><em><em>Default</em></em></p>
 <pre><code>null
 </code></pre>
 <h2 id="name"><a class="header" href="#name">name</a></h2>
-<p>The name of the configuration.</p>
-<p><em><em>Type</em></em>:
-string</p>
+<p><a href="nixos:option-description">nixos:option-description</a><para>The name of the configuration.
+</para>&lt;/nixos:option-description&gt;</p>
+<p><em><em>Type</em></em></p>
+<pre><code>string
+</code></pre>
 <p><em><em>Default</em></em></p>
 <pre><code>&quot;hive&quot;
 </code></pre>
 <h2 id="nixpkgs"><a class="header" href="#nixpkgs">nixpkgs</a></h2>
-<p>The pinned Nixpkgs package set. Accepts one of the following:</p>
+<p><a href="nixos:option-description">nixos:option-description</a><para>The pinned Nixpkgs package set. Accepts one of the following:</p>
 <ul>
 <li>A path to a Nixpkgs checkout</li>
 <li>The Nixpkgs lambda (e.g., import <nixpkgs>)</li>
 <li>An initialized Nixpkgs attribute set</li>
 </ul>
-<p>This option must be specified when using Flakes.</p>
-<p><em><em>Type</em></em>:
-unspecified value</p>
+<p>This option must be specified when using Flakes.
+</para>&lt;/nixos:option-description&gt;</p>
+<p><em><em>Type</em></em></p>
+<pre><code>unspecified value
+</code></pre>
 <p><em><em>Default</em></em></p>
 <pre><code>null
 </code></pre>
 <h2 id="nodenixpkgs"><a class="header" href="#nodenixpkgs">nodeNixpkgs</a></h2>
-<p>Node-specific Nixpkgs pins.</p>
-<p><em><em>Type</em></em>:
-attribute set of unspecified value</p>
+<p><a href="nixos:option-description">nixos:option-description</a><para>Node-specific Nixpkgs pins.
+</para>&lt;/nixos:option-description&gt;</p>
+<p><em><em>Type</em></em></p>
+<pre><code>attribute set of unspecified value
+</code></pre>
 <p><em><em>Default</em></em></p>
-<pre><code>{}
+<pre><code>{ }
 </code></pre>
 <h2 id="nodespecialargs"><a class="header" href="#nodespecialargs">nodeSpecialArgs</a></h2>
-<p>Node-specific special args.</p>
-<p><em><em>Type</em></em>:
-attribute set of unspecified value</p>
+<p><a href="nixos:option-description">nixos:option-description</a><para>Node-specific special args.
+</para>&lt;/nixos:option-description&gt;</p>
+<p><em><em>Type</em></em></p>
+<pre><code>attribute set of unspecified value
+</code></pre>
 <p><em><em>Default</em></em></p>
-<pre><code>{}
+<pre><code>{ }
 </code></pre>
 <h2 id="specialargs"><a class="header" href="#specialargs">specialArgs</a></h2>
-<p>A set of special arguments to be passed to NixOS modules.</p>
+<p><a href="nixos:option-description">nixos:option-description</a><para>A set of special arguments to be passed to NixOS modules.</p>
 <p>This will be merged into the <code>specialArgs</code> used to evaluate
-the NixOS configurations.</p>
-<p><em><em>Type</em></em>:
-attribute set of unspecified value</p>
+the NixOS configurations.
+</para>&lt;/nixos:option-description&gt;</p>
+<p><em><em>Type</em></em></p>
+<pre><code>attribute set of unspecified value
+</code></pre>
 <p><em><em>Default</em></em></p>
-<pre><code>{}
+<pre><code>{ }
 </code></pre>
 
                     </main>
@@ -242,9 +265,11 @@ attribute set of unspecified value</p>
                             <a rel="prev" href="../reference/deployment.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <i class="fa fa-angle-left"></i>
                             </a>
+
                             <a rel="next" href="../reference/cli.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
+
                         <div style="clear: both"></div>
                     </nav>
                 </div>
@@ -254,6 +279,7 @@ attribute set of unspecified value</p>
                     <a rel="prev" href="../reference/deployment.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <i class="fa fa-angle-left"></i>
                     </a>
+
                     <a rel="next" href="../reference/cli.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
@@ -261,16 +287,24 @@ attribute set of unspecified value</p>
 
         </div>
 
-        <script type="text/javascript">
+
+
+
+        <script>
             window.playground_copyable = true;
         </script>
-        <script src="../elasticlunr.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../mark.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../searcher.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../clipboard.min.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../highlight.js" type="text/javascript" charset="utf-8"></script>
-        <script src="../book.js" type="text/javascript" charset="utf-8"></script>
+
+
+        <script src="../elasticlunr.min.js"></script>
+        <script src="../mark.min.js"></script>
+        <script src="../searcher.js"></script>
+
+        <script src="../clipboard.min.js"></script>
+        <script src="../highlight.js"></script>
+        <script src="../book.js"></script>
 
         <!-- Custom JS scripts -->
+
+
     </body>
 </html>
