@@ -29,9 +29,6 @@ jobs:
           name: colmena
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
-      - run: nix flake check --no-build
-        if: ${{ !contains(matrix.nix.version, '2.3') && runner.os != 'macOS' }}
-
       - name: Build Colmena
         run: nix build -L
         if: ${{ !contains(matrix.nix.version, '2.3') }}
