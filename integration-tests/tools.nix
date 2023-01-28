@@ -140,7 +140,7 @@ let
     nix.settings.substituters = lib.mkForce [];
 
     virtualisation = {
-      memorySize = 3072;
+      memorySize = 4096;
       writableStore = true;
       additionalPaths = [
         "${pkgs.path}"
