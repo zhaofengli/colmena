@@ -18,8 +18,8 @@ jobs:
     strategy:
       matrix:
         nix:
-          - name: 2.10.3
-            url: https://releases.nixos.org/nix/nix-2.10.3/install
+          - version: 2.13.2
+            url: https://releases.nixos.org/nix/nix-2.13.2/install
 
     steps:
       - uses: actions/checkout@v3.3.0

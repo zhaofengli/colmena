@@ -12,8 +12,8 @@ jobs:
           - label: macOS
             image: macos-12
         nix:
-          - version: 2.10.3
-            url: https://releases.nixos.org/nix/nix-2.10.3/install
+          - version: 2.13.2
+            url: https://releases.nixos.org/nix/nix-2.13.2/install
 
     name: ${{ matrix.os.label }} + Nix ${{ matrix.nix.version }}
     runs-on: ${{ matrix.os.image }}
