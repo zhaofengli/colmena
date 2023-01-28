@@ -11,11 +11,8 @@ jobs:
             image: ubuntu-latest
           - label: macOS
             image: macos-12
-        nix:
-          - version: 2.13.2
-            url: https://releases.nixos.org/nix/nix-2.13.2/install
 
-    name: ${{ matrix.os.label }} + Nix ${{ matrix.nix.version }}
+    name: ${{ matrix.os.label }}
     runs-on: ${{ matrix.os.image }}
     steps:
       - uses: actions/checkout@v3.3.0
@@ -31,11 +28,9 @@ jobs:
 
       - name: Build Colmena
         run: nix build -L
-        if: ${{ !contains(matrix.nix.version, '2.3') }}
 
       - name: Build and install Colmena with flake-compat
         run: nix-env -if default.nix
 
       - name: Build manual
         run: nix build .#manual -L
-        if: ${{ !contains(matrix.nix.version, '2.3') && runner.os != 'macOS' }}

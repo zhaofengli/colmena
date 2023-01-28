@@ -9,12 +9,6 @@ jobs:
 
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        nix:
-          - version: 2.13.2
-            url: https://releases.nixos.org/nix/nix-2.13.2/install
-
     steps:
       - uses: actions/checkout@v3.3.0
 

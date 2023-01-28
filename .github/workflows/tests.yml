@@ -9,15 +9,8 @@ jobs:
         os:
           - label: Linux
             image: ubuntu-latest
-        nix:
-          - version: 2.3.16
-            url: https://releases.nixos.org/nix/nix-2.3.16/install
-          - version: 2.4
-            url: https://releases.nixos.org/nix/nix-2.4/install
-          - version: 2.13.2
-            url: https://releases.nixos.org/nix/nix-2.13.2/install
 
-    name: ${{ matrix.os.label }} + Nix ${{ matrix.nix.version }}
+    name: ${{ matrix.os.label }}
     runs-on: ${{ matrix.os.image }}
     steps:
       - uses: actions/checkout@v3.3.0
@@ -37,6 +30,3 @@ jobs:
         run: echo "NIX_PATH=nixpkgs=$(nix-instantiate --eval flake-compat.nix -A defaultNix.inputs.nixpkgs.outPath | sed 's|\"||g')" >> $GITHUB_ENV
 
       - run: nix-shell --run "cargo test"
-        if: ${{ !contains(matrix.nix.version, '2.3') }}
-      - run: nix-shell --run "cargo test -- --skip flake"
-        if: ${{ contains(matrix.nix.version, '2.3') }}
