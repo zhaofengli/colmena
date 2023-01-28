@@ -1,4 +1,4 @@
-{ pkgs ? import ../nixpkgs.nix }:
+{ pkgs }:
 
 let
   tools = pkgs.callPackage ../tools.nix {};
