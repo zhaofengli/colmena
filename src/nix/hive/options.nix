@@ -1,17 +1,18 @@
 with builtins; rec {
   keyType = { lib, name, config, ... }: let
     inherit (lib) types;
+    mdDoc = lib.mdDoc or (md: md);
   in {
     options = {
       name = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           File name of the key.
         '';
         default = name;
         type = types.str;
       };
       text = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           Content of the key.
           One of `text`, `keyCommand` and `keyFile` must be set.
         '';
@@ -19,7 +20,7 @@ with builtins; rec {
         type = types.nullOr types.str;
       };
       keyFile = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           Path of the local file to read the key from.
           One of `text`, `keyCommand` and `keyFile` must be set.
         '';
@@ -28,7 +29,7 @@ with builtins; rec {
         type = types.nullOr types.path;
       };
       keyCommand = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           Command to run to generate the key.
           One of `text`, `keyCommand` and `keyFile` must be set.
         '';
@@ -38,14 +39,14 @@ with builtins; rec {
         in types.nullOr nonEmptyList;
       };
       destDir = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           Destination directory on the host.
         '';
         default = "/run/keys";
         type = types.path;
       };
       path = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           Full path to the destination.
         '';
         default = "${config.destDir}/${config.name}";
@@ -53,28 +54,28 @@ with builtins; rec {
         internal = true;
       };
       user = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           The group that will own the file.
         '';
         default = "root";
         type = types.str;
       };
       group = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           The group that will own the file.
         '';
         default = "root";
         type = types.str;
       };
       permissions = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           Permissions to set for the file.
         '';
         default = "0600";
         type = types.str;
       };
       uploadAt = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           When to upload the keys.
 
           - pre-activation (default): Upload the keys before activating the new system profile.
@@ -93,11 +94,12 @@ with builtins; rec {
   # Largely compatible with NixOps/Morph.
   deploymentOptions = { name, lib, ... }: let
     inherit (lib) types;
+    mdDoc = lib.mdDoc or (md: md);
   in {
     options = {
       deployment = {
         targetHost = lib.mkOption {
-          description = ''
+          description = mdDoc ''
             The target SSH node for deployment.
 
             By default, the node's attribute name will be used.
@@ -107,7 +109,7 @@ with builtins; rec {
           default = name;
         };
         targetPort = lib.mkOption {
-          description = ''
+          description = mdDoc ''
             The target SSH port for deployment.
 
             By default, the port is the standard port (22) or taken
@@ -117,7 +119,7 @@ with builtins; rec {
           default = null;
         };
         targetUser = lib.mkOption {
-          description = ''
+          description = mdDoc ''
             The user to use to log into the remote node. If set to null, the
             target user will not be specified in SSH invocations.
           '';
@@ -125,7 +127,7 @@ with builtins; rec {
           default = "root";
         };
         allowLocalDeployment = lib.mkOption {
-          description = ''
+          description = mdDoc ''
             Allow the configuration to be applied locally on the host running
             Colmena.
 
@@ -142,7 +144,7 @@ with builtins; rec {
           default = false;
         };
         buildOnTarget = lib.mkOption {
-          description = ''
+          description = mdDoc ''
             Whether to build the system profiles on the target node itself.
 
             When enabled, Colmena will copy the derivation to the target
@@ -162,7 +164,7 @@ with builtins; rec {
           default = false;
         };
         tags = lib.mkOption {
-          description = ''
+          description = mdDoc ''
             A list of tags for the node.
 
             Can be used to select a group of nodes for deployment.
@@ -171,7 +173,7 @@ with builtins; rec {
           default = [];
         };
         keys = lib.mkOption {
-          description = ''
+          description = mdDoc ''
             A set of secrets to be deployed to the node.
 
             Secrets are transferred to the node out-of-band and
@@ -181,7 +183,7 @@ with builtins; rec {
           default = {};
         };
         replaceUnknownProfiles = lib.mkOption {
-          description = ''
+          description = mdDoc ''
             Allow a configuration to be applied to a host running a profile we
             have no knowledge of. By setting this option to false, you reduce
             the likelyhood of rolling back changes made via another Colmena user.
@@ -197,7 +199,7 @@ with builtins; rec {
           default = true;
         };
         privilegeEscalationCommand = lib.mkOption {
-          description = ''
+          description = mdDoc ''
             Command to use to elevate privileges when activating the new profiles on SSH hosts.
 
             This is used on SSH hosts when `deployment.targetUser` is not `root`.
@@ -212,28 +214,29 @@ with builtins; rec {
   # Hive-wide options
   metaOptions = { lib, ... }: let
     inherit (lib) types;
+    mdDoc = lib.mdDoc or (md: md);
   in {
     options = {
       name = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           The name of the configuration.
         '';
         type = types.str;
         default = "hive";
       };
       description = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           A short description for the configuration.
         '';
         type = types.str;
         default = "A Colmena Hive";
       };
       nixpkgs = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           The pinned Nixpkgs package set. Accepts one of the following:
 
           - A path to a Nixpkgs checkout
-          - The Nixpkgs lambda (e.g., import <nixpkgs>)
+          - The Nixpkgs lambda (e.g., import \<nixpkgs\>)
           - An initialized Nixpkgs attribute set
 
           This option must be specified when using Flakes.
@@ -242,21 +245,21 @@ with builtins; rec {
         default = null;
       };
       nodeNixpkgs = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           Node-specific Nixpkgs pins.
         '';
         type = types.attrsOf types.unspecified;
         default = {};
       };
       nodeSpecialArgs = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           Node-specific special args.
         '';
         type = types.attrsOf types.unspecified;
         default = {};
       };
       machinesFile = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           Use the machines listed in this file when building this hive configuration.
 
           If your Colmena host has nix configured to allow for remote builds
@@ -280,7 +283,7 @@ with builtins; rec {
         type = types.nullOr types.path;
       };
       specialArgs = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           A set of special arguments to be passed to NixOS modules.
 
           This will be merged into the `specialArgs` used to evaluate
@@ -290,7 +293,7 @@ with builtins; rec {
         type = types.attrsOf types.unspecified;
       };
       allowApplyAll = lib.mkOption {
-        description = ''
+        description = mdDoc ''
           Whether to allow deployments without a node filter set.
 
           If set to false, a node filter must be specified with `--on` when
