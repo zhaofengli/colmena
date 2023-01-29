@@ -159,18 +159,14 @@
     Looking to improve the description? Head to `src/nix/hive/eval.nix` in the repo :)
 -->
 <h2 id="deploymentallowlocaldeployment"><a class="header" href="#deploymentallowlocaldeployment">deployment.allowLocalDeployment</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>Allow the configuration to be applied locally on the host running
-Colmena.</p>
-<p>For local deployment to work, all of the following must be true:</p>
-<ul>
-<li>The node must be running NixOS.</li>
-<li>The node must have deployment.allowLocalDeployment set to true.</li>
-<li>The node's networking.hostName must match the hostname.</li>
-</ul>
-<p>To apply the configurations locally, run <code>colmena apply-local</code>.
+<p><para>Allow the configuration to be applied locally on the host running
+Colmena.</para><para>For local deployment to work, all of the following must be true:</para><para><itemizedlist>
+<listitem><para>The node must be running NixOS.</para></listitem>
+<listitem><para>The node must have deployment.allowLocalDeployment set to true.</para></listitem>
+<listitem><para>The node's networking.hostName must match the hostname.</para></listitem></p>
+<p></itemizedlist></para><para>To apply the configurations locally, run <literal>colmena apply-local</literal>.
 You can also set deployment.targetHost to null if the nost is not
-accessible over SSH (only local deployment will be possible).
-</para>&lt;/nixos:option-description&gt;</p>
+accessible over SSH (only local deployment will be possible).</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>boolean
 </code></pre>
@@ -178,19 +174,16 @@ accessible over SSH (only local deployment will be possible).
 <pre><code>false
 </code></pre>
 <h2 id="deploymentbuildontarget"><a class="header" href="#deploymentbuildontarget">deployment.buildOnTarget</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>Whether to build the system profiles on the target node itself.</p>
-<p>When enabled, Colmena will copy the derivation to the target
+<p><para>Whether to build the system profiles on the target node itself.</para><para>When enabled, Colmena will copy the derivation to the target
 node and initiate the build there. This avoids copying back the
 build results involved with the native distributed build
-feature. Furthermore, the <code>build</code> goal will be equivalent to
-the <code>push</code> goal. Since builds happen on the target node, the
+feature. Furthermore, the <literal>build</literal> goal will be equivalent to
+the <literal>push</literal> goal. Since builds happen on the target node, the
 results are automatically &quot;pushed&quot; and won't exist in the local
-Nix store.</p>
-<p>You can temporarily override per-node settings by passing
-<code>--build-on-target</code> (enable for all nodes) or
-<code>--no-build-on-target</code> (disable for all nodes) on the command
-line.
-</para>&lt;/nixos:option-description&gt;</p>
+Nix store.</para><para>You can temporarily override per-node settings by passing
+<literal>--build-on-target</literal> (enable for all nodes) or
+<literal>--no-build-on-target</literal> (disable for all nodes) on the command
+line.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>boolean
 </code></pre>
@@ -198,10 +191,8 @@ line.
 <pre><code>false
 </code></pre>
 <h2 id="deploymentkeys"><a class="header" href="#deploymentkeys">deployment.keys</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>A set of secrets to be deployed to the node.</p>
-<p>Secrets are transferred to the node out-of-band and
-never ends up in the Nix store.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>A set of secrets to be deployed to the node.</para><para>Secrets are transferred to the node out-of-band and
+never ends up in the Nix store.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>attribute set of (submodule)
 </code></pre>
@@ -209,8 +200,7 @@ never ends up in the Nix store.
 <pre><code>{ }
 </code></pre>
 <h2 id="deploymentkeysnamedestdir"><a class="header" href="#deploymentkeysnamedestdir">deployment.keys.&lt;name&gt;.destDir</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>Destination directory on the host.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>Destination directory on the host.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>path
 </code></pre>
@@ -218,8 +208,7 @@ never ends up in the Nix store.
 <pre><code>&quot;/run/keys&quot;
 </code></pre>
 <h2 id="deploymentkeysnamegroup"><a class="header" href="#deploymentkeysnamegroup">deployment.keys.&lt;name&gt;.group</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>The group that will own the file.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>The group that will own the file.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>string
 </code></pre>
@@ -227,9 +216,8 @@ never ends up in the Nix store.
 <pre><code>&quot;root&quot;
 </code></pre>
 <h2 id="deploymentkeysnamekeycommand"><a class="header" href="#deploymentkeysnamekeycommand">deployment.keys.&lt;name&gt;.keyCommand</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>Command to run to generate the key.
-One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must be set.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>Command to run to generate the key.
+One of <literal>text</literal>, <literal>keyCommand</literal> and <literal>keyFile</literal> must be set.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>null or (list of string)
 </code></pre>
@@ -237,9 +225,8 @@ One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must 
 <pre><code>null
 </code></pre>
 <h2 id="deploymentkeysnamekeyfile"><a class="header" href="#deploymentkeysnamekeyfile">deployment.keys.&lt;name&gt;.keyFile</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>Path of the local file to read the key from.
-One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must be set.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>Path of the local file to read the key from.
+One of <literal>text</literal>, <literal>keyCommand</literal> and <literal>keyFile</literal> must be set.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>null or path
 </code></pre>
@@ -247,8 +234,7 @@ One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must 
 <pre><code>null
 </code></pre>
 <h2 id="deploymentkeysnamename"><a class="header" href="#deploymentkeysnamename">deployment.keys.&lt;name&gt;.name</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>File name of the key.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>File name of the key.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>string
 </code></pre>
@@ -256,8 +242,7 @@ One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must 
 <pre><code>&quot;‹name›&quot;
 </code></pre>
 <h2 id="deploymentkeysnamepermissions"><a class="header" href="#deploymentkeysnamepermissions">deployment.keys.&lt;name&gt;.permissions</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>Permissions to set for the file.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>Permissions to set for the file.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>string
 </code></pre>
@@ -265,9 +250,8 @@ One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must 
 <pre><code>&quot;0600&quot;
 </code></pre>
 <h2 id="deploymentkeysnametext"><a class="header" href="#deploymentkeysnametext">deployment.keys.&lt;name&gt;.text</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>Content of the key.
-One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must be set.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>Content of the key.
+One of <literal>text</literal>, <literal>keyCommand</literal> and <literal>keyFile</literal> must be set.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>null or string
 </code></pre>
@@ -275,13 +259,10 @@ One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must 
 <pre><code>null
 </code></pre>
 <h2 id="deploymentkeysnameuploadat"><a class="header" href="#deploymentkeysnameuploadat">deployment.keys.&lt;name&gt;.uploadAt</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>When to upload the keys.</p>
-<ul>
-<li>pre-activation (default): Upload the keys before activating the new system profile.</li>
-<li>post-activation: Upload the keys after successfully activating the new system profile.</li>
-</ul>
-<p>For <code>colmena upload-keys</code>, all keys are uploaded at the same time regardless of the configuration here.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>When to upload the keys.</para><para><itemizedlist>
+<listitem><para>pre-activation (default): Upload the keys before activating the new system profile.</para></listitem>
+<listitem><para>post-activation: Upload the keys after successfully activating the new system profile.</para></listitem></p>
+<p></itemizedlist></para><para>For <literal>colmena upload-keys</literal>, all keys are uploaded at the same time regardless of the configuration here.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>one of &quot;pre-activation&quot;, &quot;post-activation&quot;
 </code></pre>
@@ -289,8 +270,7 @@ One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must 
 <pre><code>&quot;pre-activation&quot;
 </code></pre>
 <h2 id="deploymentkeysnameuser"><a class="header" href="#deploymentkeysnameuser">deployment.keys.&lt;name&gt;.user</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>The group that will own the file.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>The group that will own the file.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>string
 </code></pre>
@@ -298,10 +278,8 @@ One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must 
 <pre><code>&quot;root&quot;
 </code></pre>
 <h2 id="deploymentprivilegeescalationcommand"><a class="header" href="#deploymentprivilegeescalationcommand">deployment.privilegeEscalationCommand</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>Command to use to elevate privileges when activating the new profiles on SSH hosts.</p>
-<p>This is used on SSH hosts when <code>deployment.targetUser</code> is not <code>root</code>.
-The user must be allowed to use the command non-interactively.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>Command to use to elevate privileges when activating the new profiles on SSH hosts.</para><para>This is used on SSH hosts when <literal>deployment.targetUser</literal> is not <literal>root</literal>.
+The user must be allowed to use the command non-interactively.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>list of string
 </code></pre>
@@ -313,17 +291,13 @@ The user must be allowed to use the command non-interactively.
 ]
 </code></pre>
 <h2 id="deploymentreplaceunknownprofiles"><a class="header" href="#deploymentreplaceunknownprofiles">deployment.replaceUnknownProfiles</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>Allow a configuration to be applied to a host running a profile we
+<p><para>Allow a configuration to be applied to a host running a profile we
 have no knowledge of. By setting this option to false, you reduce
-the likelyhood of rolling back changes made via another Colmena user.</p>
-<p>Unknown profiles are usually the result of either:</p>
-<ul>
-<li>The node had a profile applied, locally or by another Colmena.</li>
-<li>The host running Colmena garbage-collecting the profile.</li>
-</ul>
-<p>To force profile replacement on all targeted nodes during apply,
-use the flag <code>--force-replace-unknown-profiles</code>.
-</para>&lt;/nixos:option-description&gt;</p>
+the likelyhood of rolling back changes made via another Colmena user.</para><para>Unknown profiles are usually the result of either:</para><para><itemizedlist>
+<listitem><para>The node had a profile applied, locally or by another Colmena.</para></listitem>
+<listitem><para>The host running Colmena garbage-collecting the profile.</para></listitem></p>
+<p></itemizedlist></para><para>To force profile replacement on all targeted nodes during apply,
+use the flag <literal>--force-replace-unknown-profiles</literal>.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>boolean
 </code></pre>
@@ -331,9 +305,7 @@ use the flag <code>--force-replace-unknown-profiles</code>.
 <pre><code>true
 </code></pre>
 <h2 id="deploymenttags"><a class="header" href="#deploymenttags">deployment.tags</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>A list of tags for the node.</p>
-<p>Can be used to select a group of nodes for deployment.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>A list of tags for the node.</para><para>Can be used to select a group of nodes for deployment.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>list of string
 </code></pre>
@@ -341,10 +313,8 @@ use the flag <code>--force-replace-unknown-profiles</code>.
 <pre><code>[ ]
 </code></pre>
 <h2 id="deploymenttargethost"><a class="header" href="#deploymenttargethost">deployment.targetHost</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>The target SSH node for deployment.</p>
-<p>By default, the node's attribute name will be used.
-If set to null, only local deployment will be supported.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>The target SSH node for deployment.</para><para>By default, the node's attribute name will be used.
+If set to null, only local deployment will be supported.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>null or string
 </code></pre>
@@ -352,10 +322,8 @@ If set to null, only local deployment will be supported.
 <pre><code>&quot;nixos&quot;
 </code></pre>
 <h2 id="deploymenttargetport"><a class="header" href="#deploymenttargetport">deployment.targetPort</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>The target SSH port for deployment.</p>
-<p>By default, the port is the standard port (22) or taken
-from your ssh_config.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>The target SSH port for deployment.</para><para>By default, the port is the standard port (22) or taken
+from your ssh_config.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>null or unsigned integer, meaning &gt;=0
 </code></pre>
@@ -363,9 +331,8 @@ from your ssh_config.
 <pre><code>null
 </code></pre>
 <h2 id="deploymenttargetuser"><a class="header" href="#deploymenttargetuser">deployment.targetUser</a></h2>
-<p><a href="nixos:option-description">nixos:option-description</a><para>The user to use to log into the remote node. If set to null, the
-target user will not be specified in SSH invocations.
-</para>&lt;/nixos:option-description&gt;</p>
+<p><para>The user to use to log into the remote node. If set to null, the
+target user will not be specified in SSH invocations.</para></p>
 <p><em><em>Type</em></em></p>
 <pre><code>null or string
 </code></pre>
