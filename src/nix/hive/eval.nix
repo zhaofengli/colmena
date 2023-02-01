@@ -77,7 +77,7 @@ let
         outputs = { nixpkgs, ... }: {
           colmena = {
             ${configName} = import nixpkgs {
-              system = "${currentSystem}";
+              system = "x86_64-linux"; # Set your desired system here
               overlays = [];
             };
           };
