@@ -59,7 +59,7 @@ By default, Colmena will deploy keys set in `deployment.keys` before activating 
             .num_args(1))
 }
 
-pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
+pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
     if local_args.contains_id("sudo-command") {
         log::error!("--sudo-command has been removed. Please configure it in deployment.privilegeEscalationCommand in the node configuration.");
         quit::with_code(1);
@@ -133,7 +133,10 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     let mut targets = HashMap::new();
     targets.insert(hostname.clone(), target);
 
-    let mut output = SimpleProgressOutput::new(verbose);
+    let mut output = SimpleProgressOutput::new(
+        verbose,
+        !global_args.get_one("disable-emoji").unwrap_or(&false),
+    );
     let progress = output.get_sender();
 
     let mut deployment = Deployment::new(hive, targets, goal, progress);

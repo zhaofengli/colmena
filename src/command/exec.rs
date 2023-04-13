@@ -59,7 +59,7 @@ It's recommended to use -- to separate Colmena options from the command to run. 
     util::register_selector_args(command)
 }
 
-pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
+pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
     let hive = util::hive_from_args(local_args).await?;
     let ssh_config = env::var("SSH_CONFIG_FILE").ok().map(PathBuf::from);
 
@@ -89,7 +89,10 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
             .collect(),
     );
 
-    let mut output = SimpleProgressOutput::new(local_args.get_flag("verbose"));
+    let mut output = SimpleProgressOutput::new(
+        local_args.get_flag("verbose"),
+        !global_args.get_one("disable-emoji").unwrap_or(&false),
+    );
 
     let (mut monitor, meta) = JobMonitor::new(output.get_sender());
 

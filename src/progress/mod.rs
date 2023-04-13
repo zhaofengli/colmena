@@ -89,13 +89,13 @@ pub enum LineStyle {
 }
 
 impl SimpleProgressOutput {
-    pub fn new(verbose: bool) -> Self {
+    pub fn new(verbose: bool, emoji: bool) -> Self {
         let tty = atty::is(atty::Stream::Stdout);
 
         if verbose || !tty {
             Self::Plain(PlainOutput::new())
         } else {
-            Self::Spinner(SpinnerOutput::new())
+            Self::Spinner(SpinnerOutput::new(emoji))
         }
     }
 

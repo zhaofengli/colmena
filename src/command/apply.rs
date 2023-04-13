@@ -158,7 +158,7 @@ Same as the targets for switch-to-configuration, with the following extra pseudo
     util::register_selector_args(command)
 }
 
-pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
+pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
     let hive = util::hive_from_args(local_args).await?;
 
     let ssh_config = env::var("SSH_CONFIG_FILE").ok().map(PathBuf::from);
@@ -189,7 +189,10 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     let n_targets = targets.len();
 
     let verbose = local_args.get_flag("verbose") || goal == Goal::DryActivate;
-    let mut output = SimpleProgressOutput::new(verbose);
+    let mut output = SimpleProgressOutput::new(
+        verbose,
+        !global_args.get_one("disable-emoji").unwrap_or(&false),
+    );
     let progress = output.get_sender();
 
     let mut deployment = Deployment::new(hive, targets, goal, progress);
