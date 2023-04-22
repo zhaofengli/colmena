@@ -6,19 +6,37 @@ jobs:
   build:
     strategy:
       matrix:
-        os:
-          - label: Linux
+        include:
+          - label: x86_64-linux
             image: ubuntu-latest
-          - label: macOS
+          - label: aarch64-linux
+            image: ubuntu-latest
+            system: aarch64-linux
+          - label: x86_64-darwin
             image: macos-12
 
-    name: ${{ matrix.os.label }}
-    runs-on: ${{ matrix.os.image }}
+    name: ${{ matrix.label }}
+    runs-on: ${{ matrix.image }}
     steps:
       - uses: actions/checkout@v3.3.0
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@e1f2e54ff90b012560f19481e250bb7d909f3acd
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2.1.0
+        if: matrix.system != ''
+
+      - name: Generate System Flags
+        run: |
+          LOCAL_SYSTEM=$(nix-instantiate --eval --json -E 'builtins.currentSystem' | jq -r)
+          HOST_SYSTEM=${HOST_SYSTEM:-$LOCAL_SYSTEM}
+          if [[ "$LOCAL_SYSTEM" != "$HOST_SYSTEM" ]]; then
+            echo "system_flags=--system $HOST_SYSTEM" >>"$GITHUB_ENV"
+            echo "extra-platforms = $HOST_SYSTEM" | sudo tee -a /etc/nix/nix.conf
+          fi
+        env:
+          HOST_SYSTEM: '${{ matrix.system }}'
 
       - name: Enable Binary Cache
         uses: cachix/cachix-action@v12
@@ -27,10 +45,7 @@ jobs:
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
 
       - name: Build Colmena
-        run: nix build -L
-
-      - name: Build and install Colmena with flake-compat
-        run: nix-env -if default.nix
+        run: nix build -L $system_flags
 
       - name: Build manual
         run: nix build .#manual -L
