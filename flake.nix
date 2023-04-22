@@ -18,10 +18,7 @@
     colmenaOptions = import ./src/nix/hive/options.nix;
     colmenaModules = import ./src/nix/hive/modules.nix;
   in flake-utils.lib.eachSystem supportedSystems (system: let
-    pkgs = import nixpkgs {
-      inherit system;
-      overlays = [];
-    };
+    pkgs = nixpkgs.legacyPackages.${system};
   in rec {
     # We still maintain the expression in a Nixpkgs-acceptable form
     defaultPackage = self.packages.${system}.colmena;
