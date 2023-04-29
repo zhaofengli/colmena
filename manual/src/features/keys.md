@@ -34,6 +34,15 @@ To upload your secrets without performing a full deployment, use `colmena upload
 For each secret file deployed using `deployment.keys`, a systemd service with the name of `${name}-key.service` is created (`acme-credentials.secret-key.service` for the example above).
 This unit is only active when the corresponding file is present, allowing you to set up dependencies for services requiring secret files to function.
 
+## Key Permissions
+
+The `/run/keys` directory is owned by the `keys` group. If you are using a
+systemd service running as a non-root user, you will likely need to add:
+```
+SupplementaryGroups = [ "keys" ];
+```
+to your service configuration.
+
 ## Flakes
 
 If you are using flakes, Nix will copy the entire flake (everything tracked by git) into the Nix store during evaluation.
