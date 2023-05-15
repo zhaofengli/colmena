@@ -2,7 +2,7 @@
 
 rustPlatform.buildRustPackage rec {
   pname = "colmena";
-  version = "0.4.0";
+  version = "0.5.0-pre";
 
   src = lib.cleanSourceWith {
     filter = name: type: !(type == "directory" && builtins.elem (baseNameOf name) [ "target" "manual" "integration-tests" ]);
