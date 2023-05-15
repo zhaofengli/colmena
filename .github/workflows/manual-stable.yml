@@ -7,7 +7,7 @@ name: Deploy Stable Manual
 on:
   push:
     branches:
-      - release-0.4.x
+      - release-0.5.x
 jobs:
   deploy:
     name: Deploy
