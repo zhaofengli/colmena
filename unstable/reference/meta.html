@@ -32,6 +32,7 @@
 
     </head>
     <body>
+    <div id="body-container">
         <!-- Provide site root to javascript -->
         <script>
             var path_to_root = "../";
@@ -69,10 +70,12 @@
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
             var html = document.querySelector('html');
-            var sidebar = 'hidden';
+            var sidebar = null;
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
             }
             html.classList.remove('sidebar-visible');
             html.classList.add("sidebar-" + sidebar);
@@ -161,86 +164,78 @@ However, you cannot specify both at the same time.</p>
     Looking to improve the descriptions? Head to `src/nix/hive/eval.nix` in the repo :)
 -->
 <h2 id="allowapplyall"><a class="header" href="#allowapplyall">allowApplyAll</a></h2>
-<p><para>Whether to allow deployments without a node filter set.</para><para>If set to false, a node filter must be specified with <literal>--on</literal> when
-deploying.</para><para>It helps prevent accidental deployments to the entire cluster
-when tags are used (e.g., <literal>@production</literal> and <literal>@staging</literal>).</para></p>
-<p><em><em>Type</em></em></p>
-<pre><code>boolean
-</code></pre>
-<p><em><em>Default</em></em></p>
-<pre><code>true
-</code></pre>
+<p>Whether to allow deployments without a node filter set.</p>
+<p>If set to false, a node filter must be specified with <code>--on</code> when
+deploying.</p>
+<p>It helps prevent accidental deployments to the entire cluster
+when tags are used (e.g., <code>@production</code> and <code>@staging</code>).</p>
+<p><em>Type:</em>
+boolean</p>
+<p><em>Default:</em>
+<code>true</code></p>
 <h2 id="description"><a class="header" href="#description">description</a></h2>
-<p><para>A short description for the configuration.</para></p>
-<p><em><em>Type</em></em></p>
-<pre><code>string
-</code></pre>
-<p><em><em>Default</em></em></p>
-<pre><code>&quot;A Colmena Hive&quot;
-</code></pre>
+<p>A short description for the configuration.</p>
+<p><em>Type:</em>
+string</p>
+<p><em>Default:</em>
+<code>&quot;A Colmena Hive&quot;</code></p>
 <h2 id="machinesfile"><a class="header" href="#machinesfile">machinesFile</a></h2>
-<p><para>Use the machines listed in this file when building this hive configuration.</para><para>If your Colmena host has nix configured to allow for remote builds
+<p>Use the machines listed in this file when building this hive configuration.</p>
+<p>If your Colmena host has nix configured to allow for remote builds
 (for nix-daemon, your user being included in trusted-users)
 you can set a machines file that will be passed to the underlying
 nix-store command during derivation realization as a builders option.
 For example, if you support multiple orginizations each with their own
 build machine(s) you can ensure that builds only take place on your
-local machine and/or the machines specified in this file.</para><para>See https://nixos.org/manual/nix/stable/#chap-distributed-builds
-for the machine specification format.</para><para>This option is ignored when builds are initiated on the remote nodes
-themselves via <literal>deployment.buildOnTarget</literal> or <literal>--build-on-target</literal>. To
+local machine and/or the machines specified in this file.</p>
+<p>See https://nixos.org/manual/nix/stable/#chap-distributed-builds
+for the machine specification format.</p>
+<p>This option is ignored when builds are initiated on the remote nodes
+themselves via <code>deployment.buildOnTarget</code> or <code>--build-on-target</code>. To
 still use the Nix distributed build functionality, configure the
-builders on the target nodes with <literal>nix.buildMachines</literal>.</para></p>
-<p><em><em>Type</em></em></p>
-<pre><code>null or path
-</code></pre>
-<p><em><em>Default</em></em></p>
-<pre><code>null
-</code></pre>
+builders on the target nodes with <code>nix.buildMachines</code>.</p>
+<p><em>Type:</em>
+null or path</p>
+<p><em>Default:</em>
+<code>null</code></p>
 <h2 id="name"><a class="header" href="#name">name</a></h2>
-<p><para>The name of the configuration.</para></p>
-<p><em><em>Type</em></em></p>
-<pre><code>string
-</code></pre>
-<p><em><em>Default</em></em></p>
-<pre><code>&quot;hive&quot;
-</code></pre>
+<p>The name of the configuration.</p>
+<p><em>Type:</em>
+string</p>
+<p><em>Default:</em>
+<code>&quot;hive&quot;</code></p>
 <h2 id="nixpkgs"><a class="header" href="#nixpkgs">nixpkgs</a></h2>
-<p><para>The pinned Nixpkgs package set. Accepts one of the following:</para><para><itemizedlist>
-<listitem><para>A path to a Nixpkgs checkout</para></listitem>
-<listitem><para>The Nixpkgs lambda (e.g., import &lt;nixpkgs&gt;)</para></listitem>
-<listitem><para>An initialized Nixpkgs attribute set</para></listitem></p>
-<p></itemizedlist></para><para>This option must be specified when using Flakes.</para></p>
-<p><em><em>Type</em></em></p>
-<pre><code>unspecified value
-</code></pre>
-<p><em><em>Default</em></em></p>
-<pre><code>null
-</code></pre>
+<p>The pinned Nixpkgs package set. Accepts one of the following:</p>
+<ul>
+<li>A path to a Nixpkgs checkout</li>
+<li>The Nixpkgs lambda (e.g., import &lt;nixpkgs&gt;)</li>
+<li>An initialized Nixpkgs attribute set</li>
+</ul>
+<p>This option must be specified when using Flakes.</p>
+<p><em>Type:</em>
+unspecified value</p>
+<p><em>Default:</em>
+<code>null</code></p>
 <h2 id="nodenixpkgs"><a class="header" href="#nodenixpkgs">nodeNixpkgs</a></h2>
-<p><para>Node-specific Nixpkgs pins.</para></p>
-<p><em><em>Type</em></em></p>
-<pre><code>attribute set of unspecified value
-</code></pre>
-<p><em><em>Default</em></em></p>
-<pre><code>{ }
-</code></pre>
+<p>Node-specific Nixpkgs pins.</p>
+<p><em>Type:</em>
+attribute set of unspecified value</p>
+<p><em>Default:</em>
+<code>{ }</code></p>
 <h2 id="nodespecialargs"><a class="header" href="#nodespecialargs">nodeSpecialArgs</a></h2>
-<p><para>Node-specific special args.</para></p>
-<p><em><em>Type</em></em></p>
-<pre><code>attribute set of unspecified value
-</code></pre>
-<p><em><em>Default</em></em></p>
-<pre><code>{ }
-</code></pre>
+<p>Node-specific special args.</p>
+<p><em>Type:</em>
+attribute set of unspecified value</p>
+<p><em>Default:</em>
+<code>{ }</code></p>
 <h2 id="specialargs"><a class="header" href="#specialargs">specialArgs</a></h2>
-<p><para>A set of special arguments to be passed to NixOS modules.</para><para>This will be merged into the <literal>specialArgs</literal> used to evaluate
-the NixOS configurations.</para></p>
-<p><em><em>Type</em></em></p>
-<pre><code>attribute set of unspecified value
-</code></pre>
-<p><em><em>Default</em></em></p>
-<pre><code>{ }
-</code></pre>
+<p>A set of special arguments to be passed to NixOS modules.</p>
+<p>This will be merged into the <code>specialArgs</code> used to evaluate
+the NixOS configurations.</p>
+<p><em>Type:</em>
+attribute set of unspecified value</p>
+<p><em>Default:</em>
+<code>{ }</code></p>
 
                     </main>
 
@@ -290,5 +285,6 @@ the NixOS configurations.</para></p>
         <!-- Custom JS scripts -->
 
 
+    </div>
     </body>
 </html>
