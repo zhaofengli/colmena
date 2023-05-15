@@ -1,6 +1,6 @@
 # Release Notes
 
-## Release 0.4.0 (Unreleased)
+## [Release 0.4.0](https://github.com/zhaofengli/colmena/releases/tag/v0.4.0) (2023/05/14)
 
 - Flake evaluation is now actually pure by default. To enable impure expressions, pass `--impure`.
 - `--reboot` is added to trigger a reboot and wait for the node to come back up.
