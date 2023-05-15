@@ -46,5 +46,5 @@ to your service configuration.
 ## Flakes
 
 If you are using flakes, Nix will copy the entire flake (everything tracked by git) into the Nix store during evaluation.
-This means the all file as checked out by git are world-readable, including the ones managed by filter-based encryption tools like `git-crypt`.
+This means that all files as checked out by git are world-readable, including the ones managed by filter-based encryption tools like `git-crypt`.
 To use `deployment.keys.<name>.keyFile` with flakes without having the secrets copied to the Nix store, a quoted absolute path can be used.
