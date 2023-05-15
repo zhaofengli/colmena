@@ -150,7 +150,7 @@
 
                 <div id="content" class="content">
                     <main>
-                        <!-- Generated from version 0.4.0-pre (apiVersion=0.4, unstable=True) -->
+                        <!-- Generated from version 0.5.0-pre (apiVersion=0.5, unstable=True) -->
 <h1 id="command-line-options"><a class="header" href="#command-line-options">Command Line Options</a></h1>
 <!-- UNSTABLE_BEGIN -->
 <p>You are currently reading <strong>the unstable version</strong> of the Colmena Manual, built against the tip of <a href="https://github.com/zhaofengli/colmena">the development branch</a>.</p>
@@ -1271,14 +1271,14 @@
 <pre><div class="hljs">NixOS deployment tool
 
 Colmena helps you deploy to multiple hosts running NixOS.
-For more details, read the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+For more details, read the manual at &lt;https://colmena.cli.rs/0.5&gt;.
 
 Note: You are using a pre-release version of Colmena, so the supported options may be different from what's in the manual.
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena</span> [OPTIONS] [COMMAND]
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Commands</span><span class="ansi1"></span><span class="ansi1 ansi4">:
-</span>  <span class="ansi1">apply</span>
+<span class="ansi1"></span><span class="ansi1 ansi4">Commands:</span>
+  <span class="ansi1">apply</span>
           Apply configurations on remote machines
   <span class="ansi1">apply-local</span>
           Apply configurations on the local machine
@@ -1297,8 +1297,8 @@ Note: You are using a pre-release version of Colmena, so the supported options m
   <span class="ansi1">help</span>
           Print this message or the help of the given subcommand(s)
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Options:
-</span>      <span class="ansi1">--show-trace</span>
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:</span>
+      <span class="ansi1">--show-trace</span>
           Passes --show-trace to Nix commands
 
       <span class="ansi1">--impure</span>
@@ -1313,7 +1313,7 @@ Note: You are using a pre-release version of Colmena, so the supported options m
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
-          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
           
           [default: hive.nix]
@@ -1338,8 +1338,8 @@ Note: You are using a pre-release version of Colmena, so the supported options m
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena apply</span> [OPTIONS] [goal]
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Arguments:
-</span>  [goal]
+<span class="ansi1"></span><span class="ansi1 ansi4">Arguments:</span>
+  [goal]
           The goal of the deployment.
           
           Same as the targets for switch-to-configuration, with the following extra pseudo-goals:
@@ -1354,8 +1354,8 @@ Note: You are using a pre-release version of Colmena, so the supported options m
           [default: switch]
           [possible values: build, push, switch, boot, test, dry-activate, keys]
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Options:
-</span>      <span class="ansi1">--eval-node-limit</span> &lt;LIMIT&gt;
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:</span>
+      <span class="ansi1">--eval-node-limit</span> &lt;LIMIT&gt;
           Limits the maximum number of hosts to be evaluated at once.
           
           The evaluation process is RAM-intensive. The default behavior is to limit the maximum number of host evaluated at the same time based on naive heuristics.
@@ -1444,7 +1444,7 @@ Note: You are using a pre-release version of Colmena, so the supported options m
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
-          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
           
           [default: hive.nix]
@@ -1466,16 +1466,16 @@ Note: You are using a pre-release version of Colmena, so the supported options m
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena apply-local</span> [OPTIONS] [goal]
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Arguments:
-</span>  [goal]
+<span class="ansi1"></span><span class="ansi1 ansi4">Arguments:</span>
+  [goal]
           Same as the targets for switch-to-configuration.
           "push" is noop in apply-local.
           
           [default: switch]
           [possible values: push, switch, boot, test, dry-activate, keys]
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Options:
-</span>      <span class="ansi1">--sudo</span>
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:</span>
+      <span class="ansi1">--sudo</span>
           Attempt to escalate privileges if not run as root
 
       <span class="ansi1">--show-trace</span>
@@ -1505,7 +1505,7 @@ Note: You are using a pre-release version of Colmena, so the supported options m
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
-          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
           
           [default: hive.nix]
@@ -1529,8 +1529,8 @@ This subcommand behaves as if you invoked `apply` with the `build` goal.
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena build</span> [OPTIONS]
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Options:
-</span>      <span class="ansi1">--eval-node-limit</span> &lt;LIMIT&gt;
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:</span>
+      <span class="ansi1">--eval-node-limit</span> &lt;LIMIT&gt;
           Limits the maximum number of hosts to be evaluated at once.
           
           The evaluation process is RAM-intensive. The default behavior is to limit the maximum number of host evaluated at the same time based on naive heuristics.
@@ -1619,7 +1619,7 @@ This subcommand behaves as if you invoked `apply` with the `build` goal.
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
-          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
           
           [default: hive.nix]
@@ -1643,8 +1643,8 @@ This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena upload-keys</span> [OPTIONS]
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Options:
-</span>      <span class="ansi1">--eval-node-limit</span> &lt;LIMIT&gt;
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:</span>
+      <span class="ansi1">--eval-node-limit</span> &lt;LIMIT&gt;
           Limits the maximum number of hosts to be evaluated at once.
           
           The evaluation process is RAM-intensive. The default behavior is to limit the maximum number of host evaluated at the same time based on naive heuristics.
@@ -1733,7 +1733,7 @@ This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
-          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
           
           [default: hive.nix]
@@ -1762,12 +1762,12 @@ For example, to retrieve the configuration of one node, you may write something 
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena eval</span> [OPTIONS] [FILE]
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Arguments:
-</span>  [FILE]
+<span class="ansi1"></span><span class="ansi1 ansi4">Arguments:</span>
+  [FILE]
           The .nix file containing the expression
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Options:
-</span>  <span class="ansi1">-E</span> &lt;EXPRESSION&gt;
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:</span>
+  <span class="ansi1">-E</span> &lt;EXPRESSION&gt;
           The Nix expression
 
       <span class="ansi1">--instantiate</span>
@@ -1788,7 +1788,7 @@ For example, to retrieve the configuration of one node, you may write something 
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
-          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
           
           [default: hive.nix]
@@ -1810,8 +1810,8 @@ For example, to retrieve the configuration of one node, you may write something 
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena exec</span> [OPTIONS] &lt;COMMAND&gt;...
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Arguments:
-</span>  &lt;COMMAND&gt;...
+<span class="ansi1"></span><span class="ansi1 ansi4">Arguments:</span>
+  &lt;COMMAND&gt;...
           Command to run
           
           It's recommended to use -- to separate Colmena options from the command to run. For example:
@@ -1819,8 +1819,8 @@ For example, to retrieve the configuration of one node, you may write something 
               colmena exec --on @routers -- tcpdump -vni any ip[9] == 89
           
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Options:
-</span>  <span class="ansi1">-p</span>, <span class="ansi1">--parallel</span> &lt;LIMIT&gt;
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:</span>
+  <span class="ansi1">-p</span>, <span class="ansi1">--parallel</span> &lt;LIMIT&gt;
           Limits the maximum number of hosts to run the command in parallel.
           
           In `colmena exec`, the parallelism limit is disabled (0) by default.
@@ -1856,7 +1856,7 @@ For example, to retrieve the configuration of one node, you may write something 
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
-          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
           
           [default: hive.nix]
@@ -1878,8 +1878,8 @@ For example, to retrieve the configuration of one node, you may write something 
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena nix-info</span> [OPTIONS]
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Options:
-</span>      <span class="ansi1">--show-trace</span>
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:</span>
+      <span class="ansi1">--show-trace</span>
           Passes --show-trace to Nix commands
 
       <span class="ansi1">--impure</span>
@@ -1894,7 +1894,7 @@ For example, to retrieve the configuration of one node, you may write something 
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
-          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
           
           [default: hive.nix]
@@ -1920,8 +1920,8 @@ attribute set.
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena repl</span> [OPTIONS]
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Options:
-</span>      <span class="ansi1">--show-trace</span>
+<span class="ansi1"></span><span class="ansi1 ansi4">Options:</span>
+      <span class="ansi1">--show-trace</span>
           Passes --show-trace to Nix commands
 
       <span class="ansi1">--impure</span>
@@ -1936,7 +1936,7 @@ attribute set.
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
-          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.4&gt;.
+          For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
           
           [default: hive.nix]
