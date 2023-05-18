@@ -151,10 +151,10 @@ let
       colmenaOptions.deploymentOptions
       hive.defaults
     ] ++ configs;
-    specialArgs = hive.meta.specialArgs // (hive.meta.nodeSpecialArgs.${name} or {}) // {
+    specialArgs = {
       inherit name;
       nodes = uncheckedNodes;
-    };
+    } // hive.meta.specialArgs // (hive.meta.nodeSpecialArgs.${name} or {});
   };
 
   nodeNames = filter (name: ! elem name reservedNames) (attrNames hive);
