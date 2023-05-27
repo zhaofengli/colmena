@@ -273,7 +273,11 @@ impl Ssh {
             ]);
 
             if options.use_substitutes {
-                command.arg("--substitute-on-destination");
+                command.args(&[
+                    "--substitute-on-destination",
+                    // needed due to UX bug in ssh-ng://
+                    "--builders-use-substitutes",
+                ]);
             }
 
             if let Some("drv") = path.extension().and_then(OsStr::to_str) {
