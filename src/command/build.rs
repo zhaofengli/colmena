@@ -1,9 +1,9 @@
-use clap::{builder::PossibleValuesParser, Arg, Command as ClapCommand};
+use clap::{builder::PossibleValuesParser, Arg, Args, Command as ClapCommand};
 
 use crate::util;
 
-use super::apply;
 pub use super::apply::run;
+use super::apply::DeployOpts;
 
 pub fn subcommand() -> ClapCommand {
     let command = ClapCommand::new("build")
@@ -21,7 +21,5 @@ This subcommand behaves as if you invoked `apply` with the `build` goal."#,
                 .num_args(1),
         );
 
-    let command = apply::register_deploy_args(command);
-
-    util::register_selector_args(command)
+    util::register_selector_args(DeployOpts::augment_args_for_update(command))
 }

@@ -1,5 +1,7 @@
 //! Parallelism limits.
 
+use std::str::FromStr;
+
 use tokio::sync::Semaphore;
 
 /// Amount of RAM reserved for the system, in MB.
@@ -55,9 +57,10 @@ impl ParallelismLimit {
 /// - A simple heuristic based on remaining memory in the system
 /// - A supplied number
 /// - No limit at all
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone, Debug, Default)]
 pub enum EvaluationNodeLimit {
     /// Use a naive heuristic based on available memory.
+    #[default]
     Heuristic,
 
     /// Supply the maximum number of nodes.
@@ -67,9 +70,28 @@ pub enum EvaluationNodeLimit {
     None,
 }
 
-impl Default for EvaluationNodeLimit {
-    fn default() -> Self {
-        Self::Heuristic
+impl FromStr for EvaluationNodeLimit {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s == "auto" {
+            return Ok(EvaluationNodeLimit::Heuristic);
+        }
+
+        match s.parse::<usize>() {
+            Ok(0) => Ok(EvaluationNodeLimit::None),
+            Ok(n) => Ok(EvaluationNodeLimit::Manual(n)),
+            Err(_) => Err("The value must be a valid number or `auto`"),
+        }
+    }
+}
+
+impl std::fmt::Display for EvaluationNodeLimit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Heuristic => write!(f, "auto"),
+            Self::None => write!(f, "0"),
+            Self::Manual(n) => write!(f, "{n}"),
+        }
     }
 }
 
