@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use clap::{ArgMatches, Command as ClapCommand, FromArgMatches, Args};
+use clap::{ArgMatches, Args, Command as ClapCommand, FromArgMatches};
 use tempfile::Builder as TempFileBuilder;
 use tokio::process::Command;
 
@@ -12,12 +12,11 @@ use crate::nix::info::NixCheck;
 #[command(
     name = "repl",
     about = "Start an interactive REPL with the complete configuration",
-        long_about =
-            r#"Start an interactive REPL with the complete configuration
+    long_about = r#"Start an interactive REPL with the complete configuration
 
 In the REPL, you can inspect the configuration interactively with tab
 completion. The node configurations are accessible under the `nodes`
-attribute set."#,
+attribute set."#
 )]
 pub struct Opts {}
 
