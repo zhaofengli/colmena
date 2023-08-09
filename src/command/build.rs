@@ -1,25 +1,25 @@
-use clap::{builder::PossibleValuesParser, Arg, Args, Command as ClapCommand};
+use clap::{Args, Command as ClapCommand};
 
-use crate::util;
+use crate::nix::Goal;
 
 pub use super::apply::run;
 use super::apply::DeployOpts;
 
+#[derive(Debug, Args)]
+#[command(
+    name = "build",
+    about = "Build configurations but not push to remote machines",
+    long_about = r#"Build configurations but not push to remote machines
+
+This subcommand behaves as if you invoked `apply` with the `build` goal."#
+)]
+pub struct Opts {
+    #[command(flatten)]
+    deploy: DeployOpts,
+    #[arg(hide = true, default_value_t = Goal::Build)]
+    goal: Goal,
+}
+
 pub fn subcommand() -> ClapCommand {
-    let command = ClapCommand::new("build")
-        .about("Build configurations but not push to remote machines")
-        .long_about(
-            r#"Build configurations but not push to remote machines
-
-This subcommand behaves as if you invoked `apply` with the `build` goal."#,
-        )
-        .arg(
-            Arg::new("goal")
-                .hide(true)
-                .default_value("build")
-                .value_parser(PossibleValuesParser::new(["build"]))
-                .num_args(1),
-        );
-
-    util::register_selector_args(DeployOpts::augment_args_for_update(command))
+    Opts::augment_args(ClapCommand::new("build"))
 }
