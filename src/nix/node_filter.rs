@@ -3,12 +3,14 @@
 use std::collections::HashSet;
 use std::convert::AsRef;
 use std::iter::{FromIterator, Iterator};
+use std::str::FromStr;
 
 use glob::Pattern as GlobPattern;
 
 use super::{ColmenaError, ColmenaResult, NodeConfig, NodeName};
 
 /// A node filter containing a list of rules.
+#[derive(Clone)]
 pub struct NodeFilter {
     rules: Vec<Rule>,
 }
@@ -16,13 +18,20 @@ pub struct NodeFilter {
 /// A filter rule.
 ///
 /// The filter rules are OR'd together.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 enum Rule {
     /// Matches a node's attribute name.
     MatchName(GlobPattern),
 
     /// Matches a node's `deployment.tags`.
     MatchTag(GlobPattern),
+}
+
+impl FromStr for NodeFilter {
+    type Err = ColmenaError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::new(s)
+    }
 }
 
 impl NodeFilter {

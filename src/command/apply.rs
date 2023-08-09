@@ -172,11 +172,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     let goal_arg = local_args.get_one::<String>("goal").unwrap();
     let goal = Goal::from_str(goal_arg).unwrap();
 
-    // FIXME: Just get_one::<NodeFilter>
-    let filter = local_args
-        .get_one::<String>("on")
-        .map(NodeFilter::new)
-        .transpose()?;
+    let filter = local_args.get_one::<NodeFilter>("on");
 
     if filter.is_none() && goal != Goal::Build {
         // User did not specify node, we should check meta and see rules
@@ -189,7 +185,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     }
 
     let targets = hive
-        .select_nodes(filter, ssh_config, goal.requires_target_host())
+        .select_nodes(filter.cloned(), ssh_config, goal.requires_target_host())
         .await?;
     let n_targets = targets.len();
 
