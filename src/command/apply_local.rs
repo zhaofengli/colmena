@@ -1,10 +1,7 @@
 use regex::Regex;
 use std::collections::HashMap;
-use std::str::FromStr;
 
-use clap::{
-    builder::PossibleValuesParser, Arg, ArgMatches, Command as ClapCommand, FromArgMatches,
-};
+use clap::{ArgMatches, Args, Command as ClapCommand, FromArgMatches};
 use tokio::fs;
 
 use crate::error::ColmenaError;
@@ -14,57 +11,66 @@ use crate::nix::hive::HiveArgs;
 use crate::nix::{host::Local as LocalHost, NodeName};
 use crate::progress::SimpleProgressOutput;
 
-pub fn subcommand() -> ClapCommand {
-    ClapCommand::new("apply-local")
-        .about("Apply configurations on the local machine")
-        .arg(Arg::new("goal")
-            .help("Deployment goal")
-            .long_help("Same as the targets for switch-to-configuration.\n\"push\" is noop in apply-local.")
-            .default_value("switch")
-            .index(1)
-            .value_parser(PossibleValuesParser::new([
-                "push",
-                "switch",
-                "boot",
-                "test",
-                "dry-activate",
-                "keys",
-            ])))
-        .arg(Arg::new("sudo")
-            .long("sudo")
-            .help("Attempt to escalate privileges if not run as root")
-            .num_args(0))
-        .arg(Arg::new("verbose")
-            .short('v')
-            .long("verbose")
-            .help("Be verbose")
-            .long_help("Deactivates the progress spinner and prints every line of output.")
-            .num_args(0))
-        .arg(Arg::new("no-keys")
-            .long("no-keys")
-            .help("Do not deploy keys")
-            .long_help(r#"Do not deploy secret keys set in `deployment.keys`.
+#[derive(Debug, Args)]
+#[command(
+    name = "apply-local",
+    about = "Apply configurations on the local machine"
+)]
+pub struct Opts {
+    #[arg(
+        help = "Deployment goal",
+        value_name = "GOAL",
+        default_value_t,
+        long_help = "Same as the targets for switch-to-configuration.\n\"push\" is noop in apply-local."
+    )]
+    goal: Goal,
+    #[arg(long, help = "Attempt to escalate privileges if not run as root")]
+    sudo: bool,
+    #[arg(
+        short,
+        long,
+        help = "Be verbose",
+        long_help = "Deactivates the progress spinner and prints every line of output."
+    )]
+    verbose: bool,
+    #[arg(
+        long,
+        help = "Do not deploy keys",
+        long_help = r#"Do not deploy secret keys set in `deployment.keys`.
 
 By default, Colmena will deploy keys set in `deployment.keys` before activating the profile on this host.
-"#)
-            .num_args(0))
-        .arg(Arg::new("node")
-            .long("node")
-            .value_name("NODE")
-            .help("Override the node name to use")
-            .num_args(1))
+"#
+    )]
+    no_keys: bool,
+    #[arg(long, help = "Override the node name to use")]
+    node: Option<String>,
+    #[arg(
+        long,
+        value_name = "COMMAND",
+        hide = true,
+        help = "Removed: Configure deployment.privilegeEscalationCommand in node configuration"
+    )]
+    sudo_command: Option<String>,
+    #[command(flatten)]
+    hive_args: HiveArgs,
+}
 
-        // Removed
-        .arg(Arg::new("sudo-command")
-            .long("sudo-command")
-            .value_name("COMMAND")
-            .help("Removed: Configure deployment.privilegeEscalationCommand in node configuration")
-            .hide(true)
-            .num_args(1))
+pub fn subcommand() -> ClapCommand {
+    Opts::augment_args(ClapCommand::new("apply-local"))
 }
 
 pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
-    if local_args.contains_id("sudo-command") {
+    let Opts {
+        goal,
+        sudo,
+        verbose,
+        no_keys,
+        node,
+        sudo_command,
+        hive_args,
+    } = Opts::from_arg_matches(local_args).expect("Failed to parse `apply-local` options.");
+
+    if sudo_command.is_some() {
         log::error!("--sudo-command has been removed. Please configure it in deployment.privilegeEscalationCommand in the node configuration.");
         quit::with_code(1);
     }
@@ -81,35 +87,26 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         quit::with_code(5);
     }
 
-    let escalate_privileges = local_args.get_flag("sudo");
-    let verbose = local_args.get_flag("verbose") || escalate_privileges; // cannot use spinners with interactive sudo
+    let verbose = verbose || sudo; // cannot use spinners with interactive sudo
 
     {
         let euid: u32 = unsafe { libc::geteuid() };
-        if euid != 0 && !escalate_privileges {
+        if euid != 0 && !sudo {
             log::warn!("Colmena was not started by root. This is probably not going to work.");
             log::warn!("Hint: Add the --sudo flag.");
         }
     }
 
-    let hive = HiveArgs::from_arg_matches(local_args)
-        .unwrap()
+    let hive = hive_args
         .into_hive()
         .await
-        .unwrap();
-    let hostname = {
-        let s = if local_args.contains_id("node") {
-            local_args.get_one::<String>("node").unwrap().to_owned()
-        } else {
-            hostname::get()
-                .expect("Could not get hostname")
-                .to_string_lossy()
-                .into_owned()
-        };
-
-        NodeName::new(s)?
-    };
-    let goal = Goal::from_str(local_args.get_one::<String>("goal").unwrap()).unwrap();
+        .expect("Failed to get hive from arguments");
+    let hostname = NodeName::new(node.unwrap_or_else(|| {
+        hostname::get()
+            .expect("Could not get hostname")
+            .to_string_lossy()
+            .into_owned()
+    }))?;
 
     let target = {
         if let Some(info) = hive.deployment_info_single(&hostname).await.unwrap() {
@@ -123,7 +120,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
                 quit::with_code(2);
             }
             let mut host = LocalHost::new(nix_options);
-            if escalate_privileges {
+            if sudo {
                 let command = info.privilege_escalation_command().to_owned();
                 host.set_privilege_escalation_command(Some(command));
             }
@@ -148,13 +145,13 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
     let options = {
         let mut options = Options::default();
-        options.set_upload_keys(!local_args.get_flag("no-keys"));
+        options.set_upload_keys(!no_keys);
         options
     };
 
     deployment.set_options(options);
 
-    let (deployment, output) = tokio::join!(deployment.execute(), output.run_until_completion(),);
+    let (deployment, output) = tokio::join!(deployment.execute(), output.run_until_completion());
 
     deployment?;
     output?;

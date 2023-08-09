@@ -3,7 +3,7 @@
 use std::str::FromStr;
 
 /// The goal of a deployment.
-#[derive(Debug, Copy, Clone, Default, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Eq, clap::ValueEnum)]
 pub enum Goal {
     /// Build the configurations only.
     Build,
