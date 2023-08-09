@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use clap::{ArgMatches, Command as ClapCommand, FromArgMatches};
+use clap::{ArgMatches, Command as ClapCommand, FromArgMatches, Args};
 use tempfile::Builder as TempFileBuilder;
 use tokio::process::Command;
 
@@ -8,19 +8,26 @@ use crate::error::ColmenaError;
 use crate::nix::hive::HiveArgs;
 use crate::nix::info::NixCheck;
 
-pub fn subcommand() -> ClapCommand {
-    ClapCommand::new("repl")
-        .about("Start an interactive REPL with the complete configuration")
-        .long_about(
+#[derive(Debug, Args)]
+#[command(
+    name = "repl",
+    about = "Start an interactive REPL with the complete configuration",
+        long_about =
             r#"Start an interactive REPL with the complete configuration
 
 In the REPL, you can inspect the configuration interactively with tab
 completion. The node configurations are accessible under the `nodes`
 attribute set."#,
-        )
+)]
+pub struct Opts {}
+
+pub fn subcommand() -> ClapCommand {
+    Opts::augment_args(ClapCommand::new("repl"))
 }
 
 pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
+    let Opts {} = Opts::from_arg_matches(local_args).unwrap();
+
     let nix_check = NixCheck::detect().await;
     let nix_version = nix_check.version().expect("Could not detect Nix version");
 
