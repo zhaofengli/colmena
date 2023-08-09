@@ -53,10 +53,10 @@ impl Flake {
     }
 
     /// Creates a flake from a Flake URI.
-    pub async fn from_uri(uri: String) -> ColmenaResult<Self> {
+    pub async fn from_uri(uri: impl AsRef<str>) -> ColmenaResult<Self> {
         NixCheck::require_flake_support().await?;
 
-        let metadata = FlakeMetadata::resolve(&uri).await?;
+        let metadata = FlakeMetadata::resolve(uri.as_ref()).await?;
 
         Ok(Self {
             metadata,

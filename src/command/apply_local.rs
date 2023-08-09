@@ -2,14 +2,17 @@ use regex::Regex;
 use std::collections::HashMap;
 use std::str::FromStr;
 
-use clap::{builder::PossibleValuesParser, Arg, ArgMatches, Command as ClapCommand};
+use clap::{
+    builder::PossibleValuesParser, Arg, ArgMatches, Command as ClapCommand, FromArgMatches,
+};
 use tokio::fs;
 
 use crate::error::ColmenaError;
+
 use crate::nix::deployment::{Deployment, Goal, Options, TargetNode};
+use crate::nix::hive::HiveArgs;
 use crate::nix::{host::Local as LocalHost, NodeName};
 use crate::progress::SimpleProgressOutput;
-use crate::util;
 
 pub fn subcommand() -> ClapCommand {
     ClapCommand::new("apply-local")
@@ -89,7 +92,11 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         }
     }
 
-    let hive = util::hive_from_args(local_args).await.unwrap();
+    let hive = HiveArgs::from_arg_matches(local_args)
+        .unwrap()
+        .into_hive()
+        .await
+        .unwrap();
     let hostname = {
         let s = if local_args.contains_id("node") {
             local_args.get_one::<String>("node").unwrap().to_owned()

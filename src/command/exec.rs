@@ -2,12 +2,13 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use clap::{value_parser, Arg, ArgMatches, Command as ClapCommand};
+use clap::{value_parser, Arg, ArgMatches, Command as ClapCommand, FromArgMatches};
 use futures::future::join_all;
 use tokio::sync::Semaphore;
 
 use crate::error::ColmenaError;
 use crate::job::{JobMonitor, JobState, JobType};
+use crate::nix::hive::HiveArgs;
 use crate::nix::NodeFilter;
 use crate::progress::SimpleProgressOutput;
 use crate::util;
@@ -60,7 +61,11 @@ It's recommended to use -- to separate Colmena options from the command to run. 
 }
 
 pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
-    let hive = util::hive_from_args(local_args).await?;
+    let hive = HiveArgs::from_arg_matches(local_args)
+        .unwrap()
+        .into_hive()
+        .await
+        .unwrap();
     let ssh_config = env::var("SSH_CONFIG_FILE").ok().map(PathBuf::from);
 
     // FIXME: Just get_one::<NodeFilter>

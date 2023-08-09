@@ -1,12 +1,12 @@
 use std::io::Write;
 
-use clap::{ArgMatches, Command as ClapCommand};
+use clap::{ArgMatches, Command as ClapCommand, FromArgMatches};
 use tempfile::Builder as TempFileBuilder;
 use tokio::process::Command;
 
 use crate::error::ColmenaError;
+use crate::nix::hive::HiveArgs;
 use crate::nix::info::NixCheck;
-use crate::util;
 
 pub fn subcommand() -> ClapCommand {
     ClapCommand::new("repl")
@@ -24,7 +24,11 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
     let nix_check = NixCheck::detect().await;
     let nix_version = nix_check.version().expect("Could not detect Nix version");
 
-    let hive = util::hive_from_args(local_args).await?;
+    let hive = HiveArgs::from_arg_matches(local_args)
+        .unwrap()
+        .into_hive()
+        .await
+        .unwrap();
 
     let expr = hive.get_repl_expression();
 

@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
-use clap::{value_parser, Arg, ArgMatches, Command as ClapCommand};
+use clap::{value_parser, Arg, ArgMatches, Command as ClapCommand, FromArgMatches};
 
 use crate::error::ColmenaError;
-use crate::util;
+use crate::nix::hive::HiveArgs;
 
 pub fn subcommand() -> ClapCommand {
     subcommand_gen("eval")
@@ -48,7 +48,11 @@ pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<()
         );
     }
 
-    let hive = util::hive_from_args(local_args).await?;
+    let hive = HiveArgs::from_arg_matches(local_args)
+        .unwrap()
+        .into_hive()
+        .await
+        .unwrap();
 
     if !(local_args.contains_id("expression") ^ local_args.contains_id("expression_file")) {
         log::error!("Either an expression (-E) or a .nix file containing an expression should be specified, not both.");

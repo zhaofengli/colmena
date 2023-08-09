@@ -4,16 +4,16 @@ use std::str::FromStr;
 
 use clap::{
     builder::{ArgPredicate, PossibleValuesParser, ValueParser},
-    value_parser, Arg, ArgMatches, Command as ClapCommand,
+    value_parser, Arg, ArgMatches, Command as ClapCommand, FromArgMatches,
 };
 
-use crate::error::ColmenaError;
 use crate::nix::deployment::{
     Deployment, EvaluationNodeLimit, EvaluatorType, Goal, Options, ParallelismLimit,
 };
 use crate::nix::NodeFilter;
 use crate::progress::SimpleProgressOutput;
 use crate::util;
+use crate::{error::ColmenaError, nix::hive::HiveArgs};
 
 pub fn register_deploy_args(command: ClapCommand) -> ClapCommand {
     command
@@ -160,7 +160,11 @@ Same as the targets for switch-to-configuration, with the following extra pseudo
 }
 
 pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
-    let hive = util::hive_from_args(local_args).await?;
+    let hive = HiveArgs::from_arg_matches(local_args)
+        .unwrap()
+        .into_hive()
+        .await
+        .unwrap();
 
     let ssh_config = env::var("SSH_CONFIG_FILE").ok().map(PathBuf::from);
 

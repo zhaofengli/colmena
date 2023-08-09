@@ -1,9 +1,10 @@
 use std::convert::TryFrom;
-use std::path::PathBuf;
+use std::error::Error;
+
 use std::process::Stdio;
 
 use async_trait::async_trait;
-use clap::{parser::ValueSource as ClapValueSource, Arg, ArgMatches, Command as ClapCommand};
+use clap::{Arg, Command as ClapCommand};
 use futures::future::join3;
 use serde::de::DeserializeOwned;
 use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
@@ -12,7 +13,7 @@ use tokio::process::Command;
 use super::error::{ColmenaError, ColmenaResult};
 use super::job::JobHandle;
 use super::nix::deployment::TargetNodeMap;
-use super::nix::{Flake, Hive, HivePath, StorePath};
+use super::nix::StorePath;
 
 const NEWLINE: u8 = 0xa;
 
@@ -192,104 +193,18 @@ impl CommandExt for CommandExecution {
     }
 }
 
-pub async fn hive_from_args(args: &ArgMatches) -> ColmenaResult<Hive> {
-    let path = match args.value_source("config").unwrap() {
-        ClapValueSource::DefaultValue => {
-            // traverse upwards until we find hive.nix
-            let mut cur = std::env::current_dir()?;
-            let mut file_path = None;
-
-            loop {
-                let flake = cur.join("flake.nix");
-                if flake.is_file() {
-                    file_path = Some(flake);
-                    break;
-                }
-
-                let legacy = cur.join("hive.nix");
-                if legacy.is_file() {
-                    file_path = Some(legacy);
-                    break;
-                }
-
-                match cur.parent() {
-                    Some(parent) => {
-                        cur = parent.to_owned();
-                    }
-                    None => {
-                        break;
-                    }
-                }
-            }
-
-            if file_path.is_none() {
-                log::error!(
-                    "Could not find `hive.nix` or `flake.nix` in {:?} or any parent directory",
-                    std::env::current_dir()?
-                );
-            }
-
-            file_path.unwrap()
-        }
-        ClapValueSource::CommandLine => {
-            let path = args
-                .get_one::<String>("config")
-                .expect("The config arg should exist")
-                .to_owned();
-            let fpath = PathBuf::from(&path);
-
-            if !fpath.exists() && path.contains(':') {
-                // Treat as flake URI
-                let flake = Flake::from_uri(path).await?;
-                log::info!("Using flake: {}", flake.uri());
-
-                let hive_path = HivePath::Flake(flake);
-
-                return hive_from_path(hive_path, args).await;
-            }
-
-            fpath
-        }
-        x => panic!("Unexpected value source for config: {:?}", x),
-    };
-
-    let hive_path = HivePath::from_path(path).await?;
-
-    hive_from_path(hive_path, args).await
-}
-
-pub async fn hive_from_path(hive_path: HivePath, args: &ArgMatches) -> ColmenaResult<Hive> {
-    match &hive_path {
-        HivePath::Legacy(p) => {
-            log::info!("Using configuration: {}", p.to_string_lossy());
-        }
-        HivePath::Flake(flake) => {
-            log::info!("Using flake: {}", flake.uri());
-        }
-    }
-
-    let mut hive = Hive::new(hive_path).await?;
-
-    if args.get_flag("show-trace") {
-        hive.set_show_trace(true);
-    }
-
-    if args.get_flag("impure") {
-        hive.set_impure(true);
-    }
-
-    if let Some(opts) = args.get_many::<String>("nix-option") {
-        let iter = opts;
-
-        let names = iter.clone().step_by(2);
-        let values = iter.clone().skip(1).step_by(2);
-
-        for (name, value) in names.zip(values) {
-            hive.add_nix_option(name.to_owned(), value.to_owned());
-        }
-    }
-
-    Ok(hive)
+/// Parse a single key-value pair
+pub fn parse_key_val<T, U>(s: &str) -> Result<(T, U), Box<dyn Error + Send + Sync + 'static>>
+where
+    T: std::str::FromStr,
+    T::Err: Error + Send + Sync + 'static,
+    U: std::str::FromStr,
+    U::Err: Error + Send + Sync + 'static,
+{
+    let pos = s
+        .find('=')
+        .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{s}`"))?;
+    Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
 }
 
 pub fn register_selector_args(command: ClapCommand) -> ClapCommand {
