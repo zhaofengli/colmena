@@ -191,8 +191,7 @@ It's also possible to specify the preference using environment variables. See <h
                 ),
         );
 
-        // deprecated alias
-        app = app.subcommand(command::eval::deprecated_alias());
+        // TODO: handle deprecated alias
 
         #[cfg(debug_assertions)]
         register_command!(test_progress, app);
