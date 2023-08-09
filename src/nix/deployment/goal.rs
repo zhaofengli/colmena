@@ -1,7 +1,9 @@
 //! Deployment goals.
 
+use std::str::FromStr;
+
 /// The goal of a deployment.
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Default, PartialEq, Eq)]
 pub enum Goal {
     /// Build the configurations only.
     Build,
@@ -10,6 +12,7 @@ pub enum Goal {
     Push,
 
     /// Make the configuration the boot default and activate now.
+    #[default]
     Switch,
 
     /// Make the configuration the boot default.
@@ -25,20 +28,37 @@ pub enum Goal {
     UploadKeys,
 }
 
-impl Goal {
-    pub fn from_str(s: &str) -> Option<Self> {
+impl FromStr for Goal {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "build" => Some(Self::Build),
-            "push" => Some(Self::Push),
-            "switch" => Some(Self::Switch),
-            "boot" => Some(Self::Boot),
-            "test" => Some(Self::Test),
-            "dry-activate" => Some(Self::DryActivate),
-            "keys" => Some(Self::UploadKeys),
-            _ => None,
+            "build" => Ok(Self::Build),
+            "push" => Ok(Self::Push),
+            "switch" => Ok(Self::Switch),
+            "boot" => Ok(Self::Boot),
+            "test" => Ok(Self::Test),
+            "dry-activate" => Ok(Self::DryActivate),
+            "keys" => Ok(Self::UploadKeys),
+            _ => Err("Not one of [build, push, switch, boot, test, dry-activate, keys]."),
         }
     }
+}
 
+impl std::fmt::Display for Goal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Build => "build",
+            Self::Push => "push",
+            Self::Switch => "switch",
+            Self::Boot => "boot",
+            Self::Test => "test",
+            Self::DryActivate => "dry-activate",
+            Self::UploadKeys => "keys",
+        })
+    }
+}
+
+impl Goal {
     pub fn as_str(&self) -> Option<&'static str> {
         use Goal::*;
         match self {
