@@ -8,7 +8,6 @@ use std::convert::AsRef;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
-use clap::Args;
 use tokio::process::Command;
 use tokio::sync::OnceCell;
 use validator::Validate;
@@ -22,88 +21,6 @@ use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::JobHandle;
 use crate::util::{CommandExecution, CommandExt};
 use assets::Assets;
-
-#[derive(Debug, Args)]
-pub struct HiveArgs {
-    #[arg(short = 'f', long, value_name = "CONFIG")]
-    config: Option<HivePath>,
-    #[arg(long)]
-    show_trace: bool,
-    #[arg(long)]
-    impure: bool,
-    #[arg(long, value_parser = crate::util::parse_key_val::<String, String>)]
-    nix_option: Vec<(String, String)>,
-}
-
-impl HiveArgs {
-    pub async fn into_hive(self) -> ColmenaResult<Hive> {
-        let path = match self.config {
-            Some(path) => path,
-            None => {
-                // traverse upwards until we find hive.nix
-                let mut cur = std::env::current_dir()?;
-                let mut file_path = None;
-
-                loop {
-                    let flake = cur.join("flake.nix");
-                    if flake.is_file() {
-                        file_path = Some(flake);
-                        break;
-                    }
-
-                    let legacy = cur.join("hive.nix");
-                    if legacy.is_file() {
-                        file_path = Some(legacy);
-                        break;
-                    }
-
-                    match cur.parent() {
-                        Some(parent) => {
-                            cur = parent.to_owned();
-                        }
-                        None => {
-                            break;
-                        }
-                    }
-                }
-
-                if file_path.is_none() {
-                    log::error!(
-                        "Could not find `hive.nix` or `flake.nix` in {:?} or any parent directory",
-                        std::env::current_dir()?
-                    );
-                }
-
-                HivePath::from_path(file_path.unwrap()).await?
-            }
-        };
-
-        match &path {
-            HivePath::Legacy(p) => {
-                log::info!("Using configuration: {}", p.to_string_lossy());
-            }
-            HivePath::Flake(flake) => {
-                log::info!("Using flake: {}", flake.uri());
-            }
-        }
-
-        let mut hive = Hive::new(path).await?;
-
-        if self.show_trace {
-            hive.set_show_trace(true);
-        }
-
-        if self.impure {
-            hive.set_impure(true);
-        }
-
-        for (name, value) in self.nix_option {
-            hive.add_nix_option(name, value);
-        }
-
-        Ok(hive)
-    }
-}
 
 #[derive(Debug, Clone)]
 pub enum HivePath {

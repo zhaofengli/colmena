@@ -1,4 +1,4 @@
-use clap::{Args, Command as ClapCommand};
+use clap::Args;
 
 use crate::nix::Goal;
 
@@ -18,8 +18,4 @@ pub struct Opts {
     deploy: DeployOpts,
     #[arg(hide = true, default_value_t = Goal::Build)]
     goal: Goal,
-}
-
-pub fn subcommand() -> ClapCommand {
-    Opts::augment_args(ClapCommand::new("upload-keys"))
 }

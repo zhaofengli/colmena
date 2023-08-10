@@ -1,9 +1,9 @@
 use std::path::PathBuf;
 
-use clap::{ArgMatches, Args, Command as ClapCommand, FromArgMatches};
+use clap::Args;
 
 use crate::error::ColmenaError;
-use crate::nix::hive::HiveArgs;
+use crate::nix::Hive;
 
 #[derive(Debug, Args)]
 #[command(
@@ -32,29 +32,15 @@ pub struct Opts {
     expression_file: Option<PathBuf>,
 }
 
-pub fn subcommand() -> ClapCommand {
-    Opts::augment_args(ClapCommand::new("eval"))
-}
-
-pub async fn run(global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
-    if let Some("introspect") = global_args.subcommand_name() {
-        log::warn!(
-            "`colmena introspect` has been renamed to `colmena eval`. Please update your scripts."
-        );
-    }
-
-    let hive = HiveArgs::from_arg_matches(local_args)
-        .unwrap()
-        .into_hive()
-        .await
-        .unwrap();
-
-    let Opts {
-        instantiate,
+pub async fn run(
+    hive: Hive,
+    Opts {
         expression,
+        instantiate,
         expression_file,
-    } = Opts::from_arg_matches(local_args).expect("Failed to parse args");
-
+    }: Opts,
+) -> Result<(), ColmenaError> {
+    // TODO: check for deprecated alias
     let expression = expression_file
         .map(|path| {
             format!(

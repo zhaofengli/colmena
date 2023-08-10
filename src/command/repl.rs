@@ -1,12 +1,12 @@
 use std::io::Write;
 
-use clap::{ArgMatches, Args, Command as ClapCommand, FromArgMatches};
+use clap::Args;
 use tempfile::Builder as TempFileBuilder;
 use tokio::process::Command;
 
 use crate::error::ColmenaError;
-use crate::nix::hive::HiveArgs;
 use crate::nix::info::NixCheck;
+use crate::nix::Hive;
 
 #[derive(Debug, Args)]
 #[command(
@@ -20,21 +20,9 @@ attribute set."#
 )]
 pub struct Opts {}
 
-pub fn subcommand() -> ClapCommand {
-    Opts::augment_args(ClapCommand::new("repl"))
-}
-
-pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
-    let Opts {} = Opts::from_arg_matches(local_args).unwrap();
-
+pub async fn run(hive: Hive, _: Opts) -> Result<(), ColmenaError> {
     let nix_check = NixCheck::detect().await;
     let nix_version = nix_check.version().expect("Could not detect Nix version");
-
-    let hive = HiveArgs::from_arg_matches(local_args)
-        .unwrap()
-        .into_hive()
-        .await
-        .unwrap();
 
     let expr = hive.get_repl_expression();
 

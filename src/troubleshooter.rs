@@ -11,27 +11,23 @@ use snafu::ErrorCompat;
 use crate::error::ColmenaError;
 
 /// Runs a closure and tries to troubleshoot if it returns an error.
-pub async fn run_wrapped<'a, F, U, T>(
-    global_args: &'a ArgMatches,
-    local_args: &'a ArgMatches,
-    f: U,
-) -> T
+pub async fn run_wrapped<'a, F, T>(f: F) -> T
 where
-    U: FnOnce(&'a ArgMatches, &'a ArgMatches) -> F,
     F: Future<Output = Result<T, ColmenaError>>,
 {
-    match f(global_args, local_args).await {
+    match f.await {
         Ok(r) => r,
         Err(error) => {
             log::error!("-----");
             log::error!("Operation failed with error: {}", error);
 
-            if let Err(own_error) = troubleshoot(global_args, local_args, &error) {
-                log::error!(
-                    "Error occurred while trying to troubleshoot another error: {}",
-                    own_error
-                );
-            }
+            // TODO: support troubleshooting
+            // if let Err(own_error) = troubleshoot(hive, &error) {
+            //     log::error!(
+            //         "Error occurred while trying to troubleshoot another error: {}",
+            //         own_error
+            //     );
+            // }
 
             // Ensure we exit with a code
             quit::with_code(1);

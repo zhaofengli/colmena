@@ -1,13 +1,13 @@
 use regex::Regex;
 use std::collections::HashMap;
 
-use clap::{ArgMatches, Args, Command as ClapCommand, FromArgMatches};
+use clap::Args;
 use tokio::fs;
 
 use crate::error::ColmenaError;
 
 use crate::nix::deployment::{Deployment, Goal, Options, TargetNode};
-use crate::nix::hive::HiveArgs;
+use crate::nix::Hive;
 use crate::nix::{host::Local as LocalHost, NodeName};
 use crate::progress::SimpleProgressOutput;
 
@@ -51,25 +51,19 @@ By default, Colmena will deploy keys set in `deployment.keys` before activating 
         help = "Removed: Configure deployment.privilegeEscalationCommand in node configuration"
     )]
     sudo_command: Option<String>,
-    #[command(flatten)]
-    hive_args: HiveArgs,
 }
 
-pub fn subcommand() -> ClapCommand {
-    Opts::augment_args(ClapCommand::new("apply-local"))
-}
-
-pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
-    let Opts {
+pub async fn run(
+    hive: Hive,
+    Opts {
         goal,
         sudo,
         verbose,
         no_keys,
         node,
         sudo_command,
-        hive_args,
-    } = Opts::from_arg_matches(local_args).expect("Failed to parse `apply-local` options.");
-
+    }: Opts,
+) -> Result<(), ColmenaError> {
     if sudo_command.is_some() {
         log::error!("--sudo-command has been removed. Please configure it in deployment.privilegeEscalationCommand in the node configuration.");
         quit::with_code(1);
@@ -97,10 +91,6 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
         }
     }
 
-    let hive = hive_args
-        .into_hive()
-        .await
-        .expect("Failed to get hive from arguments");
     let hostname = NodeName::new(node.unwrap_or_else(|| {
         hostname::get()
             .expect("Could not get hostname")

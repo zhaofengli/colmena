@@ -1,15 +1,15 @@
 use std::env;
 use std::path::PathBuf;
 
-use clap::{builder::ArgPredicate, ArgMatches, Args, Command as ClapCommand, FromArgMatches};
+use clap::{builder::ArgPredicate, Args};
 
+use crate::error::ColmenaError;
 use crate::nix::{
     deployment::{Deployment, EvaluationNodeLimit, EvaluatorType, Goal, Options, ParallelismLimit},
     node_filter::NodeFilterOpts,
+    Hive,
 };
 use crate::progress::SimpleProgressOutput;
-
-use crate::{error::ColmenaError, nix::hive::HiveArgs};
 
 #[derive(Debug, Args)]
 pub struct DeployOpts {
@@ -117,7 +117,7 @@ This is an experimental feature."#
 
 #[derive(Debug, Args)]
 #[command(name = "apply", about = "Apply configurations on remote machines")]
-struct Opts {
+pub struct Opts {
     #[arg(
         help = "Deployment goal",
         long_help = r#"The goal of the deployment.
@@ -139,17 +139,7 @@ Same as the targets for switch-to-configuration, with the following extra pseudo
     node_filter: NodeFilterOpts,
 }
 
-pub fn subcommand() -> ClapCommand {
-    Opts::augment_args(ClapCommand::new("apply"))
-}
-
-pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
-    let hive = HiveArgs::from_arg_matches(local_args)
-        .unwrap()
-        .into_hive()
-        .await
-        .unwrap();
-
+pub async fn run(hive: Hive, opts: Opts) -> Result<(), ColmenaError> {
     let ssh_config = env::var("SSH_CONFIG_FILE").ok().map(PathBuf::from);
 
     let Opts {
@@ -170,7 +160,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
                 evaluator,
             },
         node_filter,
-    } = Opts::from_arg_matches(local_args).expect("Failed to parse `apply` args");
+    } = opts;
 
     if node_filter.on.is_none() && goal != Goal::Build {
         // User did not specify node, we should check meta and see rules

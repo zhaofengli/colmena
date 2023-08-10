@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use clap::{ArgMatches, Command as ClapCommand};
 use tokio::time;
 
 use crate::error::{ColmenaError, ColmenaResult};
@@ -14,13 +13,7 @@ macro_rules! node {
     };
 }
 
-pub fn subcommand() -> ClapCommand {
-    ClapCommand::new("test-progress")
-        .about("Run progress spinner tests")
-        .hide(true)
-}
-
-pub async fn run(_global_args: &ArgMatches, _local_args: &ArgMatches) -> Result<(), ColmenaError> {
+pub async fn run() -> Result<(), ColmenaError> {
     let mut output = SpinnerOutput::new();
     let (monitor, meta) = JobMonitor::new(output.get_sender());
 

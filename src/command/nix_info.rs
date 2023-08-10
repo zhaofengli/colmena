@@ -1,4 +1,4 @@
-use clap::{ArgMatches, Args, Command, FromArgMatches};
+use clap::Args;
 
 use crate::error::ColmenaError;
 use crate::nix::evaluator::nix_eval_jobs::get_pinned_nix_eval_jobs;
@@ -11,12 +11,7 @@ use crate::nix::NixCheck;
 )]
 pub struct Opts {}
 
-pub fn subcommand() -> Command {
-    Opts::augment_args(Command::new("nix-info"))
-}
-
-pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
-    let Opts {} = Opts::from_arg_matches(local_args).unwrap();
+pub async fn run(_: Opts) -> Result<(), ColmenaError> {
     let check = NixCheck::detect().await;
     check.print_version_info();
     check.print_flakes_info(false);

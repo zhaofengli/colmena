@@ -2,15 +2,16 @@
 
 use std::env;
 
-use clap::{
-    builder::PossibleValue, value_parser, Arg, ArgAction, ArgMatches, ColorChoice,
-    Command as ClapCommand, ValueEnum,
-};
+use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use const_format::{concatcp, formatcp};
 use env_logger::fmt::WriteStyle;
 
-use crate::{command, nix::HivePath};
+use crate::{
+    command,
+    error::ColmenaResult,
+    nix::{Hive, HivePath},
+};
 
 /// Base URL of the manual, without the trailing slash.
 const MANUAL_URL_BASE: &str = "https://colmena.cli.rs";
@@ -66,33 +67,11 @@ const HELP_ORDER_FIRST: usize = 100;
 /// Display order in `--help` for arguments that are not very important.
 const HELP_ORDER_LOW: usize = 2000;
 
-macro_rules! register_command {
-    ($module:ident, $app:ident) => {
-        $app = $app.subcommand(command::$module::subcommand());
-    };
-}
-
-macro_rules! handle_command {
-    ($module:ident, $matches:ident) => {
-        if let Some(sub_matches) = $matches.subcommand_matches(stringify!($module)) {
-            crate::troubleshooter::run_wrapped(&$matches, &sub_matches, command::$module::run)
-                .await;
-            return;
-        }
-    };
-    ($name:expr, $module:ident, $matches:ident) => {
-        if let Some(sub_matches) = $matches.subcommand_matches($name) {
-            crate::troubleshooter::run_wrapped(&$matches, &sub_matches, command::$module::run)
-                .await;
-            return;
-        }
-    };
-}
-
 /// When to display color.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, ValueEnum)]
 enum ColorWhen {
     /// Detect automatically.
+    #[default]
     Auto,
 
     /// Always display colors.
@@ -102,149 +81,199 @@ enum ColorWhen {
     Never,
 }
 
-impl ValueEnum for ColorWhen {
-    fn value_variants<'a>() -> &'a [Self] {
-        &[Self::Auto, Self::Always, Self::Never]
-    }
-
-    fn to_possible_value<'a>(&self) -> Option<PossibleValue> {
-        match self {
-            Self::Auto => Some(PossibleValue::new("auto")),
-            Self::Always => Some(PossibleValue::new("always")),
-            Self::Never => Some(PossibleValue::new("never")),
-        }
+impl std::fmt::Display for ColorWhen {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Auto => "auto",
+            Self::Always => "always",
+            Self::Never => "never",
+        })
     }
 }
 
-pub fn build_cli(include_internal: bool) -> ClapCommand {
-    let version = env!("CARGO_PKG_VERSION");
-    let mut app = ClapCommand::new("Colmena")
-        .bin_name("colmena")
-        .version(version)
-        .author("Zhaofeng Li <hello@zhaofeng.li>")
-        .about("NixOS deployment tool")
-        .long_about(LONG_ABOUT)
-        .arg_required_else_help(true)
-        .arg(Arg::new("config")
-            .short('f')
-            .long("config")
-            .value_name("CONFIG")
-            .help("Path to a Hive expression, a flake.nix, or a Nix Flake URI")
-            .long_help(Some(CONFIG_HELP))
-            .display_order(HELP_ORDER_FIRST)
-            .global(true)
-            .value_parser(value_parser!(HivePath)))
-        .arg(Arg::new("show-trace")
-            .long("show-trace")
-            .help("Show debug information for Nix commands")
-            .long_help("Passes --show-trace to Nix commands")
-            .global(true)
-            .num_args(0))
-        .arg(Arg::new("impure")
-            .long("impure")
-            .help("Allow impure expressions")
-            .long_help("Passes --impure to Nix commands")
-            .global(true)
-            .num_args(0))
-        .arg(Arg::new("nix-option")
-            .long("nix-option")
-            .help("Passes an arbitrary option to Nix commands")
-            .long_help(r#"Passes arbitrary options to Nix commands
+#[derive(Parser)]
+#[command(
+    name = "Colmena",
+    bin_name = "colmena",
+    author = "Zhaofeng Li <hello@zhaofeng.li>",
+    version = env!("CARGO_PKG_VERSION"),
+    about = "NixOS deployment tool",
+    long_about = LONG_ABOUT,
+)]
+struct Opts {
+    #[arg(
+        short = 'f',
+        long,
+        value_name = "CONFIG",
+        help = "Path to a Hive expression, a flake.nix, or a Nix Flake URI",
+        long_help = CONFIG_HELP,
+        display_order = HELP_ORDER_FIRST,
+        global = true,
+    )]
+    config: Option<HivePath>,
+    #[arg(
+        long,
+        help = "Show debug information for Nix commands",
+        long_help = "Passes --show-trace to Nix commands",
+        global = true
+    )]
+    show_trace: bool,
+    #[arg(
+        long,
+        help = "Allow impure expressions",
+        long_help = "Passes --impure to Nix commands",
+        global = true
+    )]
+    impure: bool,
+    #[arg(
+        long,
+        value_parser = crate::util::parse_key_val::<String, String>,
+        help = "Passes an arbitrary option to Nix commands",
+        long_help = r#"Passes arbitrary options to Nix commands
 
 This only works when building locally.
-"#)
-            .global(true)
-            .num_args(2)
-            .value_names(["NAME", "VALUE"])
-            .action(ArgAction::Append))
-        .arg(Arg::new("color")
-            .long("color")
-            .help("When to colorize the output")
-            .long_help(r#"When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
+"#,
+        global = true,
+        num_args = 2,
+        value_names = ["NAME, VALUE"],
+    )]
+    nix_option: Vec<(String, String)>,
+    #[arg(
+        long,
+        value_name = "WHEN",
+        default_value_t,
+        global = true,
+        display_order = HELP_ORDER_LOW,
+        help = "When to colorize the output",
+        long_help = r#"When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
 
 It's also possible to specify the preference using environment variables. See <https://bixense.com/clicolors>.
-"#)
-            .display_order(HELP_ORDER_LOW)
-            .value_name("WHEN")
-            .value_parser(value_parser!(ColorWhen))
-            .default_value("auto")
-            .global(true));
+"#,
+    )]
+    color: ColorWhen,
+    #[command(subcommand)]
+    command: Command,
+}
 
-    if include_internal {
-        app = app.subcommand(
-            ClapCommand::new("gen-completions")
-                .about("Generate shell auto-completion files (Internal)")
-                .hide(true)
-                .arg(
-                    Arg::new("shell")
-                        .index(1)
-                        .value_parser(value_parser!(Shell))
-                        .required(true)
-                        .num_args(1),
-                ),
-        );
-
-        // TODO: handle deprecated alias
-
-        #[cfg(debug_assertions)]
-        register_command!(test_progress, app);
-    }
-
-    register_command!(apply, app);
+#[derive(Subcommand)]
+enum Command {
+    Apply(command::apply::Opts),
     #[cfg(target_os = "linux")]
-    register_command!(apply_local, app);
-    register_command!(build, app);
-    register_command!(eval, app);
-    register_command!(upload_keys, app);
-    register_command!(exec, app);
-    register_command!(repl, app);
-    register_command!(nix_info, app);
+    ApplyLocal(command::apply_local::Opts),
+    Build(command::build::Opts),
+    Eval(command::eval::Opts),
+    UploadKeys(command::upload_keys::Opts),
+    Exec(command::exec::Opts),
+    Repl(command::repl::Opts),
+    NixInfo(command::nix_info::Opts),
+    #[cfg(debug_assertions)]
+    #[command(about = "Run progress spinner tests", hide = true)]
+    TestProgress,
+    #[command(about = "Generate shell auto-completion files (Internal)", hide = true)]
+    GenCompletions {
+        shell: Shell,
+    },
+}
 
-    // This does _not_ take the --color flag into account (haven't
-    // parsed yet), only the CLICOLOR environment variable.
-    if clicolors_control::colors_enabled() {
-        app.color(ColorChoice::Always)
-    } else {
-        app
+async fn get_hive(opts: &Opts) -> ColmenaResult<Hive> {
+    let path = match &opts.config {
+        Some(path) => path.clone(),
+        None => {
+            // traverse upwards until we find hive.nix
+            let mut cur = std::env::current_dir()?;
+            let mut file_path = None;
+
+            loop {
+                let flake = cur.join("flake.nix");
+                if flake.is_file() {
+                    file_path = Some(flake);
+                    break;
+                }
+
+                let legacy = cur.join("hive.nix");
+                if legacy.is_file() {
+                    file_path = Some(legacy);
+                    break;
+                }
+
+                match cur.parent() {
+                    Some(parent) => {
+                        cur = parent.to_owned();
+                    }
+                    None => {
+                        break;
+                    }
+                }
+            }
+
+            if file_path.is_none() {
+                log::error!(
+                    "Could not find `hive.nix` or `flake.nix` in {:?} or any parent directory",
+                    std::env::current_dir()?
+                );
+            }
+
+            HivePath::from_path(file_path.unwrap()).await?
+        }
+    };
+
+    match &path {
+        HivePath::Legacy(p) => {
+            log::info!("Using configuration: {}", p.to_string_lossy());
+        }
+        HivePath::Flake(flake) => {
+            log::info!("Using flake: {}", flake.uri());
+        }
     }
+
+    let mut hive = Hive::new(path).await?;
+
+    if opts.show_trace {
+        hive.set_show_trace(true);
+    }
+
+    if opts.impure {
+        hive.set_impure(true);
+    }
+
+    for (name, value) in opts.nix_option.iter().cloned() {
+        hive.add_nix_option(name, value);
+    }
+
+    Ok(hive)
 }
 
 pub async fn run() {
-    let mut app = build_cli(true);
-    let matches = app.clone().get_matches();
+    let opts = Opts::parse();
 
-    set_color_pref(matches.get_one("color").unwrap());
+    set_color_pref(&opts.color);
     init_logging();
 
-    handle_command!(apply, matches);
-    #[cfg(target_os = "linux")]
-    handle_command!("apply-local", apply_local, matches);
-    handle_command!(build, matches);
-    handle_command!(eval, matches);
-    handle_command!("upload-keys", upload_keys, matches);
-    handle_command!(exec, matches);
-    handle_command!(repl, matches);
-    handle_command!("nix-info", nix_info, matches);
+    let hive = get_hive(&opts).await.expect("Failed to get flake or hive");
 
-    #[cfg(debug_assertions)]
-    handle_command!("test-progress", test_progress, matches);
+    use crate::troubleshooter::run_wrapped as r;
 
-    if let Some(args) = matches.subcommand_matches("gen-completions") {
-        return gen_completions(args);
+    match opts.command {
+        Command::Apply(args) => r(command::apply::run(hive, args)).await,
+        Command::ApplyLocal(args) => r(command::apply_local::run(hive, args)).await,
+        Command::Eval(args) => r(command::eval::run(hive, args)).await,
+        Command::Exec(args) => r(command::exec::run(hive, args)).await,
+        Command::NixInfo(args) => r(command::nix_info::run(args)).await,
+        Command::Repl(args) => r(command::repl::run(hive, args)).await,
+        Command::TestProgress => r(command::test_progress::run()).await,
+        Command::Build(_args) => todo!("This is an alias for `colmena apply build`"),
+        Command::UploadKeys(_opts) => todo!("This is an alias for `colmena apply upload-keys`"),
+        Command::GenCompletions { shell } => print_completions(shell, &mut Opts::command()),
     }
-
-    // deprecated alias
-    handle_command!("introspect", eval, matches);
-
-    app.print_long_help().unwrap();
-    println!();
 }
 
-fn gen_completions(args: &ArgMatches) {
-    let mut app = build_cli(false);
-    let shell = args.get_one::<Shell>("shell").unwrap().to_owned();
-
-    clap_complete::generate(shell, &mut app, "colmena", &mut std::io::stdout());
+fn print_completions(shell: Shell, cmd: &mut clap::Command) {
+    clap_complete::generate(
+        shell,
+        cmd,
+        cmd.get_name().to_string(),
+        &mut std::io::stdout(),
+    );
 }
 
 fn set_color_pref(when: &ColorWhen) {
@@ -272,14 +301,4 @@ fn init_logging() {
         .format_target(false)
         .write_style(style)
         .init();
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_cli_debug_assert() {
-        build_cli(true).debug_assert()
-    }
 }

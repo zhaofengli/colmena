@@ -2,20 +2,20 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use clap::{ArgMatches, Args, Command as ClapCommand, FromArgMatches};
+use clap::Args;
 use futures::future::join_all;
 use tokio::sync::Semaphore;
 
 use crate::error::ColmenaError;
 use crate::job::{JobMonitor, JobState, JobType};
-use crate::nix::hive::HiveArgs;
 use crate::nix::node_filter::NodeFilterOpts;
+use crate::nix::Hive;
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
 #[derive(Debug, Args)]
 #[command(name = "exec", about = "Run a command on remote machines")]
-struct Opts {
+pub struct Opts {
     #[arg(
         short,
         long,
@@ -52,24 +52,16 @@ It's recommended to use -- to separate Colmena options from the command to run. 
     command: Vec<String>,
 }
 
-pub fn subcommand() -> ClapCommand {
-    Opts::augment_args(ClapCommand::new("exec"))
-}
-
-pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
-    let hive = HiveArgs::from_arg_matches(local_args)
-        .unwrap()
-        .into_hive()
-        .await
-        .unwrap();
-    let ssh_config = env::var("SSH_CONFIG_FILE").ok().map(PathBuf::from);
-
-    let Opts {
+pub async fn run(
+    hive: Hive,
+    Opts {
         parallel,
         verbose,
         nodes,
         command,
-    } = Opts::from_arg_matches(local_args).unwrap();
+    }: Opts,
+) -> Result<(), ColmenaError> {
+    let ssh_config = env::var("SSH_CONFIG_FILE").ok().map(PathBuf::from);
 
     let mut targets = hive.select_nodes(nodes.on, ssh_config, true).await?;
 
