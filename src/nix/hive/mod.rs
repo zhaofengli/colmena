@@ -122,20 +122,27 @@ impl FromStr for HivePath {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         // TODO: check for escaped colon maybe?
 
-        let path = std::path::Path::new(s);
+        let s = s.to_owned();
+        let path = std::path::PathBuf::from(&s);
+
+        let fut = async move {
+            if !path.exists() && s.contains(':') {
+                // Treat as flake URI
+                let flake = Flake::from_uri(s).await?;
+
+                log::info!("Using flake: {}", flake.uri());
+
+                Ok(Self::Flake(flake))
+            } else {
+                HivePath::from_path(path).await
+            }
+        };
+
         let handle = tokio::runtime::Handle::try_current()
             .expect("We should always be executed after we have a runtime");
-
-        if !path.exists() && s.contains(':') {
-            // Treat as flake URI
-            let flake = handle.block_on(Flake::from_uri(s))?;
-
-            log::info!("Using flake: {}", flake.uri());
-
-            Ok(Self::Flake(flake))
-        } else {
-            handle.block_on(HivePath::from_path(path))
-        }
+        std::thread::spawn(move || handle.block_on(fut))
+            .join()
+            .expect("Failed to join future")
     }
 }
 

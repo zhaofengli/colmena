@@ -10,7 +10,7 @@ use clap_complete::Shell;
 use const_format::{concatcp, formatcp};
 use env_logger::fmt::WriteStyle;
 
-use crate::command;
+use crate::{command, nix::HivePath};
 
 /// Base URL of the manual, without the trailing slash.
 const MANUAL_URL_BASE: &str = "https://colmena.cli.rs";
@@ -132,15 +132,8 @@ pub fn build_cli(include_internal: bool) -> ClapCommand {
             .help("Path to a Hive expression, a flake.nix, or a Nix Flake URI")
             .long_help(Some(CONFIG_HELP))
             .display_order(HELP_ORDER_FIRST)
-
-            // The default value is a lie (sort of)!
-            //
-            // The default behavior is to search upwards from the
-            // current working directory for a file named "flake.nix"
-            // or "hive.nix". This behavior is disabled if --config/-f
-            // is explicitly supplied by the user (occurrences_of > 0).
-            .default_value("hive.nix")
-            .global(true))
+            .global(true)
+            .value_parser(value_parser!(HivePath)))
         .arg(Arg::new("show-trace")
             .long("show-trace")
             .help("Show debug information for Nix commands")

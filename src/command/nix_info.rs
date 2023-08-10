@@ -1,4 +1,4 @@
-use clap::{ArgMatches, Args, FromArgMatches, Command};
+use clap::{ArgMatches, Args, Command, FromArgMatches};
 
 use crate::error::ColmenaError;
 use crate::nix::evaluator::nix_eval_jobs::get_pinned_nix_eval_jobs;

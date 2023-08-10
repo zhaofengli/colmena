@@ -4,7 +4,6 @@ use std::error::Error;
 use std::process::Stdio;
 
 use async_trait::async_trait;
-use clap::{Arg, Command as ClapCommand};
 use futures::future::join3;
 use serde::de::DeserializeOwned;
 use tokio::io::{AsyncBufReadExt, AsyncRead, BufReader};
@@ -205,23 +204,6 @@ where
         .find('=')
         .ok_or_else(|| format!("invalid KEY=value: no `=` found in `{s}`"))?;
     Ok((s[..pos].parse()?, s[pos + 1..].parse()?))
-}
-
-pub fn register_selector_args(command: ClapCommand) -> ClapCommand {
-    command
-        .arg(Arg::new("on")
-            .long("on")
-            .value_name("NODES")
-            .help("Node selector")
-            .long_help(r#"Select a list of nodes to deploy to.
-
-The list is comma-separated and globs are supported. To match tags, prepend the filter by @. Valid examples:
-
-- host1,host2,host3
-- edge-*
-- edge-*,core-*
-- @a-tag,@tags-can-have-*"#)
-            .num_args(1))
 }
 
 pub async fn capture_stream<R>(

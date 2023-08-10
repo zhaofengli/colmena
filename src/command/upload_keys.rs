@@ -1,6 +1,6 @@
 use clap::{Args, Command as ClapCommand};
 
-use crate::{nix::Goal, util};
+use crate::nix::Goal;
 
 pub use super::apply::run;
 use super::apply::DeployOpts;
