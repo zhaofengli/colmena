@@ -10,7 +10,7 @@ use glob::Pattern as GlobPattern;
 
 use super::{ColmenaError, ColmenaResult, NodeConfig, NodeName};
 
-#[derive(Debug, Args)]
+#[derive(Debug, Default, Args)]
 pub struct NodeFilterOpts {
     #[arg(
         long,

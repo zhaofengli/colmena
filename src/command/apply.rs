@@ -132,11 +132,11 @@ Same as the targets for switch-to-configuration, with the following extra pseudo
 "#,
         default_value_if("reboot", ArgPredicate::IsPresent, Some("boot"))
     )]
-    goal: Goal,
+    pub goal: Goal,
     #[command(flatten)]
-    deploy: DeployOpts,
+    pub deploy: DeployOpts,
     #[command(flatten)]
-    node_filter: NodeFilterOpts,
+    pub node_filter: NodeFilterOpts,
 }
 
 pub async fn run(hive: Hive, opts: Opts) -> Result<(), ColmenaError> {

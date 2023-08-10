@@ -8,7 +8,7 @@ use const_format::{concatcp, formatcp};
 use env_logger::fmt::WriteStyle;
 
 use crate::{
-    command,
+    command::{self, apply::DeployOpts},
     error::ColmenaResult,
     nix::{Hive, HivePath},
 };
@@ -160,9 +160,27 @@ enum Command {
     Apply(command::apply::Opts),
     #[cfg(target_os = "linux")]
     ApplyLocal(command::apply_local::Opts),
-    Build(command::build::Opts),
+    #[command(
+        about = "Build configurations but not push to remote machines",
+        long_about = r#"Build configurations but not push to remote machines
+
+This subcommand behaves as if you invoked `apply` with the `build` goal."#
+    )]
+    Build {
+        #[command(flatten)]
+        deploy: DeployOpts,
+    },
     Eval(command::eval::Opts),
-    UploadKeys(command::upload_keys::Opts),
+    #[command(
+        about = "Upload keys to remote hosts",
+        long_about = r#"Upload keys to remote hosts
+
+This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal."#
+    )]
+    UploadKeys {
+        #[command(flatten)]
+        deploy: DeployOpts,
+    },
     Exec(command::exec::Opts),
     Repl(command::repl::Opts),
     NixInfo(command::nix_info::Opts),
@@ -261,8 +279,22 @@ pub async fn run() {
         Command::NixInfo(args) => r(command::nix_info::run(args)).await,
         Command::Repl(args) => r(command::repl::run(hive, args)).await,
         Command::TestProgress => r(command::test_progress::run()).await,
-        Command::Build(_args) => todo!("This is an alias for `colmena apply build`"),
-        Command::UploadKeys(_opts) => todo!("This is an alias for `colmena apply upload-keys`"),
+        Command::Build { deploy } => {
+            let args = command::apply::Opts {
+                deploy,
+                goal: crate::nix::Goal::Build,
+                node_filter: Default::default(),
+            };
+            r(command::apply::run(hive, args)).await
+        },
+        Command::UploadKeys { deploy } => {
+            let args = command::apply::Opts {
+                deploy,
+                goal: crate::nix::Goal::UploadKeys,
+                node_filter: Default::default(),
+            };
+            r(command::apply::run(hive, args)).await
+        },
         Command::GenCompletions { shell } => print_completions(shell, &mut Opts::command()),
     }
 }
