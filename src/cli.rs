@@ -127,7 +127,6 @@ struct Opts {
     impure: bool,
     #[arg(
         long,
-        value_parser = crate::util::parse_key_val::<String, String>,
         help = "Passes an arbitrary option to Nix commands",
         long_help = r#"Passes arbitrary options to Nix commands
 
@@ -135,9 +134,9 @@ This only works when building locally.
 "#,
         global = true,
         num_args = 2,
-        value_names = ["NAME, VALUE"],
+        value_names = ["NAME", "VALUE"],
     )]
-    nix_option: Vec<(String, String)>,
+    nix_option: Vec<String>,
     #[arg(
         long,
         value_name = "WHEN",
@@ -263,8 +262,11 @@ async fn get_hive(opts: &Opts) -> ColmenaResult<Hive> {
         hive.set_impure(true);
     }
 
-    for (name, value) in opts.nix_option.iter().cloned() {
-        hive.add_nix_option(name, value);
+    for chunks in opts.nix_option.chunks_exact(2) {
+        let [name, value] = chunks else {
+            unreachable!()
+        };
+        hive.add_nix_option(name.clone(), value.clone());
     }
 
     Ok(hive)
