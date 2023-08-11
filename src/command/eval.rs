@@ -40,7 +40,6 @@ pub async fn run(
         expression_file,
     }: Opts,
 ) -> Result<(), ColmenaError> {
-    // TODO: check for deprecated alias
     let expression = expression_file
         .map(|path| {
             format!(
