@@ -130,6 +130,7 @@ Same as the targets for switch-to-configuration, with the following extra pseudo
 
 `switch` is the default goal unless `--reboot` is passed, in which case `boot` is the default.
 "#,
+        default_value_t,
         default_value_if("reboot", ArgPredicate::IsPresent, Some("boot"))
     )]
     pub goal: Goal,

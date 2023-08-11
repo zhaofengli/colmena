@@ -284,11 +284,13 @@ pub async fn run() {
 
     match opts.command {
         Command::Apply(args) => r(command::apply::run(hive, args), opts.config).await,
+        #[cfg(target_os = "linux")]
         Command::ApplyLocal(args) => r(command::apply_local::run(hive, args), opts.config).await,
         Command::Eval(args) => r(command::eval::run(hive, args), opts.config).await,
         Command::Exec(args) => r(command::exec::run(hive, args), opts.config).await,
         Command::NixInfo => r(command::nix_info::run(), opts.config).await,
         Command::Repl => r(command::repl::run(hive), opts.config).await,
+        #[cfg(debug_assertions)]
         Command::TestProgress => r(command::test_progress::run(), opts.config).await,
         Command::Build { deploy } => {
             let args = command::apply::Opts {
