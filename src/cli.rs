@@ -182,8 +182,17 @@ This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal."#
         deploy: DeployOpts,
     },
     Exec(command::exec::Opts),
-    Repl(command::repl::Opts),
-    NixInfo(command::nix_info::Opts),
+    #[command(
+        about = "Start an interactive REPL with the complete configuration",
+        long_about = r#"Start an interactive REPL with the complete configuration
+
+In the REPL, you can inspect the configuration interactively with tab
+completion. The node configurations are accessible under the `nodes`
+attribute set."#
+    )]
+    Repl,
+    #[command(about = "Show information about the current Nix installation")]
+    NixInfo,
     #[cfg(debug_assertions)]
     #[command(about = "Run progress spinner tests", hide = true)]
     TestProgress,
@@ -276,8 +285,8 @@ pub async fn run() {
         Command::ApplyLocal(args) => r(command::apply_local::run(hive, args), opts.config).await,
         Command::Eval(args) => r(command::eval::run(hive, args), opts.config).await,
         Command::Exec(args) => r(command::exec::run(hive, args), opts.config).await,
-        Command::NixInfo(args) => r(command::nix_info::run(args), opts.config).await,
-        Command::Repl(args) => r(command::repl::run(hive, args), opts.config).await,
+        Command::NixInfo => r(command::nix_info::run(), opts.config).await,
+        Command::Repl => r(command::repl::run(hive), opts.config).await,
         Command::TestProgress => r(command::test_progress::run(), opts.config).await,
         Command::Build { deploy } => {
             let args = command::apply::Opts {
