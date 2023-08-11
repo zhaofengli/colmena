@@ -113,6 +113,8 @@ will treat deployment.replaceUnknownProfiles as though it was set true and perfo
 This is an experimental feature."#
     )]
     evaluator: EvaluatorType,
+    #[command(flatten)]
+    node_filter: NodeFilterOpts,
 }
 
 #[derive(Debug, Args)]
@@ -136,8 +138,6 @@ Same as the targets for switch-to-configuration, with the following extra pseudo
     pub goal: Goal,
     #[command(flatten)]
     pub deploy: DeployOpts,
-    #[command(flatten)]
-    pub node_filter: NodeFilterOpts,
 }
 
 pub async fn run(hive: Hive, opts: Opts) -> Result<(), ColmenaError> {
@@ -159,8 +159,8 @@ pub async fn run(hive: Hive, opts: Opts) -> Result<(), ColmenaError> {
                 no_build_on_target,
                 force_replace_unknown_profiles,
                 evaluator,
+                node_filter,
             },
-        node_filter,
     } = opts;
 
     if node_filter.on.is_none() && goal != Goal::Build {

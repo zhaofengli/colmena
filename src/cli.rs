@@ -296,7 +296,6 @@ pub async fn run() {
             let args = command::apply::Opts {
                 deploy,
                 goal: crate::nix::Goal::Build,
-                node_filter: Default::default(),
             };
             r(command::apply::run(hive, args), opts.config).await
         }
@@ -304,7 +303,6 @@ pub async fn run() {
             let args = command::apply::Opts {
                 deploy,
                 goal: crate::nix::Goal::UploadKeys,
-                node_filter: Default::default(),
             };
             r(command::apply::run(hive, args), opts.config).await
         }
