@@ -272,29 +272,29 @@ pub async fn run() {
     use crate::troubleshooter::run_wrapped as r;
 
     match opts.command {
-        Command::Apply(args) => r(command::apply::run(hive, args)).await,
-        Command::ApplyLocal(args) => r(command::apply_local::run(hive, args)).await,
-        Command::Eval(args) => r(command::eval::run(hive, args)).await,
-        Command::Exec(args) => r(command::exec::run(hive, args)).await,
-        Command::NixInfo(args) => r(command::nix_info::run(args)).await,
-        Command::Repl(args) => r(command::repl::run(hive, args)).await,
-        Command::TestProgress => r(command::test_progress::run()).await,
+        Command::Apply(args) => r(command::apply::run(hive, args), opts.config).await,
+        Command::ApplyLocal(args) => r(command::apply_local::run(hive, args), opts.config).await,
+        Command::Eval(args) => r(command::eval::run(hive, args), opts.config).await,
+        Command::Exec(args) => r(command::exec::run(hive, args), opts.config).await,
+        Command::NixInfo(args) => r(command::nix_info::run(args), opts.config).await,
+        Command::Repl(args) => r(command::repl::run(hive, args), opts.config).await,
+        Command::TestProgress => r(command::test_progress::run(), opts.config).await,
         Command::Build { deploy } => {
             let args = command::apply::Opts {
                 deploy,
                 goal: crate::nix::Goal::Build,
                 node_filter: Default::default(),
             };
-            r(command::apply::run(hive, args)).await
-        },
+            r(command::apply::run(hive, args), opts.config).await
+        }
         Command::UploadKeys { deploy } => {
             let args = command::apply::Opts {
                 deploy,
                 goal: crate::nix::Goal::UploadKeys,
                 node_filter: Default::default(),
             };
-            r(command::apply::run(hive, args)).await
-        },
+            r(command::apply::run(hive, args), opts.config).await
+        }
         Command::GenCompletions { shell } => print_completions(shell, &mut Opts::command()),
     }
 }
