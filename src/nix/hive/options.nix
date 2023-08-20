@@ -270,7 +270,7 @@ with builtins; rec {
           build machine(s) you can ensure that builds only take place on your
           local machine and/or the machines specified in this file.
 
-          See https://nixos.org/manual/nix/stable/#chap-distributed-builds
+          See https://nixos.org/manual/nix/stable/advanced-topics/distributed-builds
           for the machine specification format.
 
           This option is ignored when builds are initiated on the remote nodes
