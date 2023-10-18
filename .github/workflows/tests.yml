@@ -18,7 +18,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@e1f2e54ff90b012560f19481e250bb7d909f3acd
+        uses: DeterminateSystems/nix-installer-action@9b252454a8d70586c4ee7f163bf4bb1e9de3d763 # v2
 
       - name: Enable Binary Cache
         uses: cachix/cachix-action@v12
