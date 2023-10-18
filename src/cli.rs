@@ -7,9 +7,8 @@ use clap::{
     Command as ClapCommand, ValueEnum,
 };
 use clap_complete::Shell;
-use const_format::concatcp;
+use const_format::{concatcp, formatcp};
 use env_logger::fmt::WriteStyle;
-use lazy_static::lazy_static;
 
 use crate::command;
 
@@ -34,36 +33,30 @@ const MANUAL_URL: &str = concatcp!(
 /// API stability cannot be guaranteed for pre-release versions.
 /// Links to the version currently in development automatically
 /// leads the user to the unstable manual.
-const MANUAL_DISCREPANCY_NOTE: &str = "Note: You are using a pre-release version of Colmena, so the supported options may be different from what's in the manual.";
+const MANUAL_DISCREPANCY_NOTE: &str = "\nNote: You are using a pre-release version of Colmena, so the supported options may be different from what's in the manual.";
 
-lazy_static! {
-    static ref LONG_ABOUT: String = {
-        let mut message = format!(
-            r#"NixOS deployment tool
+static LONG_ABOUT: &str = formatcp!(
+    r#"NixOS deployment tool
 
 Colmena helps you deploy to multiple hosts running NixOS.
 For more details, read the manual at <{}>.
 
-"#,
-            MANUAL_URL
-        );
+{}"#,
+    MANUAL_URL,
+    if !env!("CARGO_PKG_VERSION_PRE").is_empty() {
+        MANUAL_DISCREPANCY_NOTE
+    } else {
+        ""
+    }
+);
 
-        if !env!("CARGO_PKG_VERSION_PRE").is_empty() {
-            message += MANUAL_DISCREPANCY_NOTE;
-        }
-
-        message
-    };
-    static ref CONFIG_HELP: String = {
-        format!(
-            r#"If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
+static CONFIG_HELP: &str = formatcp!(
+    r#"If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
 
 For a sample configuration, check the manual at <{}>.
 "#,
-            MANUAL_URL
-        )
-    };
-}
+    MANUAL_URL
+);
 
 /// Display order in `--help` for arguments that should be shown first.
 ///
@@ -130,14 +123,14 @@ pub fn build_cli(include_internal: bool) -> ClapCommand {
         .version(version)
         .author("Zhaofeng Li <hello@zhaofeng.li>")
         .about("NixOS deployment tool")
-        .long_about(LONG_ABOUT.as_str())
+        .long_about(LONG_ABOUT)
         .arg_required_else_help(true)
         .arg(Arg::new("config")
             .short('f')
             .long("config")
             .value_name("CONFIG")
             .help("Path to a Hive expression, a flake.nix, or a Nix Flake URI")
-            .long_help(Some(CONFIG_HELP.as_str()))
+            .long_help(Some(CONFIG_HELP))
             .display_order(HELP_ORDER_FIRST)
 
             // The default value is a lie (sort of)!
