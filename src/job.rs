@@ -367,7 +367,7 @@ impl JobMonitor {
         message: Option<String>,
         noop: bool,
     ) {
-        let mut metadata = self.jobs.get_mut(&job_id).unwrap();
+        let metadata = self.jobs.get_mut(&job_id).unwrap();
         let old_state = metadata.state;
 
         if old_state == new_state {
