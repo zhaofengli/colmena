@@ -46,7 +46,7 @@ impl StorePath {
     /// Returns the immediate dependencies of the store path.
     pub async fn references(&self) -> ColmenaResult<Vec<StorePath>> {
         let references = Command::new("nix-store")
-            .args(&["--query", "--references"])
+            .args(["--query", "--references"])
             .arg(&self.0)
             .capture_output()
             .await?

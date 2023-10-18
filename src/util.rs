@@ -279,7 +279,7 @@ pub async fn hive_from_path(hive_path: HivePath, args: &ArgMatches) -> ColmenaRe
     }
 
     if let Some(opts) = args.get_many::<String>("nix-option") {
-        let iter = opts.into_iter();
+        let iter = opts;
 
         let names = iter.clone().step_by(2);
         let values = iter.clone().skip(1).step_by(2);

@@ -53,13 +53,13 @@ impl Profile {
     /// Create a GC root for this profile.
     pub async fn create_gc_root(&self, path: &Path) -> ColmenaResult<()> {
         let mut command = Command::new("nix-store");
-        command.args(&[
+        command.args([
             "--no-build-output",
             "--indirect",
             "--add-root",
             path.to_str().unwrap(),
         ]);
-        command.args(&["--realise", self.as_path().to_str().unwrap()]);
+        command.args(["--realise", self.as_path().to_str().unwrap()]);
         command.stdout(Stdio::null());
 
         let status = command.status().await?;

@@ -112,7 +112,6 @@ impl Host for Ssh {
 
         let path = paths
             .lines()
-            .into_iter()
             .next()
             .ok_or(ColmenaError::FailedToGetCurrentProfile)?
             .to_string()
@@ -131,7 +130,6 @@ impl Host for Ssh {
 
         let path = paths
             .lines()
-            .into_iter()
             .next()
             .ok_or(ColmenaError::FailedToGetCurrentProfile)?
             .to_string()
@@ -265,7 +263,7 @@ impl Ssh {
             // experimental `nix copy` command with ssh-ng://
             let mut command = Command::new("nix");
 
-            command.args(&[
+            command.args([
                 "--extra-experimental-features",
                 "nix-command",
                 "copy",
@@ -273,7 +271,7 @@ impl Ssh {
             ]);
 
             if options.use_substitutes {
-                command.args(&[
+                command.args([
                     "--substitute-on-destination",
                     // needed due to UX bug in ssh-ng://
                     "--builders-use-substitutes",

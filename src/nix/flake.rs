@@ -87,8 +87,8 @@ impl FlakeMetadata {
     /// Resolves a flake.
     async fn resolve(flake: &str) -> ColmenaResult<Self> {
         let child = Command::new("nix")
-            .args(&["flake", "metadata", "--json"])
-            .args(&["--extra-experimental-features", "nix-command flakes"])
+            .args(["flake", "metadata", "--json"])
+            .args(["--extra-experimental-features", "nix-command flakes"])
             .arg(flake)
             .stdout(Stdio::piped())
             .spawn()?;
@@ -109,8 +109,8 @@ impl FlakeMetadata {
 /// Quietly locks the dependencies of a flake.
 pub async fn lock_flake_quiet(uri: &str) -> ColmenaResult<()> {
     let status = Command::new("nix")
-        .args(&["flake", "lock"])
-        .args(&["--extra-experimental-features", "nix-command flakes"])
+        .args(["flake", "lock"])
+        .args(["--extra-experimental-features", "nix-command flakes"])
         .arg(uri)
         .stderr(Stdio::null())
         .status()

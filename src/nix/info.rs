@@ -81,7 +81,7 @@ impl NixCheck {
         let flakes_supported = version.has_flakes();
 
         let flake_cmd = Command::new("nix-instantiate")
-            .args(&["--eval", "-E", "builtins.getFlake"])
+            .args(["--eval", "-E", "builtins.getFlake"])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
             .status()

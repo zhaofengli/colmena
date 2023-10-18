@@ -104,13 +104,12 @@ impl Host for Local {
 
     async fn get_current_system_profile(&mut self) -> ColmenaResult<Profile> {
         let paths = Command::new("readlink")
-            .args(&["-e", CURRENT_PROFILE])
+            .args(["-e", CURRENT_PROFILE])
             .capture_output()
             .await?;
 
         let path = paths
             .lines()
-            .into_iter()
             .next()
             .ok_or(ColmenaError::FailedToGetCurrentProfile)?
             .to_string()
@@ -121,7 +120,7 @@ impl Host for Local {
 
     async fn get_main_system_profile(&mut self) -> ColmenaResult<Profile> {
         let paths = Command::new("sh")
-            .args(&[
+            .args([
                 "-c",
                 &format!(
                     "readlink -e {} || readlink -e {}",
@@ -133,7 +132,6 @@ impl Host for Local {
 
         let path = paths
             .lines()
-            .into_iter()
             .next()
             .ok_or(ColmenaError::FailedToGetCurrentProfile)?
             .to_string()
