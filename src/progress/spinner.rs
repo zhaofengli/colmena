@@ -29,6 +29,9 @@ pub struct SpinnerOutput {
     /// Maximum label width for alignment.
     label_width: usize,
 
+    /// Determines if emoji should be used
+    emoji: bool,
+
     multi: MultiProgress,
     sender: Option<Sender>,
     receiver: Receiver,
@@ -50,10 +53,13 @@ struct JobState {
 }
 
 impl SpinnerOutput {
-    pub fn new() -> Self {
+    pub fn new(emoji: bool) -> Self {
         let meta_bar = {
-            ProgressBar::new(100)
-                .with_style(get_spinner_style(DEFAULT_LABEL_WIDTH, LineStyle::Normal))
+            ProgressBar::new(100).with_style(get_spinner_style(
+                DEFAULT_LABEL_WIDTH,
+                LineStyle::Normal,
+                emoji,
+            ))
         };
 
         let (sender, receiver) = create_channel();
@@ -65,6 +71,7 @@ impl SpinnerOutput {
             meta_bar,
             meta_style: LineStyle::Normal,
             label_width: DEFAULT_LABEL_WIDTH,
+            emoji,
             sender: Some(sender),
             receiver,
         }
@@ -157,7 +164,7 @@ impl SpinnerOutput {
     }
 
     fn get_spinner_style(&self, style: LineStyle) -> ProgressStyle {
-        get_spinner_style(self.label_width, style)
+        get_spinner_style(self.label_width, style, self.emoji)
     }
 }
 
@@ -219,7 +226,7 @@ impl JobState {
     }
 }
 
-fn get_spinner_style(label_width: usize, style: LineStyle) -> ProgressStyle {
+fn get_spinner_style(label_width: usize, style: LineStyle, emoji: bool) -> ProgressStyle {
     let template = format!(
         "{{prefix:>{}.bold.dim}} {{spinner}} {{elapsed}} {{wide_msg}}",
         label_width
@@ -228,12 +235,16 @@ fn get_spinner_style(label_width: usize, style: LineStyle) -> ProgressStyle {
     match style {
         LineStyle::Normal | LineStyle::Success | LineStyle::SuccessNoop => {
             ProgressStyle::default_spinner()
-                .tick_chars("🕛🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚✅")
+                .tick_chars(if emoji {
+                    "🕛🕐🕑🕒🕓🕔🕕🕖🕗🕘🕙🕚✅"
+                } else {
+                    "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏✔"
+                })
                 .template(&template)
                 .unwrap()
         }
         LineStyle::Failure => ProgressStyle::default_spinner()
-            .tick_chars("❌❌")
+            .tick_chars(if emoji { "❌❌" } else { "✖✖" })
             .template(&template)
             .unwrap(),
     }

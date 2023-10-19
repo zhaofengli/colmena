@@ -20,8 +20,8 @@ pub fn subcommand() -> ClapCommand {
         .hide(true)
 }
 
-pub async fn run(_global_args: &ArgMatches, _local_args: &ArgMatches) -> Result<(), ColmenaError> {
-    let mut output = SpinnerOutput::new();
+pub async fn run(global_args: &ArgMatches, _local_args: &ArgMatches) -> Result<(), ColmenaError> {
+    let mut output = SpinnerOutput::new(!global_args.get_one("disable-emoji").unwrap_or(&false));
     let (monitor, meta) = JobMonitor::new(output.get_sender());
 
     let meta_future = meta.run(|meta| async move {

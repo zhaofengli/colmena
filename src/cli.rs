@@ -175,7 +175,14 @@ It's also possible to specify the preference using environment variables. See <h
             .value_name("WHEN")
             .value_parser(value_parser!(ColorWhen))
             .default_value("auto")
-            .global(true));
+            .global(true))
+        .arg(Arg::new("disable-emoji")
+            .long("disable-emoji")
+            .help("Disable emoji spinners in output").long_help("Use plain braille pattern spinners instead of emoji")
+            .display_order(HELP_ORDER_LOW)
+            .global(true)
+            .num_args(0)
+        );
 
     if include_internal {
         app = app.subcommand(
