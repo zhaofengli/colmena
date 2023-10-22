@@ -60,6 +60,12 @@ The built system profiles will be added as GC roots so that they will not be rem
 The links will be created under .gcroots in the directory the Hive configuration is located.
 "#)
             .num_args(0))
+        .arg(Arg::new("keep-result-dir")
+          .long("keep-result-dir")
+          .value_name("DIR")
+          .help("Path to link gcroots")
+          .long_help("Path to a directory where the gcroots will be linked")
+          .default_value(".gcroots"))
         .arg(Arg::new("verbose")
             .short('v')
             .long("verbose")
@@ -213,6 +219,9 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
         if local_args.get_flag("keep-result") {
             options.set_create_gc_roots(true);
+            if let Some(dir) = local_args.get_one::<String>("keep-result-dir") {
+                options.set_create_gc_roots_dir(dir.to_owned());
+            }
         }
 
         if local_args.get_flag("no-build-on-target") {
