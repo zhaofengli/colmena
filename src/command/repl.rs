@@ -1,30 +1,15 @@
 use std::io::Write;
 
-use clap::{ArgMatches, Command as ClapCommand};
 use tempfile::Builder as TempFileBuilder;
 use tokio::process::Command;
 
-use crate::error::ColmenaError;
+use crate::error::ColmenaResult;
 use crate::nix::info::NixCheck;
-use crate::util;
+use crate::nix::Hive;
 
-pub fn subcommand() -> ClapCommand {
-    ClapCommand::new("repl")
-        .about("Start an interactive REPL with the complete configuration")
-        .long_about(
-            r#"Start an interactive REPL with the complete configuration
-
-In the REPL, you can inspect the configuration interactively with tab
-completion. The node configurations are accessible under the `nodes`
-attribute set."#,
-        )
-}
-
-pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
+pub async fn run(hive: Hive) -> ColmenaResult<()> {
     let nix_check = NixCheck::detect().await;
     let nix_version = nix_check.version().expect("Could not detect Nix version");
-
-    let hive = util::hive_from_args(local_args).await?;
 
     let expr = hive.get_repl_expression();
 

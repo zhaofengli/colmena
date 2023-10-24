@@ -1,6 +1,6 @@
 //! Deployment options.
 
-use clap::{builder::PossibleValue, ValueEnum};
+use clap::ValueEnum;
 
 use crate::nix::CopyOptions;
 
@@ -36,10 +36,20 @@ pub struct Options {
 }
 
 /// Which evaluator to use.
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq, Default, ValueEnum)]
 pub enum EvaluatorType {
+    #[default]
     Chunked,
     Streaming,
+}
+
+impl std::fmt::Display for EvaluatorType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Chunked => "chunked",
+            Self::Streaming => "streaming",
+        })
+    }
 }
 
 impl Options {
@@ -95,19 +105,6 @@ impl Default for Options {
             force_build_on_target: None,
             force_replace_unknown_profiles: false,
             evaluator: EvaluatorType::Chunked,
-        }
-    }
-}
-
-impl ValueEnum for EvaluatorType {
-    fn value_variants<'a>() -> &'a [Self] {
-        &[Self::Chunked, Self::Streaming]
-    }
-
-    fn to_possible_value<'a>(&self) -> Option<PossibleValue> {
-        match self {
-            Self::Chunked => Some(PossibleValue::new("chunked")),
-            Self::Streaming => Some(PossibleValue::new("streaming")),
         }
     }
 }

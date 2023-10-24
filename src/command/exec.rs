@@ -2,94 +2,78 @@ use std::env;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use clap::{value_parser, Arg, ArgMatches, Command as ClapCommand};
+use clap::Args;
 use futures::future::join_all;
 use tokio::sync::Semaphore;
 
 use crate::error::ColmenaError;
 use crate::job::{JobMonitor, JobState, JobType};
-use crate::nix::NodeFilter;
+use crate::nix::node_filter::NodeFilterOpts;
+use crate::nix::Hive;
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
-pub fn subcommand() -> ClapCommand {
-    let command = ClapCommand::new("exec")
-        .about("Run a command on remote machines")
-        .arg(
-            Arg::new("parallel")
-                .short('p')
-                .long("parallel")
-                .value_name("LIMIT")
-                .help("Deploy parallelism limit")
-                .long_help(
-                    r#"Limits the maximum number of hosts to run the command in parallel.
+#[derive(Debug, Args)]
+#[command(name = "exec", about = "Run a command on remote machines")]
+pub struct Opts {
+    #[arg(
+        short,
+        long,
+        default_value_t = 0,
+        value_name = "LIMIT",
+        help = "Deploy parallelism limit",
+        long_help = r#"Limits the maximum number of hosts to run the command in parallel.
 
 In `colmena exec`, the parallelism limit is disabled (0) by default.
-"#,
-                )
-                .default_value("0")
-                .num_args(1)
-                .value_parser(value_parser!(usize)),
-        )
-        .arg(
-            Arg::new("verbose")
-                .short('v')
-                .long("verbose")
-                .help("Be verbose")
-                .long_help("Deactivates the progress spinner and prints every line of output.")
-                .num_args(0),
-        )
-        .arg(
-            Arg::new("command")
-                .value_name("COMMAND")
-                .trailing_var_arg(true)
-                .help("Command")
-                .required(true)
-                .num_args(1..)
-                .long_help(
-                    r#"Command to run
+"#
+    )]
+    parallel: usize,
+    #[arg(
+        short,
+        long,
+        help = "Be verbose",
+        long_help = "Deactivates the progress spinner and prints every line of output."
+    )]
+    verbose: bool,
+    #[command(flatten)]
+    nodes: NodeFilterOpts,
+    #[arg(
+        trailing_var_arg = true,
+        required = true,
+        value_name = "COMMAND",
+        help = "Command",
+        long_help = r#"Command to run
 
 It's recommended to use -- to separate Colmena options from the command to run. For example:
 
     colmena exec --on @routers -- tcpdump -vni any ip[9] == 89
-"#,
-                ),
-        );
-
-    util::register_selector_args(command)
+"#
+    )]
+    command: Vec<String>,
 }
 
-pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(), ColmenaError> {
-    let hive = util::hive_from_args(local_args).await?;
+pub async fn run(
+    hive: Hive,
+    Opts {
+        parallel,
+        verbose,
+        nodes,
+        command,
+    }: Opts,
+) -> Result<(), ColmenaError> {
     let ssh_config = env::var("SSH_CONFIG_FILE").ok().map(PathBuf::from);
 
-    // FIXME: Just get_one::<NodeFilter>
-    let filter = local_args
-        .get_one::<String>("on")
-        .map(NodeFilter::new)
-        .transpose()?;
+    let mut targets = hive.select_nodes(nodes.on, ssh_config, true).await?;
 
-    let mut targets = hive.select_nodes(filter, ssh_config, true).await?;
-
-    let parallel_sp = Arc::new({
-        let limit = local_args.get_one::<usize>("parallel").unwrap().to_owned();
-
-        if limit > 0 {
-            Some(Semaphore::new(limit))
-        } else {
-            None
-        }
+    let parallel_sp = Arc::new(if parallel > 0 {
+        Some(Semaphore::new(parallel))
+    } else {
+        None
     });
 
-    let command: Arc<Vec<String>> = Arc::new(
-        local_args
-            .get_many::<String>("command")
-            .unwrap()
-            .cloned()
-            .collect(),
-    );
+    let command = Arc::new(command);
 
-    let mut output = SimpleProgressOutput::new(local_args.get_flag("verbose"));
+    let mut output = SimpleProgressOutput::new(verbose);
 
     let (mut monitor, meta) = JobMonitor::new(output.get_sender());
 
@@ -102,7 +86,7 @@ pub async fn run(_global_args: &ArgMatches, local_args: &ArgMatches) -> Result<(
 
         for (name, target) in targets.drain() {
             let parallel_sp = parallel_sp.clone();
-            let command = command.clone();
+            let command = Arc::clone(&command);
 
             let mut host = target.into_host().unwrap();
 

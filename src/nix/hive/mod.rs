@@ -6,6 +6,7 @@ mod tests;
 use std::collections::HashMap;
 use std::convert::AsRef;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use tokio::process::Command;
 use tokio::sync::OnceCell;
@@ -16,7 +17,7 @@ use super::{
     Flake, MetaConfig, NixExpression, NixFlags, NodeConfig, NodeFilter, NodeName,
     ProfileDerivation, SerializedNixExpression, StorePath,
 };
-use crate::error::ColmenaResult;
+use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::JobHandle;
 use crate::util::{CommandExecution, CommandExt};
 use assets::Assets;
@@ -30,6 +31,36 @@ pub enum HivePath {
 
     /// A regular .nix file
     Legacy(PathBuf),
+}
+
+impl FromStr for HivePath {
+    type Err = ColmenaError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        // TODO: check for escaped colon maybe?
+
+        let s = s.to_owned();
+        let path = std::path::PathBuf::from(&s);
+
+        let fut = async move {
+            if !path.exists() && s.contains(':') {
+                // Treat as flake URI
+                let flake = Flake::from_uri(s).await?;
+
+                log::info!("Using flake: {}", flake.uri());
+
+                Ok(Self::Flake(flake))
+            } else {
+                HivePath::from_path(path).await
+            }
+        };
+
+        let handle = tokio::runtime::Handle::try_current()
+            .expect("We should always be executed after we have a runtime");
+        std::thread::spawn(move || handle.block_on(fut))
+            .join()
+            .expect("Failed to join future")
+    }
 }
 
 #[derive(Debug)]

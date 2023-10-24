@@ -3,12 +3,33 @@
 use std::collections::HashSet;
 use std::convert::AsRef;
 use std::iter::{FromIterator, Iterator};
+use std::str::FromStr;
 
+use clap::Args;
 use glob::Pattern as GlobPattern;
 
 use super::{ColmenaError, ColmenaResult, NodeConfig, NodeName};
 
+#[derive(Debug, Default, Args)]
+pub struct NodeFilterOpts {
+    #[arg(
+        long,
+        value_name = "NODES",
+        help = "Node selector",
+        long_help = r#"Select a list of nodes to deploy to.
+
+The list is comma-separated and globs are supported. To match tags, prepend the filter by @. Valid examples:
+
+- host1,host2,host3
+- edge-*
+- edge-*,core-*
+- @a-tag,@tags-can-have-*"#
+    )]
+    pub on: Option<NodeFilter>,
+}
+
 /// A node filter containing a list of rules.
+#[derive(Clone, Debug)]
 pub struct NodeFilter {
     rules: Vec<Rule>,
 }
@@ -16,13 +37,20 @@ pub struct NodeFilter {
 /// A filter rule.
 ///
 /// The filter rules are OR'd together.
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 enum Rule {
     /// Matches a node's attribute name.
     MatchName(GlobPattern),
 
     /// Matches a node's `deployment.tags`.
     MatchTag(GlobPattern),
+}
+
+impl FromStr for NodeFilter {
+    type Err = ColmenaError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::new(s)
+    }
 }
 
 impl NodeFilter {
