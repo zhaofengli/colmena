@@ -2021,27 +2021,18 @@ For more details, read the manual at &lt;https://colmena.cli.rs/0.5&gt;.
 
 Note: You are using a pre-release version of Colmena, so the supported options may be different from what's in the manual.
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena</span> [OPTIONS] [COMMAND]
+<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena</span> [OPTIONS] &lt;COMMAND&gt;
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Commands:</span>
-  <span class="ansi1">apply</span>
-          Apply configurations on remote machines
-  <span class="ansi1">apply-local</span>
-          Apply configurations on the local machine
-  <span class="ansi1">build</span>
-          Build configurations but not push to remote machines
-  <span class="ansi1">eval</span>
-          Evaluate an expression using the complete configuration
-  <span class="ansi1">upload-keys</span>
-          Upload keys to remote hosts
-  <span class="ansi1">exec</span>
-          Run a command on remote machines
-  <span class="ansi1">repl</span>
-          Start an interactive REPL with the complete configuration
-  <span class="ansi1">nix-info</span>
-          Show information about the current Nix installation
-  <span class="ansi1">help</span>
-          Print this message or the help of the given subcommand(s)
+  <span class="ansi1">apply</span>        Apply configurations on remote machines
+  <span class="ansi1">apply-local</span>  Apply configurations on the local machine
+  <span class="ansi1">build</span>        Build configurations but not push to remote machines
+  <span class="ansi1">eval</span>         Evaluate an expression using the complete configuration
+  <span class="ansi1">upload-keys</span>  Upload keys to remote hosts
+  <span class="ansi1">exec</span>         Run a command on remote machines
+  <span class="ansi1">repl</span>         Start an interactive REPL with the complete configuration
+  <span class="ansi1">nix-info</span>     Show information about the current Nix installation
+  <span class="ansi1">help</span>         Print this message or the help of the given subcommand(s)
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Options:</span>
       <span class="ansi1">--show-trace</span>
@@ -2061,8 +2052,6 @@ Note: You are using a pre-release version of Colmena, so the supported options m
           
           For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
-          
-          [default: hive.nix]
 
   <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
           Print help (see a summary with '-h')
@@ -2077,15 +2066,19 @@ Note: You are using a pre-release version of Colmena, so the supported options m
           
           
           [default: auto]
-          [possible values: auto, always, never]
+
+          Possible values:
+          - <span class="ansi1">auto</span>:   Detect automatically
+          - <span class="ansi1">always</span>: Always display colors
+          - <span class="ansi1">never</span>:  Never display colors
 </div></pre>
 <h2 id="colmena-apply"><a class="header" href="#colmena-apply"><code>colmena apply</code></a></h2>
 <pre><div class="hljs">Apply configurations on remote machines
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena apply</span> [OPTIONS] [goal]
+<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena apply</span> [OPTIONS] [GOAL]
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Arguments:</span>
-  [goal]
+  [GOAL]
           The goal of the deployment.
           
           Same as the targets for switch-to-configuration, with the following extra pseudo-goals:
@@ -2098,7 +2091,15 @@ Note: You are using a pre-release version of Colmena, so the supported options m
           
           
           [default: switch]
-          [possible values: build, push, switch, boot, test, dry-activate, keys]
+
+          Possible values:
+          - <span class="ansi1">build</span>:        Build the configurations only
+          - <span class="ansi1">push</span>:         Push the closures only
+          - <span class="ansi1">switch</span>:       Make the configuration the boot default and activate now
+          - <span class="ansi1">boot</span>:         Make the configuration the boot default
+          - <span class="ansi1">test</span>:         Activate the configuration, but don't make it the boot default
+          - <span class="ansi1">dry-activate</span>: Show what would be done if this configuration were activated
+          - <span class="ansi1">upload-keys</span>:  Only upload keys
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Options:</span>
       <span class="ansi1">--eval-node-limit</span> &lt;LIMIT&gt;
@@ -2114,7 +2115,7 @@ Note: You are using a pre-release version of Colmena, so the supported options m
   <span class="ansi1">-p</span>, <span class="ansi1">--parallel</span> &lt;LIMIT&gt;
           Limits the maximum number of hosts to be deployed in parallel.
           
-          Set to 0 to disable parallemism limit.
+          Set to 0 to disable parallelism limit.
           
           
           [default: 10]
@@ -2169,7 +2170,7 @@ Note: You are using a pre-release version of Colmena, so the supported options m
           If `deployment.replaceUnknownProfiles` is set for a target, using this switch
           will treat deployment.replaceUnknownProfiles as though it was set true and perform unknown profile replacement.
 
-      <span class="ansi1">--evaluator</span> &lt;evaluator&gt;
+      <span class="ansi1">--evaluator</span> &lt;EVALUATOR&gt;
           If set to `chunked` (default), evaluation of nodes will happen in batches. If set to `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes will be evaluated in parallel.
           
           This is an experimental feature.
@@ -2192,8 +2193,6 @@ Note: You are using a pre-release version of Colmena, so the supported options m
           
           For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
-          
-          [default: hive.nix]
 
   <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
           Print help (see a summary with '-h')
@@ -2205,20 +2204,32 @@ Note: You are using a pre-release version of Colmena, so the supported options m
           
           
           [default: auto]
-          [possible values: auto, always, never]
+
+          Possible values:
+          - <span class="ansi1">auto</span>:   Detect automatically
+          - <span class="ansi1">always</span>: Always display colors
+          - <span class="ansi1">never</span>:  Never display colors
 </div></pre>
 <h2 id="colmena-apply-local"><a class="header" href="#colmena-apply-local"><code>colmena apply-local</code></a></h2>
 <pre><div class="hljs">Apply configurations on the local machine
 
-<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena apply-local</span> [OPTIONS] [goal]
+<span class="ansi1"></span><span class="ansi1 ansi4">Usage:</span> <span class="ansi1">colmena apply-local</span> [OPTIONS] [GOAL]
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Arguments:</span>
-  [goal]
+  [GOAL]
           Same as the targets for switch-to-configuration.
           "push" is noop in apply-local.
           
           [default: switch]
-          [possible values: push, switch, boot, test, dry-activate, keys]
+
+          Possible values:
+          - <span class="ansi1">build</span>:        Build the configurations only
+          - <span class="ansi1">push</span>:         Push the closures only
+          - <span class="ansi1">switch</span>:       Make the configuration the boot default and activate now
+          - <span class="ansi1">boot</span>:         Make the configuration the boot default
+          - <span class="ansi1">test</span>:         Activate the configuration, but don't make it the boot default
+          - <span class="ansi1">dry-activate</span>: Show what would be done if this configuration were activated
+          - <span class="ansi1">upload-keys</span>:  Only upload keys
 
 <span class="ansi1"></span><span class="ansi1 ansi4">Options:</span>
       <span class="ansi1">--sudo</span>
@@ -2253,8 +2264,6 @@ Note: You are using a pre-release version of Colmena, so the supported options m
           
           For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
-          
-          [default: hive.nix]
 
   <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
           Print help (see a summary with '-h')
@@ -2266,7 +2275,11 @@ Note: You are using a pre-release version of Colmena, so the supported options m
           
           
           [default: auto]
-          [possible values: auto, always, never]
+
+          Possible values:
+          - <span class="ansi1">auto</span>:   Detect automatically
+          - <span class="ansi1">always</span>: Always display colors
+          - <span class="ansi1">never</span>:  Never display colors
 </div></pre>
 <h2 id="colmena-build"><a class="header" href="#colmena-build"><code>colmena build</code></a></h2>
 <pre><div class="hljs">Build configurations but not push to remote machines
@@ -2289,7 +2302,7 @@ This subcommand behaves as if you invoked `apply` with the `build` goal.
   <span class="ansi1">-p</span>, <span class="ansi1">--parallel</span> &lt;LIMIT&gt;
           Limits the maximum number of hosts to be deployed in parallel.
           
-          Set to 0 to disable parallemism limit.
+          Set to 0 to disable parallelism limit.
           
           
           [default: 10]
@@ -2344,7 +2357,7 @@ This subcommand behaves as if you invoked `apply` with the `build` goal.
           If `deployment.replaceUnknownProfiles` is set for a target, using this switch
           will treat deployment.replaceUnknownProfiles as though it was set true and perform unknown profile replacement.
 
-      <span class="ansi1">--evaluator</span> &lt;evaluator&gt;
+      <span class="ansi1">--evaluator</span> &lt;EVALUATOR&gt;
           If set to `chunked` (default), evaluation of nodes will happen in batches. If set to `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes will be evaluated in parallel.
           
           This is an experimental feature.
@@ -2367,8 +2380,6 @@ This subcommand behaves as if you invoked `apply` with the `build` goal.
           
           For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
-          
-          [default: hive.nix]
 
   <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
           Print help (see a summary with '-h')
@@ -2380,7 +2391,11 @@ This subcommand behaves as if you invoked `apply` with the `build` goal.
           
           
           [default: auto]
-          [possible values: auto, always, never]
+
+          Possible values:
+          - <span class="ansi1">auto</span>:   Detect automatically
+          - <span class="ansi1">always</span>: Always display colors
+          - <span class="ansi1">never</span>:  Never display colors
 </div></pre>
 <h2 id="colmena-upload-keys"><a class="header" href="#colmena-upload-keys"><code>colmena upload-keys</code></a></h2>
 <pre><div class="hljs">Upload keys to remote hosts
@@ -2403,7 +2418,7 @@ This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
   <span class="ansi1">-p</span>, <span class="ansi1">--parallel</span> &lt;LIMIT&gt;
           Limits the maximum number of hosts to be deployed in parallel.
           
-          Set to 0 to disable parallemism limit.
+          Set to 0 to disable parallelism limit.
           
           
           [default: 10]
@@ -2458,7 +2473,7 @@ This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
           If `deployment.replaceUnknownProfiles` is set for a target, using this switch
           will treat deployment.replaceUnknownProfiles as though it was set true and perform unknown profile replacement.
 
-      <span class="ansi1">--evaluator</span> &lt;evaluator&gt;
+      <span class="ansi1">--evaluator</span> &lt;EVALUATOR&gt;
           If set to `chunked` (default), evaluation of nodes will happen in batches. If set to `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes will be evaluated in parallel.
           
           This is an experimental feature.
@@ -2481,8 +2496,6 @@ This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
           
           For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
-          
-          [default: hive.nix]
 
   <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
           Print help (see a summary with '-h')
@@ -2494,7 +2507,11 @@ This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
           
           
           [default: auto]
-          [possible values: auto, always, never]
+
+          Possible values:
+          - <span class="ansi1">auto</span>:   Detect automatically
+          - <span class="ansi1">always</span>: Always display colors
+          - <span class="ansi1">never</span>:  Never display colors
 </div></pre>
 <h2 id="colmena-eval"><a class="header" href="#colmena-eval"><code>colmena eval</code></a></h2>
 <pre><div class="hljs">Evaluate an expression using the complete configuration
@@ -2536,8 +2553,6 @@ For example, to retrieve the configuration of one node, you may write something 
           
           For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
-          
-          [default: hive.nix]
 
   <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
           Print help (see a summary with '-h')
@@ -2549,7 +2564,11 @@ For example, to retrieve the configuration of one node, you may write something 
           
           
           [default: auto]
-          [possible values: auto, always, never]
+
+          Possible values:
+          - <span class="ansi1">auto</span>:   Detect automatically
+          - <span class="ansi1">always</span>: Always display colors
+          - <span class="ansi1">never</span>:  Never display colors
 </div></pre>
 <h2 id="colmena-exec"><a class="header" href="#colmena-exec"><code>colmena exec</code></a></h2>
 <pre><div class="hljs">Run a command on remote machines
@@ -2604,8 +2623,6 @@ For example, to retrieve the configuration of one node, you may write something 
           
           For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
-          
-          [default: hive.nix]
 
   <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
           Print help (see a summary with '-h')
@@ -2617,7 +2634,11 @@ For example, to retrieve the configuration of one node, you may write something 
           
           
           [default: auto]
-          [possible values: auto, always, never]
+
+          Possible values:
+          - <span class="ansi1">auto</span>:   Detect automatically
+          - <span class="ansi1">always</span>: Always display colors
+          - <span class="ansi1">never</span>:  Never display colors
 </div></pre>
 <h2 id="colmena-nix-info"><a class="header" href="#colmena-nix-info"><code>colmena nix-info</code></a></h2>
 <pre><div class="hljs">Show information about the current Nix installation
@@ -2642,8 +2663,6 @@ For example, to retrieve the configuration of one node, you may write something 
           
           For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
-          
-          [default: hive.nix]
 
   <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
           Print help (see a summary with '-h')
@@ -2655,7 +2674,11 @@ For example, to retrieve the configuration of one node, you may write something 
           
           
           [default: auto]
-          [possible values: auto, always, never]
+
+          Possible values:
+          - <span class="ansi1">auto</span>:   Detect automatically
+          - <span class="ansi1">always</span>: Always display colors
+          - <span class="ansi1">never</span>:  Never display colors
 </div></pre>
 <h2 id="colmena-repl"><a class="header" href="#colmena-repl"><code>colmena repl</code></a></h2>
 <pre><div class="hljs">Start an interactive REPL with the complete configuration
@@ -2684,8 +2707,6 @@ attribute set.
           
           For a sample configuration, check the manual at &lt;https://colmena.cli.rs/0.5&gt;.
           
-          
-          [default: hive.nix]
 
   <span class="ansi1">-h</span>, <span class="ansi1">--help</span>
           Print help (see a summary with '-h')
@@ -2697,7 +2718,11 @@ attribute set.
           
           
           [default: auto]
-          [possible values: auto, always, never]
+
+          Possible values:
+          - <span class="ansi1">auto</span>:   Detect automatically
+          - <span class="ansi1">always</span>: Always display colors
+          - <span class="ansi1">never</span>:  Never display colors
 </div></pre>
 <div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.5.0-pre (apiVersion=0.5, unstable=True) -->
 <h1 id="release-notes"><a class="header" href="#release-notes">Release Notes</a></h1>
