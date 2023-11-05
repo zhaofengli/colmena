@@ -278,6 +278,11 @@ pub async fn run() {
     set_color_pref(&opts.color);
     init_logging();
 
+    if let Command::GenCompletions { shell } = opts.command {
+        print_completions(shell, &mut Opts::command());
+        return;
+    }
+
     let hive = get_hive(&opts).await.expect("Failed to get flake or hive");
 
     use crate::troubleshooter::run_wrapped as r;
@@ -306,15 +311,19 @@ pub async fn run() {
             };
             r(command::apply::run(hive, args), opts.config).await
         }
-        Command::GenCompletions { shell } => print_completions(shell, &mut Opts::command()),
+        Command::GenCompletions { .. } => unreachable!(),
     }
 }
 
 fn print_completions(shell: Shell, cmd: &mut clap::Command) {
+    let bin_name = cmd.get_bin_name()
+        .expect("Must have a bin_name")
+        .to_string();
+
     clap_complete::generate(
         shell,
         cmd,
-        cmd.get_name().to_string(),
+        bin_name,
         &mut std::io::stdout(),
     );
 }
