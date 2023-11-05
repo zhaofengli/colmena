@@ -316,16 +316,12 @@ pub async fn run() {
 }
 
 fn print_completions(shell: Shell, cmd: &mut clap::Command) {
-    let bin_name = cmd.get_bin_name()
+    let bin_name = cmd
+        .get_bin_name()
         .expect("Must have a bin_name")
         .to_string();
 
-    clap_complete::generate(
-        shell,
-        cmd,
-        bin_name,
-        &mut std::io::stdout(),
-    );
+    clap_complete::generate(shell, cmd, bin_name, &mut std::io::stdout());
 }
 
 fn set_color_pref(when: &ColorWhen) {
