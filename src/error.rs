@@ -75,6 +75,9 @@ pub enum ColmenaError {
 
     #[snafu(display("Unknown error: {}", message))]
     Unknown { message: String },
+
+    #[snafu(display("Exec failed on {} hosts", n_hosts))]
+    ExecError { n_hosts: usize },
 }
 
 impl From<std::io::Error> for ColmenaError {
