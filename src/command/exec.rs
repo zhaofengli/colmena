@@ -110,9 +110,18 @@ pub async fn run(
             }));
         }
 
-        join_all(futures).await;
+        let results: Vec<Result<(), ColmenaError>> = join_all(futures).await;
 
-        Ok(())
+        let mut failed: usize = 0;
+
+        for x in results {
+            match x {
+                Err(_) => failed += 1,
+                Ok(_) => (),
+            }
+        }
+
+        Ok(failed)
     });
 
     let (meta, monitor, output) = tokio::join!(
@@ -121,9 +130,13 @@ pub async fn run(
         output.run_until_completion(),
     );
 
-    meta?;
+    let failed = meta?;
     monitor?;
     output?;
 
-    Ok(())
+    if failed > 0 {
+        Err(ColmenaError::ExecError { n_hosts: failed })
+    } else {
+        Ok(())
+    }
 }
