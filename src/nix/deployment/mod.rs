@@ -671,6 +671,26 @@ impl Deployment {
             target
         };
 
+        // Delete old generations
+        let mut target = if self.options.delete_old {
+            let job = parent.create_job(JobType::DeleteOld, nodes.clone())?;
+            job.run_waiting(|job| async move {
+                job.state(JobState::Running)?;
+                job.message("Deleting old NixOS generations...".to_string())?;
+
+                let host = target.host.as_mut().unwrap();
+                host.set_job(Some(job.clone()));
+                host.run_command(&["nix-collect-garbage", "--delete-old"])
+                    .await?;
+
+                job.success_with_message("Deleted old NixOS generations.".to_string())?;
+                Ok(target)
+            })
+            .await?
+        } else {
+            target
+        };
+
         // Upload post-activation keys
         if self.options.upload_keys {
             let job = parent.create_job(JobType::UploadKeys, nodes.clone())?;
