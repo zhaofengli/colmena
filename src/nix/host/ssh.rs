@@ -33,6 +33,9 @@ pub struct Ssh {
     /// Command to elevate privileges with.
     privilege_escalation_command: Vec<String>,
 
+    /// extra SSH options
+    extra_ssh_options: Vec<String>,
+
     /// Whether to use the experimental `nix copy` command.
     use_nix3_copy: bool,
 
@@ -189,6 +192,7 @@ impl Ssh {
             port: None,
             ssh_config: None,
             privilege_escalation_command: Vec::new(),
+            extra_ssh_options: Vec::new(),
             use_nix3_copy: false,
             job: None,
         }
@@ -204,6 +208,10 @@ impl Ssh {
 
     pub fn set_privilege_escalation_command(&mut self, command: Vec<String>) {
         self.privilege_escalation_command = command;
+    }
+
+    pub fn set_extra_ssh_options(&mut self, options: Vec<String>) {
+        self.extra_ssh_options = options;
     }
 
     pub fn set_use_nix3_copy(&mut self, enable: bool) {
@@ -346,6 +354,7 @@ impl Ssh {
         ]
         .iter()
         .map(|s| s.to_string())
+        .chain(self.extra_ssh_options.clone())
         .collect();
 
         if let Some(port) = self.port {

@@ -78,6 +78,9 @@ pub struct NodeConfig {
     #[serde(rename = "privilegeEscalationCommand")]
     privilege_escalation_command: Vec<String>,
 
+    #[serde(rename = "sshOptions")]
+    extra_ssh_options: Vec<String>,
+
     #[validate(custom = "validate_keys")]
     keys: HashMap<String, Key>,
 }
@@ -181,6 +184,7 @@ impl NodeConfig {
         self.target_host.as_ref().map(|target_host| {
             let mut host = Ssh::new(self.target_user.clone(), target_host.clone());
             host.set_privilege_escalation_command(self.privilege_escalation_command.clone());
+            host.set_extra_ssh_options(self.extra_ssh_options.clone());
 
             if let Some(target_port) = self.target_port {
                 host.set_port(target_port);

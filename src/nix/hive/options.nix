@@ -208,6 +208,13 @@ with builtins; rec {
           type = types.listOf types.str;
           default = [ "sudo" "-H" "--" ];
         };
+        sshOptions = lib.mkOption {
+          description = mdDoc ''
+            Extra SSH options to pass to the SSH command.
+          '';
+          type = types.listOf types.str;
+          default = [];
+        };
       };
     };
   };
