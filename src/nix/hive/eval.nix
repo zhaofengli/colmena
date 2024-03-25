@@ -1,8 +1,8 @@
 { rawHive ? null               # Colmena Hive attrset
 , rawFlake ? null              # Nix Flake attrset with `outputs.colmena`
 , hermetic ? rawFlake != null  # Whether we are allowed to use <nixpkgs>
-, colmenaOptions
-, colmenaModules
+, colmenaOptions ? import ./options.nix
+, colmenaModules ? import ./modules.nix
 }:
 with builtins;
 let
