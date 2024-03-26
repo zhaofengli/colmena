@@ -104,6 +104,11 @@
       inherit rawHive colmenaOptions colmenaModules;
       hermetic = true;
     };
+
+    lib.fromRawFlake = rawFlake: import ./src/nix/hive/eval.nix {
+      inherit rawFlake colmenaOptions colmenaModules;
+      hermetic = true;
+    };
   };
 
   nixConfig = {
