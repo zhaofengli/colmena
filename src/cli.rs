@@ -9,8 +9,9 @@ use env_logger::fmt::WriteStyle;
 
 use crate::{
     command::{self, apply::DeployOpts},
-    error::ColmenaResult,
+    error::{ColmenaError, ColmenaResult},
     nix::{Hive, HivePath},
+    troubleshooter::run_wrapped,
 };
 
 /// Base URL of the manual, without the trailing slash.
@@ -232,14 +233,14 @@ async fn get_hive(opts: &Opts) -> ColmenaResult<Hive> {
                 }
             }
 
-            if file_path.is_none() {
-                log::error!(
-                    "Could not find `hive.nix` or `flake.nix` in {:?} or any parent directory",
-                    std::env::current_dir()?
-                );
+            match file_path {
+                None => {
+                    return Err(ColmenaError::InvalidHive {
+                        current_dir: std::env::current_dir()?,
+                    })
+                }
+                Some(file_path) => HivePath::from_path(file_path).await?,
             }
-
-            HivePath::from_path(file_path.unwrap()).await?
         }
     };
 
@@ -283,33 +284,37 @@ pub async fn run() {
         return;
     }
 
-    let hive = get_hive(&opts).await.expect("Failed to get flake or hive");
+    let hive = run_wrapped(get_hive(&opts), None).await;
+    let config = opts.config;
+    let command = opts.command;
 
-    use crate::troubleshooter::run_wrapped as r;
+    run_wrapped(handle_command(command, hive), config).await;
+}
 
-    match opts.command {
-        Command::Apply(args) => r(command::apply::run(hive, args), opts.config).await,
+async fn handle_command(command: Command, hive: Hive) -> ColmenaResult<()> {
+    match command {
+        Command::Apply(args) => command::apply::run(hive, args).await,
         #[cfg(target_os = "linux")]
-        Command::ApplyLocal(args) => r(command::apply_local::run(hive, args), opts.config).await,
-        Command::Eval(args) => r(command::eval::run(hive, args), opts.config).await,
-        Command::Exec(args) => r(command::exec::run(hive, args), opts.config).await,
-        Command::NixInfo => r(command::nix_info::run(), opts.config).await,
-        Command::Repl => r(command::repl::run(hive), opts.config).await,
+        Command::ApplyLocal(args) => command::apply_local::run(hive, args).await,
+        Command::Eval(args) => command::eval::run(hive, args).await,
+        Command::Exec(args) => command::exec::run(hive, args).await,
+        Command::NixInfo => command::nix_info::run().await,
+        Command::Repl => command::repl::run(hive).await,
         #[cfg(debug_assertions)]
-        Command::TestProgress => r(command::test_progress::run(), opts.config).await,
+        Command::TestProgress => command::test_progress::run().await,
         Command::Build { deploy } => {
             let args = command::apply::Opts {
                 deploy,
                 goal: crate::nix::Goal::Build,
             };
-            r(command::apply::run(hive, args), opts.config).await
+            command::apply::run(hive, args).await
         }
         Command::UploadKeys { deploy } => {
             let args = command::apply::Opts {
                 deploy,
                 goal: crate::nix::Goal::UploadKeys,
             };
-            r(command::apply::run(hive, args), opts.config).await
+            command::apply::run(hive, args).await
         }
         Command::GenCompletions { .. } => unreachable!(),
     }
