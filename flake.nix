@@ -3,7 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    stable.url = "github:NixOS/nixpkgs/nixos-23.05";
+    stable.url = "github:NixOS/nixpkgs/nixos-24.05";
 
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -83,11 +83,21 @@
     in if pkgs.stdenv.isLinux then import ./integration-tests {
       pkgs = import nixpkgs {
         inherit system;
-        overlays = [ self.overlays.default inputsOverlay ];
+        overlays = [
+          self.overlays.default
+          inputsOverlay
+
+          self._evalJobsOverlay
+        ];
       };
       pkgsStable = import stable {
         inherit system;
-        overlays = [ self.overlays.default inputsOverlay ];
+        overlays = [
+          self.overlays.default
+          inputsOverlay
+
+          self._evalJobsOverlay
+        ];
       };
     } else {};
   }) // {
@@ -103,6 +113,23 @@
     lib.makeHive = rawHive: import ./src/nix/hive/eval.nix {
       inherit rawHive colmenaOptions colmenaModules;
       hermetic = true;
+    };
+
+    # Temporary fork of nix-eval-jobs with changes to be upstreamed
+    # Mostly for the integration test setup and not needed in most use cases
+    _evalJobsOverlay = final: prev: let
+      patched = prev.nix-eval-jobs.overrideAttrs (old: {
+        version = old.version + "-colmena";
+        patches = (old.patches or []) ++ [
+          # Allows NIX_PATH to be honored
+          (final.fetchpatch {
+            url = "https://github.com/zhaofengli/nix-eval-jobs/commit/6ff5972724230ac2b96eb1ec355cd25ca512ef57.patch";
+            hash = "sha256-2NiMYpw27N+X7Ixh2HkP3fcWvopDJWQDVjgRdhOL2QQ";
+          })
+        ];
+      });
+    in {
+      nix-eval-jobs = patched;
     };
   };
 

@@ -129,6 +129,9 @@ let
       extraDeployerConfig
     ];
 
+    # FIXME: Colmena flake support is broken with Nix 2.24
+    nix.package = pkgs.nixVersions.nix_2_18;
+
     nix.registry = lib.mkIf (pkgs ? _inputs) {
       nixpkgs.flake = pkgs._inputs.nixpkgs;
     };
@@ -140,7 +143,7 @@ let
     nix.settings.substituters = lib.mkForce [];
 
     virtualisation = {
-      memorySize = 4096;
+      memorySize = 6144;
       writableStore = true;
       additionalPaths = [
         "${pkgs.path}"
