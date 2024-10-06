@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="light" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -10,7 +10,7 @@
         
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#ffffff">
 
         <link rel="icon" href="../favicon.svg">
         <link rel="shortcut icon" href="../favicon.png">
@@ -31,7 +31,7 @@
         <!-- Custom theme stylesheets -->
 
     </head>
-    <body>
+    <body class="sidebar-visible no-js">
     <div id="body-container">
         <!-- Provide site root to javascript -->
         <script>
@@ -61,31 +61,38 @@
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             var html = document.querySelector('html');
-            html.classList.remove('no-js')
             html.classList.remove('light')
             html.classList.add(theme);
-            html.classList.add('js');
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
         </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var html = document.querySelector('html');
+            var body = document.querySelector('body');
             var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
             } else {
                 sidebar = 'hidden';
             }
-            html.classList.remove('sidebar-visible');
-            html.classList.add("sidebar-" + sidebar);
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
                 <ol class="chapter"><li class="chapter-item expanded "><a href="../introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="../tutorial/index.html"><strong aria-hidden="true">2.</strong> Tutorial</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../tutorial/flakes.html"><strong aria-hidden="true">2.1.</strong> Usage with Flakes</a></li><li class="chapter-item expanded "><a href="../tutorial/migration.html"><strong aria-hidden="true">2.2.</strong> Migrating from NixOps/morph</a></li></ol></li><li class="chapter-item expanded "><a href="../features/index.html"><strong aria-hidden="true">3.</strong> Features</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../features/tags.html"><strong aria-hidden="true">3.1.</strong> Node Tagging</a></li><li class="chapter-item expanded "><a href="../features/apply-local.html"><strong aria-hidden="true">3.2.</strong> Local Deployment</a></li><li class="chapter-item expanded "><a href="../features/keys.html"><strong aria-hidden="true">3.3.</strong> Secrets</a></li><li class="chapter-item expanded "><a href="../features/eval.html"><strong aria-hidden="true">3.4.</strong> Ad Hoc Evaluation</a></li><li class="chapter-item expanded "><a href="../features/parallelism.html"><strong aria-hidden="true">3.5.</strong> Parallelism</a></li><li class="chapter-item expanded "><a href="../features/remote-builds.html"><strong aria-hidden="true">3.6.</strong> Remote Builds</a></li></ol></li><li class="chapter-item expanded "><a href="../examples/index.html"><strong aria-hidden="true">4.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../examples/multi-arch.html"><strong aria-hidden="true">4.1.</strong> Multi-Architecture Deployments</a></li></ol></li><li class="chapter-item expanded "><a href="../reference/index.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../reference/deployment.html" class="active"><strong aria-hidden="true">5.1.</strong> Deployment Options</a></li><li class="chapter-item expanded "><a href="../reference/meta.html"><strong aria-hidden="true">5.2.</strong> Meta Options</a></li><li class="chapter-item expanded "><a href="../reference/cli.html"><strong aria-hidden="true">5.3.</strong> Command Line Options</a></li></ol></li><li class="chapter-item expanded "><a href="../release-notes.html"><strong aria-hidden="true">6.</strong> Release Notes</a></li><li class="chapter-item expanded "><a href="../contributing.html"><strong aria-hidden="true">7.</strong> Contributing</a></li></ol>
             </div>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
         </nav>
 
         <!-- Track and set sidebar scroll position -->
@@ -116,9 +123,9 @@
                                 <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
-                        </button>
+                        </label>
                         <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
                             <i class="fa fa-paint-brush"></i>
                         </button>
@@ -229,13 +236,13 @@ attribute set of (submodule)</p>
 <p><em>Type:</em>
 path</p>
 <p><em>Default:</em>
-<code>&quot;/run/keys&quot;</code></p>
+<code>"/run/keys"</code></p>
 <h2 id="deploymentkeysnamegroup"><a class="header" href="#deploymentkeysnamegroup">deployment.keys.&lt;name&gt;.group</a></h2>
 <p>The group that will own the file.</p>
 <p><em>Type:</em>
 string</p>
 <p><em>Default:</em>
-<code>&quot;root&quot;</code></p>
+<code>"root"</code></p>
 <h2 id="deploymentkeysnamekeycommand"><a class="header" href="#deploymentkeysnamekeycommand">deployment.keys.&lt;name&gt;.keyCommand</a></h2>
 <p>Command to run to generate the key.
 One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must be set.</p>
@@ -255,13 +262,13 @@ null or path</p>
 <p><em>Type:</em>
 string</p>
 <p><em>Default:</em>
-<code>&quot;‹name›&quot;</code></p>
+<code>"‹name›"</code></p>
 <h2 id="deploymentkeysnamepermissions"><a class="header" href="#deploymentkeysnamepermissions">deployment.keys.&lt;name&gt;.permissions</a></h2>
 <p>Permissions to set for the file.</p>
 <p><em>Type:</em>
 string</p>
 <p><em>Default:</em>
-<code>&quot;0600&quot;</code></p>
+<code>"0600"</code></p>
 <h2 id="deploymentkeysnametext"><a class="header" href="#deploymentkeysnametext">deployment.keys.&lt;name&gt;.text</a></h2>
 <p>Content of the key.
 One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must be set.</p>
@@ -279,13 +286,13 @@ null or string</p>
 <p><em>Type:</em>
 one of “pre-activation”, “post-activation”</p>
 <p><em>Default:</em>
-<code>&quot;pre-activation&quot;</code></p>
+<code>"pre-activation"</code></p>
 <h2 id="deploymentkeysnameuser"><a class="header" href="#deploymentkeysnameuser">deployment.keys.&lt;name&gt;.user</a></h2>
 <p>The group that will own the file.</p>
 <p><em>Type:</em>
 string</p>
 <p><em>Default:</em>
-<code>&quot;root&quot;</code></p>
+<code>"root"</code></p>
 <h2 id="deploymentprivilegeescalationcommand"><a class="header" href="#deploymentprivilegeescalationcommand">deployment.privilegeEscalationCommand</a></h2>
 <p>Command to use to elevate privileges when activating the new profiles on SSH hosts.</p>
 <p>This is used on SSH hosts when <code>deployment.targetUser</code> is not <code>root</code>.
@@ -294,9 +301,9 @@ The user must be allowed to use the command non-interactively.</p>
 list of string</p>
 <p><em>Default:</em></p>
 <pre><code>[
-  &quot;sudo&quot;
-  &quot;-H&quot;
-  &quot;--&quot;
+  "sudo"
+  "-H"
+  "--"
 ]
 </code></pre>
 <h2 id="deploymentreplaceunknownprofiles"><a class="header" href="#deploymentreplaceunknownprofiles">deployment.replaceUnknownProfiles</a></h2>
@@ -334,13 +341,13 @@ If set to null, only local deployment will be supported.</p>
 <p><em>Type:</em>
 null or string</p>
 <p><em>Default:</em>
-<code>&quot;nixos&quot;</code></p>
+<code>"nixos"</code></p>
 <h2 id="deploymenttargetport"><a class="header" href="#deploymenttargetport">deployment.targetPort</a></h2>
 <p>The target SSH port for deployment.</p>
 <p>By default, the port is the standard port (22) or taken
 from your ssh_config.</p>
 <p><em>Type:</em>
-null or unsigned integer, meaning &gt;=0</p>
+null or (unsigned integer, meaning &gt;=0)</p>
 <p><em>Default:</em>
 <code>null</code></p>
 <h2 id="deploymenttargetuser"><a class="header" href="#deploymenttargetuser">deployment.targetUser</a></h2>
@@ -349,7 +356,7 @@ target user will not be specified in SSH invocations.</p>
 <p><em>Type:</em>
 null or string</p>
 <p><em>Default:</em>
-<code>&quot;root&quot;</code></p>
+<code>"root"</code></p>
 
                     </main>
 
@@ -359,7 +366,7 @@ null or string</p>
                                 <i class="fa fa-angle-left"></i>
                             </a>
 
-                            <a rel="next" href="../reference/meta.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../reference/meta.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <i class="fa fa-angle-right"></i>
                             </a>
 
@@ -373,7 +380,7 @@ null or string</p>
                         <i class="fa fa-angle-left"></i>
                     </a>
 
-                    <a rel="next" href="../reference/meta.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../reference/meta.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <i class="fa fa-angle-right"></i>
                     </a>
             </nav>

@@ -1,17 +1,17 @@
 <!DOCTYPE HTML>
-<html lang="en" class="sidebar-visible no-js light">
+<html lang="en" class="light" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
         <title>Colmena (Unstable)</title>
-        <meta name="robots" content="noindex" />
+        <meta name="robots" content="noindex">
 
 
         <!-- Custom HTML head -->
         
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="theme-color" content="#ffffff" />
+        <meta name="theme-color" content="#ffffff">
 
         <link rel="icon" href="favicon.svg">
         <link rel="shortcut icon" href="favicon.png">
@@ -32,7 +32,7 @@
         <!-- Custom theme stylesheets -->
 
     </head>
-    <body>
+    <body class="sidebar-visible no-js">
     <div id="body-container">
         <!-- Provide site root to javascript -->
         <script>
@@ -62,31 +62,38 @@
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
             var html = document.querySelector('html');
-            html.classList.remove('no-js')
             html.classList.remove('light')
             html.classList.add(theme);
-            html.classList.add('js');
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
         </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var html = document.querySelector('html');
+            var body = document.querySelector('body');
             var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
             } else {
                 sidebar = 'hidden';
             }
-            html.classList.remove('sidebar-visible');
-            html.classList.add("sidebar-" + sidebar);
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
                 <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="tutorial/index.html"><strong aria-hidden="true">2.</strong> Tutorial</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorial/flakes.html"><strong aria-hidden="true">2.1.</strong> Usage with Flakes</a></li><li class="chapter-item expanded "><a href="tutorial/migration.html"><strong aria-hidden="true">2.2.</strong> Migrating from NixOps/morph</a></li></ol></li><li class="chapter-item expanded "><a href="features/index.html"><strong aria-hidden="true">3.</strong> Features</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="features/tags.html"><strong aria-hidden="true">3.1.</strong> Node Tagging</a></li><li class="chapter-item expanded "><a href="features/apply-local.html"><strong aria-hidden="true">3.2.</strong> Local Deployment</a></li><li class="chapter-item expanded "><a href="features/keys.html"><strong aria-hidden="true">3.3.</strong> Secrets</a></li><li class="chapter-item expanded "><a href="features/eval.html"><strong aria-hidden="true">3.4.</strong> Ad Hoc Evaluation</a></li><li class="chapter-item expanded "><a href="features/parallelism.html"><strong aria-hidden="true">3.5.</strong> Parallelism</a></li><li class="chapter-item expanded "><a href="features/remote-builds.html"><strong aria-hidden="true">3.6.</strong> Remote Builds</a></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">4.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/multi-arch.html"><strong aria-hidden="true">4.1.</strong> Multi-Architecture Deployments</a></li></ol></li><li class="chapter-item expanded "><a href="reference/index.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="reference/deployment.html"><strong aria-hidden="true">5.1.</strong> Deployment Options</a></li><li class="chapter-item expanded "><a href="reference/meta.html"><strong aria-hidden="true">5.2.</strong> Meta Options</a></li><li class="chapter-item expanded "><a href="reference/cli.html"><strong aria-hidden="true">5.3.</strong> Command Line Options</a></li></ol></li><li class="chapter-item expanded "><a href="release-notes.html"><strong aria-hidden="true">6.</strong> Release Notes</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">7.</strong> Contributing</a></li></ol>
             </div>
-            <div id="sidebar-resize-handle" class="sidebar-resize-handle"></div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
         </nav>
 
         <!-- Track and set sidebar scroll position -->
@@ -117,9 +124,9 @@
                                 <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
-                        <button id="sidebar-toggle" class="icon-button" type="button" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
                             <i class="fa fa-bars"></i>
-                        </button>
+                        </label>
                         <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
                             <i class="fa fa-paint-brush"></i>
                         </button>
@@ -260,10 +267,10 @@ This binary cache contains unstable versions of Colmena built by <a href="https:
     networking.hostName = name;
     time.timeZone = nodes.host-b.config.time.timeZone;
 
-    boot.loader.grub.device = &quot;/dev/sda&quot;;
-    fileSystems.&quot;/&quot; = {
-      device = &quot;/dev/sda1&quot;;
-      fsType = &quot;ext4&quot;;
+    boot.loader.grub.device = "/dev/sda";
+    fileSystems."/" = {
+      device = "/dev/sda1";
+      fsType = "ext4";
     };
   };
 
@@ -271,7 +278,7 @@ This binary cache contains unstable versions of Colmena built by <a href="https:
     # Like NixOps and Morph, Colmena will attempt to connect to
     # the remote host using the attribute name by default. You
     # can override it like:
-    deployment.targetHost = &quot;host-b.mydomain.tld&quot;;
+    deployment.targetHost = "host-b.mydomain.tld";
 
     # It's also possible to override the target SSH port.
     # For further customization, use the SSH_CONFIG_FILE
@@ -282,18 +289,18 @@ This binary cache contains unstable versions of Colmena built by <a href="https:
     deployment.replaceUnknownProfiles = false;
 
     # You can filter hosts by tags with --on @tag-a,@tag-b.
-    # In this example, you can deploy to hosts with the &quot;web&quot; tag using:
+    # In this example, you can deploy to hosts with the "web" tag using:
     #    colmena apply --on @web
     # You can use globs in tag matching as well:
     #    colmena apply --on '@infra-*'
-    deployment.tags = [ &quot;web&quot; &quot;infra-lax&quot; ];
+    deployment.tags = [ "web" "infra-lax" ];
 
-    time.timeZone = &quot;America/Los_Angeles&quot;;
+    time.timeZone = "America/Los_Angeles";
 
-    boot.loader.grub.device = &quot;/dev/sda&quot;;
-    fileSystems.&quot;/&quot; = {
-      device = &quot;/dev/sda1&quot;;
-      fsType = &quot;ext4&quot;;
+    boot.loader.grub.device = "/dev/sda";
+    fileSystems."/" = {
+      device = "/dev/sda1";
+      fsType = "ext4";
     };
   };
 }
@@ -331,13 +338,13 @@ This binary cache contains unstable versions of Colmena built by <a href="https:
 <p>Here is a short example:</p>
 <pre><code class="language-nix">{
   inputs = {
-    nixpkgs.url = &quot;github:NixOS/nixpkgs/nixos-unstable&quot;;
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
   };
   outputs = { nixpkgs, ... }: {
     colmena = {
       meta = {
         nixpkgs = import nixpkgs {
-          system = &quot;x86_64-linux&quot;;
+          system = "x86_64-linux";
           overlays = [];
         };
       };
@@ -348,12 +355,12 @@ This binary cache contains unstable versions of Colmena built by <a href="https:
       };
       host-b = {
         deployment = {
-          targetHost = &quot;somehost.tld&quot;;
+          targetHost = "somehost.tld";
           targetPort = 1234;
-          targetUser = &quot;luser&quot;;
+          targetUser = "luser";
         };
         boot.isContainer = true;
-        time.timeZone = &quot;America/Los_Angeles&quot;;
+        time.timeZone = "America/Los_Angeles";
       };
     };
   };
@@ -398,7 +405,7 @@ The options accepts one of the following:</p>
 </li>
 <li>A fully initialized Nixpkgs attribute set
 <ul>
-<li>Example: <code>import ./nixpkgs { system = &quot;x86_64-linux&quot;; }</code></li>
+<li>Example: <code>import ./nixpkgs { system = "x86_64-linux"; }</code></li>
 </ul>
 </li>
 </ul>
@@ -419,12 +426,12 @@ The options accepts one of the following:</p>
 You can specify tags using the <code>deployment.tags</code> option:</p>
 <pre><code class="language-nix">{
   alpha = { pkgs, ... }: {
-    deployment.tags = [ &quot;web&quot; &quot;infra-lax&quot; ];
+    deployment.tags = [ "web" "infra-lax" ];
 
     # ... Rest of configuration ...
   };
   beta = { pkgs, ... }: {
-    deployment.tags = [ &quot;infra-sfo&quot; ];
+    deployment.tags = [ "infra-sfo" ];
 
     # ... Rest of configuration ...
   };
@@ -464,7 +471,7 @@ You may also find it helpful to set <code>deployment.targetHost</code> to <code>
 
   # This attribute name must match the output of `hostname` on your machine
   laptop = { name, nodes, ... }: {
-    networking.hostName = &quot;laptop&quot;;
+    networking.hostName = "laptop";
 
     deployment = {
       # Allow local deployment with `colmena apply-local`
@@ -494,18 +501,18 @@ It implements a subset of the <code>deployment.keys</code> options supported by 
 <p>For example, to deploy DNS-01 credentials for use with <code>security.acme</code>:</p>
 <pre><code class="language-nix">{
   shared-box = {
-    security.acme.certs.&quot;my-site.tld&quot;.credentialsFile = &quot;/run/keys/acme-credentials.secret&quot;;
-    deployment.keys.&quot;acme-credentials.secret&quot; = {
+    security.acme.certs."my-site.tld".credentialsFile = "/run/keys/acme-credentials.secret";
+    deployment.keys."acme-credentials.secret" = {
       # Alternatively, `text` (string) or `keyFile` (path to file)
       # may be specified.
-      keyCommand = [ &quot;vault&quot; &quot;read&quot; &quot;-field=env&quot; &quot;secret/dns01&quot; ];
+      keyCommand = [ "vault" "read" "-field=env" "secret/dns01" ];
 
-      destDir = &quot;/run/keys&quot;;       # Default: /run/keys
-      user = &quot;acme&quot;;               # Default: root
-      group = &quot;nginx&quot;;             # Default: root
-      permissions = &quot;0640&quot;;        # Default: 0600
+      destDir = "/run/keys";       # Default: /run/keys
+      user = "acme";               # Default: root
+      group = "nginx";             # Default: root
+      permissions = "0640";        # Default: 0600
 
-      uploadAt = &quot;pre-activation&quot;; # Default: pre-activation, Alternative: post-activation
+      uploadAt = "pre-activation"; # Default: pre-activation, Alternative: post-activation
     };
     # Rest of configuration...
   };
@@ -519,7 +526,7 @@ This unit is only active when the corresponding file is present, allowing you to
 <h2 id="key-permissions"><a class="header" href="#key-permissions">Key Permissions</a></h2>
 <p>The <code>/run/keys</code> directory is owned by the <code>keys</code> group. If you are using a
 systemd service running as a non-root user, you will likely need to add:</p>
-<pre><code>SupplementaryGroups = [ &quot;keys&quot; ];
+<pre><code>SupplementaryGroups = [ "keys" ];
 </code></pre>
 <p>to your service configuration.</p>
 <h2 id="flakes"><a class="header" href="#flakes">Flakes</a></h2>
@@ -536,7 +543,7 @@ lib.attrsets.mapAttrs (k: v: v.config.deployment.targetHost) nodes
 </code></pre>
 <p>Then you can obtain a JSON output with:</p>
 <pre><code class="language-console">$ colmena eval target-hosts.nix
-{&quot;alpha&quot;:&quot;fd12:3456::1&quot;,&quot;beta&quot;:&quot;fd12:3456::2&quot;}
+{"alpha":"fd12:3456::1","beta":"fd12:3456::2"}
 </code></pre>
 <p>You can also specify an expression directly on the command line:</p>
 <pre><code class="language-console">$ colmena eval -E '{ nodes, pkgs, lib, ... }: ...'
@@ -555,7 +562,7 @@ Welcome to Nix 2.10.3. Type :? for help.
 Loading installable ''...
 Added 3 variables.
 nix-repl&gt; nodes.alpha.config.deployment.targetHost
-&quot;fd12:3456::1&quot;
+"fd12:3456::1"
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.5.0-pre (apiVersion=0.5, unstable=True) -->
 <h1 id="parallelism"><a class="header" href="#parallelism">Parallelism</a></h1>
@@ -604,7 +611,7 @@ There are two ways to achieve this:</p>
   # The NixOS machine you are running Colmena on (x86_64-linux)
   laptop = { pkgs, ... }: {
     # Enable binfmt emulation for aarch64-linux
-    boot.binfmt.emulatedSystems = [ &quot;aarch64-linux&quot; ];
+    boot.binfmt.emulatedSystems = [ "aarch64-linux" ];
 
     # ... Rest of configuration ...
   };
@@ -612,7 +619,7 @@ There are two ways to achieve this:</p>
   # The remote machine running a foreign architecture (aarch64-linux)
   rpi = { pkgs, ... }: {
     # Override nixpkgs architecture
-    nixpkgs.system = &quot;aarch64-linux&quot;;
+    nixpkgs.system = "aarch64-linux";
 
     # ... Rest of configuration ...
   };
@@ -694,13 +701,13 @@ attribute set of (submodule)</p>
 <p><em>Type:</em>
 path</p>
 <p><em>Default:</em>
-<code>&quot;/run/keys&quot;</code></p>
+<code>"/run/keys"</code></p>
 <h2 id="deploymentkeysnamegroup"><a class="header" href="#deploymentkeysnamegroup">deployment.keys.&lt;name&gt;.group</a></h2>
 <p>The group that will own the file.</p>
 <p><em>Type:</em>
 string</p>
 <p><em>Default:</em>
-<code>&quot;root&quot;</code></p>
+<code>"root"</code></p>
 <h2 id="deploymentkeysnamekeycommand"><a class="header" href="#deploymentkeysnamekeycommand">deployment.keys.&lt;name&gt;.keyCommand</a></h2>
 <p>Command to run to generate the key.
 One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must be set.</p>
@@ -720,13 +727,13 @@ null or path</p>
 <p><em>Type:</em>
 string</p>
 <p><em>Default:</em>
-<code>&quot;‹name›&quot;</code></p>
+<code>"‹name›"</code></p>
 <h2 id="deploymentkeysnamepermissions"><a class="header" href="#deploymentkeysnamepermissions">deployment.keys.&lt;name&gt;.permissions</a></h2>
 <p>Permissions to set for the file.</p>
 <p><em>Type:</em>
 string</p>
 <p><em>Default:</em>
-<code>&quot;0600&quot;</code></p>
+<code>"0600"</code></p>
 <h2 id="deploymentkeysnametext"><a class="header" href="#deploymentkeysnametext">deployment.keys.&lt;name&gt;.text</a></h2>
 <p>Content of the key.
 One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must be set.</p>
@@ -744,13 +751,13 @@ null or string</p>
 <p><em>Type:</em>
 one of “pre-activation”, “post-activation”</p>
 <p><em>Default:</em>
-<code>&quot;pre-activation&quot;</code></p>
+<code>"pre-activation"</code></p>
 <h2 id="deploymentkeysnameuser"><a class="header" href="#deploymentkeysnameuser">deployment.keys.&lt;name&gt;.user</a></h2>
 <p>The group that will own the file.</p>
 <p><em>Type:</em>
 string</p>
 <p><em>Default:</em>
-<code>&quot;root&quot;</code></p>
+<code>"root"</code></p>
 <h2 id="deploymentprivilegeescalationcommand"><a class="header" href="#deploymentprivilegeescalationcommand">deployment.privilegeEscalationCommand</a></h2>
 <p>Command to use to elevate privileges when activating the new profiles on SSH hosts.</p>
 <p>This is used on SSH hosts when <code>deployment.targetUser</code> is not <code>root</code>.
@@ -759,9 +766,9 @@ The user must be allowed to use the command non-interactively.</p>
 list of string</p>
 <p><em>Default:</em></p>
 <pre><code>[
-  &quot;sudo&quot;
-  &quot;-H&quot;
-  &quot;--&quot;
+  "sudo"
+  "-H"
+  "--"
 ]
 </code></pre>
 <h2 id="deploymentreplaceunknownprofiles"><a class="header" href="#deploymentreplaceunknownprofiles">deployment.replaceUnknownProfiles</a></h2>
@@ -799,13 +806,13 @@ If set to null, only local deployment will be supported.</p>
 <p><em>Type:</em>
 null or string</p>
 <p><em>Default:</em>
-<code>&quot;nixos&quot;</code></p>
+<code>"nixos"</code></p>
 <h2 id="deploymenttargetport"><a class="header" href="#deploymenttargetport">deployment.targetPort</a></h2>
 <p>The target SSH port for deployment.</p>
 <p>By default, the port is the standard port (22) or taken
 from your ssh_config.</p>
 <p><em>Type:</em>
-null or unsigned integer, meaning &gt;=0</p>
+null or (unsigned integer, meaning &gt;=0)</p>
 <p><em>Default:</em>
 <code>null</code></p>
 <h2 id="deploymenttargetuser"><a class="header" href="#deploymenttargetuser">deployment.targetUser</a></h2>
@@ -814,7 +821,7 @@ target user will not be specified in SSH invocations.</p>
 <p><em>Type:</em>
 null or string</p>
 <p><em>Default:</em>
-<code>&quot;root&quot;</code></p>
+<code>"root"</code></p>
 <div style="break-before: page; page-break-before: always;"></div><!-- Generated from version 0.5.0-pre (apiVersion=0.5, unstable=True) -->
 <h1 id="meta-options"><a class="header" href="#meta-options">Meta Options</a></h1>
 <!-- UNSTABLE_BEGIN -->
@@ -843,7 +850,7 @@ boolean</p>
 <p><em>Type:</em>
 string</p>
 <p><em>Default:</em>
-<code>&quot;A Colmena Hive&quot;</code></p>
+<code>"A Colmena Hive"</code></p>
 <h2 id="machinesfile"><a class="header" href="#machinesfile">machinesFile</a></h2>
 <p>Use the machines listed in this file when building this hive configuration.</p>
 <p>If your Colmena host has nix configured to allow for remote builds
@@ -868,7 +875,7 @@ null or path</p>
 <p><em>Type:</em>
 string</p>
 <p><em>Default:</em>
-<code>&quot;hive&quot;</code></p>
+<code>"hive"</code></p>
 <h2 id="nixpkgs"><a class="header" href="#nixpkgs">nixpkgs</a></h2>
 <p>The pinned Nixpkgs package set. Accepts one of the following:</p>
 <ul>
