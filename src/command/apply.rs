@@ -73,6 +73,12 @@ To upload keys without building or deploying the rest of the configuration, use 
     reboot: bool,
     #[arg(
         long,
+        help = "Delete old NixOS generations.",
+        long_help = "Automatically delete previous NixOS generation after a succesful deployment. If the reboot flag is enabled, this is performed after the reboot."
+    )]
+    delete_old: bool,
+    #[arg(
+        long,
         alias = "no-substitutes",
         help = "Do not use substitutes",
         long_help = "Disables the use of substituters when copying closures to the remote host."
@@ -153,6 +159,7 @@ pub async fn run(hive: Hive, opts: Opts) -> Result<(), ColmenaError> {
                 verbose,
                 no_keys,
                 reboot,
+                delete_old,
                 no_substitute,
                 no_gzip,
                 build_on_target,
@@ -195,6 +202,7 @@ pub async fn run(hive: Hive, opts: Opts) -> Result<(), ColmenaError> {
         options.set_gzip(!no_gzip);
         options.set_upload_keys(!no_keys);
         options.set_reboot(reboot);
+        options.set_delete_old(delete_old);
         options.set_force_replace_unknown_profiles(force_replace_unknown_profiles);
         options.set_evaluator(evaluator);
 
