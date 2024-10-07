@@ -129,9 +129,6 @@ let
       extraDeployerConfig
     ];
 
-    # FIXME: Colmena flake support is broken with Nix 2.24
-    nix.package = pkgs.nixVersions.nix_2_18;
-
     nix.registry = lib.mkIf (pkgs ? _inputs) {
       nixpkgs.flake = pkgs._inputs.nixpkgs;
     };
@@ -168,6 +165,9 @@ let
         exec "$@" 2> >(tee /dev/stderr)
       '')
     ];
+
+    # Re-enable switch-to-configuration
+    system.switch.enable = true;
   };
 
   # Setup for target nodes
@@ -183,6 +183,9 @@ let
       sshKeys.snakeOilPublicKey
     ];
     virtualisation.writableStore = true;
+
+    # Re-enable switch-to-configuration
+    system.switch.enable = true;
   };
 
   nodes = let

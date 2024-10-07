@@ -10,7 +10,7 @@ use env_logger::fmt::WriteStyle;
 use crate::{
     command::{self, apply::DeployOpts},
     error::ColmenaResult,
-    nix::{Hive, HivePath},
+    nix::{hive::EvaluationMethod, Hive, HivePath},
 };
 
 /// Base URL of the manual, without the trailing slash.
@@ -139,6 +139,21 @@ This only works when building locally.
     nix_option: Vec<String>,
     #[arg(
         long,
+        default_value_t,
+        help = "Use direct flake evaluation (experimental)",
+        long_help = r#"If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
+
+  outputs = { self, colmena, ... }: {
+    colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+    colmena = ...;
+  };
+
+This is an experimental feature."#,
+        global = true
+    )]
+    experimental_flake_eval: bool,
+    #[arg(
+        long,
         value_name = "WHEN",
         default_value_t,
         global = true,
@@ -260,6 +275,11 @@ async fn get_hive(opts: &Opts) -> ColmenaResult<Hive> {
 
     if opts.impure {
         hive.set_impure(true);
+    }
+
+    if opts.experimental_flake_eval {
+        log::warn!("Using direct flake evaluation (experimental)");
+        hive.set_evaluation_method(EvaluationMethod::FlakeApply);
     }
 
     for chunks in opts.nix_option.chunks_exact(2) {

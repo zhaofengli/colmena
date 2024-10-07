@@ -8,8 +8,18 @@
   apply-local = import ./apply-local { inherit pkgs; };
   build-on-target = import ./build-on-target { inherit pkgs; };
   exec = import ./exec { inherit pkgs; };
-  flakes = import ./flakes { inherit pkgs; };
-  flakes-streaming = import ./flakes { inherit pkgs; evaluator = "streaming"; };
+
+  # FIXME: The old evaluation method doesn't work purely with Nix 2.21+
+  flakes = import ./flakes {
+    inherit pkgs;
+    extraApplyFlags = "--experimental-flake-eval";
+  };
+  flakes-impure = import ./flakes {
+    inherit pkgs;
+    extraApplyFlags = "--impure";
+  };
+  #flakes-streaming = import ./flakes { inherit pkgs; evaluator = "streaming"; };
+
   parallel = import ./parallel { inherit pkgs; };
 
   allow-apply-all = import ./allow-apply-all { inherit pkgs; };

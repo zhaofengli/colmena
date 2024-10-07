@@ -8,6 +8,7 @@ use std::convert::AsRef;
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
 
+use const_format::formatcp;
 use tokio::process::Command;
 use tokio::sync::OnceCell;
 use validator::Validate;
@@ -21,6 +22,21 @@ use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::JobHandle;
 use crate::util::{CommandExecution, CommandExt};
 use assets::Assets;
+
+/// The version of the Hive schema we are compatible with.
+///
+/// Currently we are tied to one specific version.
+const HIVE_SCHEMA: &str = "v0.20241006";
+
+/// The snippet to be used for `nix eval --apply`.
+const FLAKE_APPLY_SNIPPET: &str = formatcp!(
+    r#"with builtins; hive: assert (hive.__schema == "{}" || throw ''
+    The colmenaHive output (schema ${{hive.__schema}}) isn't compatible with this version of Colmena.
+
+    Hint: Use the same version of Colmena as in the Flake input.
+''); "#,
+    HIVE_SCHEMA
+);
 
 #[derive(Debug, Clone)]
 pub enum HivePath {
@@ -63,10 +79,32 @@ impl FromStr for HivePath {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum EvaluationMethod {
+    /// Use nix-instantiate and specify the entire Nix expression.
+    ///
+    /// This is the default method.
+    ///
+    /// For flakes, we use `builtins.getFlakes`. Pure evaluation no longer works
+    /// with this method in Nix 2.21+.
+    NixInstantiate,
+
+    /// Use `nix eval --apply` on top of a flake.
+    ///
+    /// This can be activated with --experimental-flake-eval.
+    ///
+    /// In this method, we can no longer pull in our bundled assets and
+    /// the flake must expose a compatible `colmenaHive` output.
+    FlakeApply,
+}
+
 #[derive(Debug)]
 pub struct Hive {
     /// Path to the hive.
     path: HivePath,
+
+    /// Method to evaluate the hive with.
+    evaluation_method: EvaluationMethod,
 
     /// Path to the context directory.
     ///
@@ -134,6 +172,7 @@ impl Hive {
 
         Ok(Self {
             path,
+            evaluation_method: EvaluationMethod::NixInstantiate,
             context_dir,
             assets,
             show_trace: false,
@@ -156,6 +195,14 @@ impl Hive {
                     .await
             })
             .await
+    }
+
+    pub fn set_evaluation_method(&mut self, method: EvaluationMethod) {
+        if !self.is_flake() && method == EvaluationMethod::FlakeApply {
+            return;
+        }
+
+        self.evaluation_method = method;
     }
 
     pub fn set_show_trace(&mut self, value: bool) {
@@ -421,7 +468,10 @@ impl Hive {
 
     /// Returns the base expression from which the evaluated Hive can be used.
     fn get_base_expression(&self) -> String {
-        self.assets.get_base_expression()
+        match self.evaluation_method {
+            EvaluationMethod::NixInstantiate => self.assets.get_base_expression(),
+            EvaluationMethod::FlakeApply => FLAKE_APPLY_SNIPPET.to_string(),
+        }
     }
 
     /// Returns whether this Hive is a flake.
@@ -444,6 +494,11 @@ impl<'hive> NixInstantiate<'hive> {
     }
 
     fn instantiate(&self) -> Command {
+        // TODO: Better error handling
+        if self.hive.evaluation_method == EvaluationMethod::FlakeApply {
+            panic!("Instantiation is not supported with FlakeApply");
+        }
+
         let mut command = Command::new("nix-instantiate");
 
         if self.hive.is_flake() {
@@ -462,17 +517,48 @@ impl<'hive> NixInstantiate<'hive> {
     }
 
     fn eval(self) -> Command {
-        let mut command = self.instantiate();
         let flags = self.hive.nix_flags();
-        command
-            .arg("--eval")
-            .arg("--json")
-            .arg("--strict")
-            // Ensures the derivations are instantiated
-            // Required for system profile evaluation and IFD
-            .arg("--read-write-mode")
-            .args(flags.to_args());
-        command
+
+        match self.hive.evaluation_method {
+            EvaluationMethod::NixInstantiate => {
+                let mut command = self.instantiate();
+
+                command
+                    .arg("--eval")
+                    .arg("--json")
+                    .arg("--strict")
+                    // Ensures the derivations are instantiated
+                    // Required for system profile evaluation and IFD
+                    .arg("--read-write-mode")
+                    .args(flags.to_args());
+
+                command
+            }
+            EvaluationMethod::FlakeApply => {
+                let mut command = Command::new("nix");
+                let flake = if let HivePath::Flake(flake) = self.hive.path() {
+                    flake
+                } else {
+                    panic!("The FlakeApply evaluation method only support flakes");
+                };
+
+                let hive_installable = format!("{}#colmenaHive", flake.uri());
+
+                let mut full_expression = self.hive.get_base_expression();
+                full_expression += &self.expression;
+
+                command
+                    .arg("eval") // nix eval
+                    .args(["--extra-experimental-features", "flakes"])
+                    .arg(hive_installable)
+                    .arg("--json")
+                    .arg("--apply")
+                    .arg(&full_expression)
+                    .args(flags.to_args());
+
+                command
+            }
+        }
     }
 
     async fn instantiate_with_builders(self) -> ColmenaResult<Command> {
