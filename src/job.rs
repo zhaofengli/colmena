@@ -874,11 +874,17 @@ fn describe_node_list(nodes: &[NodeName]) -> Option<String> {
         }
 
         let (idx, next) = next.unwrap();
-        let remaining = rough_limit - s.len();
+        let remaining_text = rough_limit - s.len();
+        let remaining_nodes = total - idx;
 
-        if next.len() + other_text.len() >= remaining {
-            write!(s, ", and {} other nodes", total - idx).unwrap();
-            break;
+        if next.len() + other_text.len() >= remaining_text {
+            if remaining_nodes == 1 {
+                write!(s, ", and {}", next.as_str()).unwrap();
+                break;
+            } else {
+                write!(s, ", and {} other nodes", remaining_nodes).unwrap();
+                break;
+            }
         }
     }
 
