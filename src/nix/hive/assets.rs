@@ -8,6 +8,7 @@
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::os::unix::fs::OpenOptionsExt;
+use std::path::Path;
 
 use tempfile::{Builder as TempFileBuilder, TempDir};
 
@@ -27,7 +28,11 @@ pub(super) struct Assets {
     hive_path: HivePath,
 
     /// Temporary directory holding the files.
+    #[allow(dead_code)]
     temp_dir: TempDir,
+
+    /// Path to the temporary directory with symlinks resolved.
+    temp_path: std::path::PathBuf,
 
     /// Locked Flake URI of the assets flake.
     assets_flake_uri: Option<String>,
@@ -36,22 +41,24 @@ pub(super) struct Assets {
 impl Assets {
     pub async fn new(hive_path: HivePath) -> ColmenaResult<Self> {
         let temp_dir = TempFileBuilder::new().prefix("colmena-assets-").tempdir()?;
+        // resolve symlink to avoid issues with Nix
+        let temp_path = temp_dir.path().canonicalize()?;
 
-        create_file(&temp_dir, "eval.nix", false, EVAL_NIX)?;
-        create_file(&temp_dir, "options.nix", false, OPTIONS_NIX)?;
-        create_file(&temp_dir, "modules.nix", false, MODULES_NIX)?;
+        create_file(&temp_path, "eval.nix", false, EVAL_NIX)?;
+        create_file(&temp_path, "options.nix", false, OPTIONS_NIX)?;
+        create_file(&temp_path, "modules.nix", false, MODULES_NIX)?;
 
         let mut assets_flake_uri = None;
 
         if let HivePath::Flake(hive_flake) = &hive_path {
             // Emit a temporary flake, then resolve the locked URI
             let flake_nix = FLAKE_NIX.replace("%hive%", hive_flake.locked_uri());
-            create_file(&temp_dir, "flake.nix", false, flake_nix.as_bytes())?;
+            create_file(&temp_path, "flake.nix", false, flake_nix.as_bytes())?;
 
             // We explicitly specify `path:` instead of letting Nix resolve
             // automatically, which would involve checking parent directories
             // for a git repository.
-            let uri = format!("path:{}", temp_dir.path().to_str().unwrap());
+            let uri = format!("path:{}", temp_path.to_str().unwrap());
             let _ = lock_flake_quiet(&uri).await;
             let assets_flake = Flake::from_uri(uri).await?;
             assets_flake_uri = Some(assets_flake.locked_uri().to_owned());
@@ -60,6 +67,7 @@ impl Assets {
         Ok(Self {
             hive_path,
             temp_dir,
+            temp_path,
             assets_flake_uri,
         })
     }
@@ -86,8 +94,7 @@ impl Assets {
     }
 
     fn get_path(&self, name: &str) -> String {
-        self.temp_dir
-            .path()
+        self.temp_path
             .join(name)
             .to_str()
             .unwrap()
@@ -95,9 +102,9 @@ impl Assets {
     }
 }
 
-fn create_file(base: &TempDir, name: &str, executable: bool, contents: &[u8]) -> ColmenaResult<()> {
+fn create_file(base: &Path, name: &str, executable: bool, contents: &[u8]) -> ColmenaResult<()> {
     let mode = if executable { 0o700 } else { 0o600 };
-    let path = base.path().join(name);
+    let path = base.join(name);
     let mut f = OpenOptions::new()
         .create_new(true)
         .write(true)
