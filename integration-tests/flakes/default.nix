@@ -47,7 +47,7 @@ in tools.runTest {
           # don't put probe.nix in source control - should fail
           deployer.succeed("cd /tmp/bundle && git init && git add flake.nix flake.lock hive.nix tools.nix")
           logs = deployer.fail("cd /tmp/bundle && run-copy-stderr ${tools.colmenaExec} apply --on @target ${applyFlags}")
-          assert re.search(r"probe.nix.*No such file or directory", logs)
+          assert re.search(r"probe.nix.*(No such file or directory|does not exist)", logs), "Expected error message not found in log"
 
           # now it should succeed
           deployer.succeed("cd /tmp/bundle && git add probe.nix")
@@ -58,7 +58,7 @@ in tools.runTest {
       with subtest("Check that impure expressions are forbidden"):
           deployer.succeed("sed -i 's|SECOND|''${builtins.readFile /etc/hostname}|g' /tmp/bundle/probe.nix")
           logs = deployer.fail("cd /tmp/bundle && run-copy-stderr ${tools.colmenaExec} apply --on @target ${applyFlags}")
-          assert re.search(r"access to absolute path.*forbidden in pure eval mode", logs)
+          assert re.search(r"access to absolute path.*forbidden in pure (eval|evaluation) mode", logs), "Expected error message not found in log"
 
       with subtest("Check that impure expressions can be allowed with --impure"):
           deployer.succeed("cd /tmp/bundle && ${tools.colmenaExec} apply --on @target ${applyFlags} --impure")
