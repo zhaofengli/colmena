@@ -90,6 +90,34 @@ To build and deploy to all nodes:
 colmena apply
 ```
 
+## Direct Flake Evaluation (Experimental)
+
+By default, Colmena uses `nix-instantiate` to evaluate your flake which does not work purely on Nix 2.21+, necessitating the use of `--impure`.
+There is experimental support for evaluating flakes directly with `nix eval`, enabled via `--experimental-flake-eval`.
+
+To use this new evaluation mode, your flake needs to depend on Colmena itself as an input and expose a new output called `colmenaHive`:
+
+```diff
+ {
+   inputs = {
++    # ADDED: Colmena input
++    colmena.url = "github:zhaofengli/colmena";
+
+     # ... Rest of configuration ...
+   };
+   outputs = { self, colmena, ... }: {
++    # ADDED: New colmenaHive output
++    colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+
+     # Your existing colmena output
+     colmena = {
+       # ... Rest of configuration ...
+     };
+   };
+ }
+```
+
+
 ## Next Steps
 
 - Head to the [Features](../features/index.md) section to see what else Colmena can do.

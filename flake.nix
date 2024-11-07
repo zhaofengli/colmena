@@ -5,6 +5,11 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     stable.url = "github:NixOS/nixpkgs/nixos-24.05";
 
+    nix-github-actions = {
+      url = "github:nix-community/nix-github-actions";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     flake-utils.url = "github:numtide/flake-utils";
 
     flake-compat = {
@@ -13,12 +18,41 @@
     };
   };
 
-  outputs = { self, nixpkgs, stable, flake-utils, ... } @ inputs: let
+  outputs = {
+    self,
+    nixpkgs,
+    stable,
+    flake-utils,
+    nix-github-actions,
+    ...
+  } @ inputs: let
     supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
     colmenaOptions = import ./src/nix/hive/options.nix;
     colmenaModules = import ./src/nix/hive/modules.nix;
+
+    # Temporary fork of nix-eval-jobs with changes to be upstreamed
+    # Mostly for the integration test setup and not needed in most use cases
+    _evalJobsOverlay = final: prev: let
+      patched = prev.nix-eval-jobs.overrideAttrs (old: {
+        version = old.version + "-colmena";
+        patches = (old.patches or []) ++ [
+          # Allows NIX_PATH to be honored
+          (final.fetchpatch {
+            url = "https://github.com/zhaofengli/nix-eval-jobs/commit/6ff5972724230ac2b96eb1ec355cd25ca512ef57.patch";
+            hash = "sha256-2NiMYpw27N+X7Ixh2HkP3fcWvopDJWQDVjgRdhOL2QQ";
+          })
+        ];
+      });
+    in {
+      nix-eval-jobs = patched;
+    };
   in flake-utils.lib.eachSystem supportedSystems (system: let
-    pkgs = nixpkgs.legacyPackages.${system};
+    pkgs = import nixpkgs {
+      inherit system;
+      overlays = [
+        _evalJobsOverlay
+      ];
+    };
   in rec {
     # We still maintain the expression in a Nixpkgs-acceptable form
     defaultPackage = self.packages.${system}.colmena;
@@ -87,7 +121,7 @@
           self.overlays.default
           inputsOverlay
 
-          self._evalJobsOverlay
+          _evalJobsOverlay
         ];
       };
       pkgsStable = import stable {
@@ -96,7 +130,7 @@
           self.overlays.default
           inputsOverlay
 
-          self._evalJobsOverlay
+          _evalJobsOverlay
         ];
       };
     } else {};
@@ -115,21 +149,10 @@
       hermetic = true;
     };
 
-    # Temporary fork of nix-eval-jobs with changes to be upstreamed
-    # Mostly for the integration test setup and not needed in most use cases
-    _evalJobsOverlay = final: prev: let
-      patched = prev.nix-eval-jobs.overrideAttrs (old: {
-        version = old.version + "-colmena";
-        patches = (old.patches or []) ++ [
-          # Allows NIX_PATH to be honored
-          (final.fetchpatch {
-            url = "https://github.com/zhaofengli/nix-eval-jobs/commit/6ff5972724230ac2b96eb1ec355cd25ca512ef57.patch";
-            hash = "sha256-2NiMYpw27N+X7Ixh2HkP3fcWvopDJWQDVjgRdhOL2QQ";
-          })
-        ];
-      });
-    in {
-      nix-eval-jobs = patched;
+    githubActions = nix-github-actions.lib.mkGithubMatrix {
+      checks = {
+        inherit (self.checks) x86_64-linux;
+      };
     };
   };
 

@@ -181,7 +181,7 @@ let
 
 in rec {
   # Exported attributes
-  __schema = "v0";
+  __schema = "v0.20241006";
 
   nodes = listToAttrs (map (name: { inherit name; value = evalNode name (configsFor name); }) nodeNames);
   toplevel =         lib.mapAttrs (_: v: v.config.system.build.toplevel) nodes;
