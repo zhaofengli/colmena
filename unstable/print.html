@@ -374,6 +374,28 @@ You can also check out the example in <a href="tutorial/index.html">the main tut
 <p>To build and deploy to all nodes:</p>
 <pre><code class="language-bash">colmena apply
 </code></pre>
+<h2 id="direct-flake-evaluation-experimental"><a class="header" href="#direct-flake-evaluation-experimental">Direct Flake Evaluation (Experimental)</a></h2>
+<p>By default, Colmena uses <code>nix-instantiate</code> to evaluate your flake which does not work purely on Nix 2.21+, necessitating the use of <code>--impure</code>.
+There is experimental support for evaluating flakes directly with <code>nix eval</code>, enabled via <code>--experimental-flake-eval</code>.</p>
+<p>To use this new evaluation mode, your flake needs to depend on Colmena itself as an input and expose a new output called <code>colmenaHive</code>:</p>
+<pre><code class="language-diff"> {
+   inputs = {
++    # ADDED: Colmena input
++    colmena.url = "github:zhaofengli/colmena";
+
+     # ... Rest of configuration ...
+   };
+   outputs = { self, colmena, ... }: {
++    # ADDED: New colmenaHive output
++    colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+
+     # Your existing colmena output
+     colmena = {
+       # ... Rest of configuration ...
+     };
+   };
+ }
+</code></pre>
 <h2 id="next-steps-1"><a class="header" href="#next-steps-1">Next Steps</a></h2>
 <ul>
 <li>Head to the <a href="tutorial/../features/index.html">Features</a> section to see what else Colmena can do.</li>
@@ -2060,6 +2082,16 @@ Note: You are using a pre-release version of Colmena, so the supported options m
           This only works when building locally.
           
 
+      <span class="ansi1">--experimental-flake-eval</span>
+          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
+          
+            outputs = { self, colmena, ... }: {
+              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+              colmena = ...;
+            };
+          
+          This is an experimental feature.
+
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
@@ -2154,6 +2186,16 @@ Note: You are using a pre-release version of Colmena, so the supported options m
 
   <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
           Deactivates the progress spinner and prints every line of output.
+
+      <span class="ansi1">--experimental-flake-eval</span>
+          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
+          
+            outputs = { self, colmena, ... }: {
+              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+              colmena = ...;
+            };
+          
+          This is an experimental feature.
 
       <span class="ansi1">--no-keys</span>
           Do not upload secret keys set in `deployment.keys`.
@@ -2272,6 +2314,16 @@ Note: You are using a pre-release version of Colmena, so the supported options m
       <span class="ansi1">--node</span> &lt;NODE&gt;
           Override the node name to use
 
+      <span class="ansi1">--experimental-flake-eval</span>
+          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
+          
+            outputs = { self, colmena, ... }: {
+              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+              colmena = ...;
+            };
+          
+          This is an experimental feature.
+
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
@@ -2341,6 +2393,16 @@ This subcommand behaves as if you invoked `apply` with the `build` goal.
 
   <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
           Deactivates the progress spinner and prints every line of output.
+
+      <span class="ansi1">--experimental-flake-eval</span>
+          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
+          
+            outputs = { self, colmena, ... }: {
+              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+              colmena = ...;
+            };
+          
+          This is an experimental feature.
 
       <span class="ansi1">--no-keys</span>
           Do not upload secret keys set in `deployment.keys`.
@@ -2458,6 +2520,16 @@ This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
   <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
           Deactivates the progress spinner and prints every line of output.
 
+      <span class="ansi1">--experimental-flake-eval</span>
+          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
+          
+            outputs = { self, colmena, ... }: {
+              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+              colmena = ...;
+            };
+          
+          This is an experimental feature.
+
       <span class="ansi1">--no-keys</span>
           Do not upload secret keys set in `deployment.keys`.
           
@@ -2561,6 +2633,16 @@ For example, to retrieve the configuration of one node, you may write something 
           This only works when building locally.
           
 
+      <span class="ansi1">--experimental-flake-eval</span>
+          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
+          
+            outputs = { self, colmena, ... }: {
+              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+              colmena = ...;
+            };
+          
+          This is an experimental feature.
+
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
@@ -2631,6 +2713,16 @@ For example, to retrieve the configuration of one node, you may write something 
           This only works when building locally.
           
 
+      <span class="ansi1">--experimental-flake-eval</span>
+          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
+          
+            outputs = { self, colmena, ... }: {
+              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+              colmena = ...;
+            };
+          
+          This is an experimental feature.
+
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
@@ -2670,6 +2762,16 @@ For example, to retrieve the configuration of one node, you may write something 
           
           This only works when building locally.
           
+
+      <span class="ansi1">--experimental-flake-eval</span>
+          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
+          
+            outputs = { self, colmena, ... }: {
+              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+              colmena = ...;
+            };
+          
+          This is an experimental feature.
 
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
@@ -2714,6 +2816,16 @@ attribute set.
           
           This only works when building locally.
           
+
+      <span class="ansi1">--experimental-flake-eval</span>
+          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
+          
+            outputs = { self, colmena, ... }: {
+              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+              colmena = ...;
+            };
+          
+          This is an experimental feature.
 
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.

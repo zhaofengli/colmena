@@ -236,6 +236,28 @@ You can also check out the example in <a href="index.html">the main tutorial</a>
 <p>To build and deploy to all nodes:</p>
 <pre><code class="language-bash">colmena apply
 </code></pre>
+<h2 id="direct-flake-evaluation-experimental"><a class="header" href="#direct-flake-evaluation-experimental">Direct Flake Evaluation (Experimental)</a></h2>
+<p>By default, Colmena uses <code>nix-instantiate</code> to evaluate your flake which does not work purely on Nix 2.21+, necessitating the use of <code>--impure</code>.
+There is experimental support for evaluating flakes directly with <code>nix eval</code>, enabled via <code>--experimental-flake-eval</code>.</p>
+<p>To use this new evaluation mode, your flake needs to depend on Colmena itself as an input and expose a new output called <code>colmenaHive</code>:</p>
+<pre><code class="language-diff"> {
+   inputs = {
++    # ADDED: Colmena input
++    colmena.url = "github:zhaofengli/colmena";
+
+     # ... Rest of configuration ...
+   };
+   outputs = { self, colmena, ... }: {
++    # ADDED: New colmenaHive output
++    colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+
+     # Your existing colmena output
+     colmena = {
+       # ... Rest of configuration ...
+     };
+   };
+ }
+</code></pre>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
 <li>Head to the <a href="../features/index.html">Features</a> section to see what else Colmena can do.</li>
