@@ -17,8 +17,30 @@
     supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
     colmenaOptions = import ./src/nix/hive/options.nix;
     colmenaModules = import ./src/nix/hive/modules.nix;
+
+    # Temporary fork of nix-eval-jobs with changes to be upstreamed
+    # Mostly for the integration test setup and not needed in most use cases
+    _evalJobsOverlay = final: prev: let
+      patched = prev.nix-eval-jobs.overrideAttrs (old: {
+        version = old.version + "-colmena";
+        patches = (old.patches or []) ++ [
+          # Allows NIX_PATH to be honored
+          (final.fetchpatch {
+            url = "https://github.com/zhaofengli/nix-eval-jobs/commit/6ff5972724230ac2b96eb1ec355cd25ca512ef57.patch";
+            hash = "sha256-2NiMYpw27N+X7Ixh2HkP3fcWvopDJWQDVjgRdhOL2QQ";
+          })
+        ];
+      });
+    in {
+      nix-eval-jobs = patched;
+    };
   in flake-utils.lib.eachSystem supportedSystems (system: let
-    pkgs = nixpkgs.legacyPackages.${system};
+    pkgs = import nixpkgs {
+      inherit system;
+      overlays = [
+        _evalJobsOverlay
+      ];
+    };
   in rec {
     # We still maintain the expression in a Nixpkgs-acceptable form
     defaultPackage = self.packages.${system}.colmena;
@@ -87,7 +109,7 @@
           self.overlays.default
           inputsOverlay
 
-          self._evalJobsOverlay
+          _evalJobsOverlay
         ];
       };
       pkgsStable = import stable {
@@ -96,7 +118,7 @@
           self.overlays.default
           inputsOverlay
 
-          self._evalJobsOverlay
+          _evalJobsOverlay
         ];
       };
     } else {};
@@ -113,23 +135,6 @@
     lib.makeHive = rawHive: import ./src/nix/hive/eval.nix {
       inherit rawHive colmenaOptions colmenaModules;
       hermetic = true;
-    };
-
-    # Temporary fork of nix-eval-jobs with changes to be upstreamed
-    # Mostly for the integration test setup and not needed in most use cases
-    _evalJobsOverlay = final: prev: let
-      patched = prev.nix-eval-jobs.overrideAttrs (old: {
-        version = old.version + "-colmena";
-        patches = (old.patches or []) ++ [
-          # Allows NIX_PATH to be honored
-          (final.fetchpatch {
-            url = "https://github.com/zhaofengli/nix-eval-jobs/commit/6ff5972724230ac2b96eb1ec355cd25ca512ef57.patch";
-            hash = "sha256-2NiMYpw27N+X7Ixh2HkP3fcWvopDJWQDVjgRdhOL2QQ";
-          })
-        ];
-      });
-    in {
-      nix-eval-jobs = patched;
     };
   };
 
