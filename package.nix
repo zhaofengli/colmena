@@ -5,7 +5,12 @@ rustPlatform.buildRustPackage rec {
   version = "0.5.0-pre";
 
   src = lib.cleanSourceWith {
-    filter = name: type: !(type == "directory" && builtins.elem (baseNameOf name) [ "target" "manual" "integration-tests" ]);
+    filter = name: type: !(type == "directory" && builtins.elem (baseNameOf name) [
+      ".github"
+      "target"
+      "manual"
+      "integration-tests"
+    ]);
     src = lib.cleanSource ./.;
   };
 
