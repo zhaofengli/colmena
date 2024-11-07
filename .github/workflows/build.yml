@@ -49,3 +49,50 @@ jobs:
 
       - name: Build manual
         run: nix build .#manual -L
+
+  nix-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4.1.7
+
+      - uses: DeterminateSystems/nix-installer-action@v14
+        continue-on-error: true # Self-hosted runners already have Nix installed
+
+      - name: Enable Binary Cache
+        uses: cachix/cachix-action@v12
+        with:
+          name: colmena
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      - id: set-matrix
+        name: Generate Nix Matrix
+        run: |
+          set -Eeu
+          matrix="$(nix eval --json '.#githubActions.matrix')"
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+  nix-matrix-job:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    needs:
+      - build
+      - nix-matrix
+    strategy:
+      matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4.1.7
+
+      - uses: DeterminateSystems/nix-installer-action@v14
+        continue-on-error: true # Self-hosted runners already have Nix installed
+
+      - name: Enable Binary Cache
+        uses: cachix/cachix-action@v12
+        with:
+          name: colmena
+          authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
+
+      - name: Build ${{ matrix.attr }}
+        run: |
+          nix build --no-link --print-out-paths -L '.#${{ matrix.attr }}'

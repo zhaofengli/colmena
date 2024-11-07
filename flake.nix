@@ -5,6 +5,11 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     stable.url = "github:NixOS/nixpkgs/nixos-24.05";
 
+    nix-github-actions = {
+      url = "github:nix-community/nix-github-actions";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
     flake-utils.url = "github:numtide/flake-utils";
 
     flake-compat = {
@@ -13,7 +18,14 @@
     };
   };
 
-  outputs = { self, nixpkgs, stable, flake-utils, ... } @ inputs: let
+  outputs = {
+    self,
+    nixpkgs,
+    stable,
+    flake-utils,
+    nix-github-actions,
+    ...
+  } @ inputs: let
     supportedSystems = [ "x86_64-linux" "i686-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
     colmenaOptions = import ./src/nix/hive/options.nix;
     colmenaModules = import ./src/nix/hive/modules.nix;
@@ -135,6 +147,12 @@
     lib.makeHive = rawHive: import ./src/nix/hive/eval.nix {
       inherit rawHive colmenaOptions colmenaModules;
       hermetic = true;
+    };
+
+    githubActions = nix-github-actions.lib.mkGithubMatrix {
+      checks = {
+        inherit (self.checks) x86_64-linux;
+      };
     };
   };
 
