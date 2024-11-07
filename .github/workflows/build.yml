@@ -82,6 +82,16 @@ jobs:
     strategy:
       matrix: ${{ fromJSON(needs.nix-matrix.outputs.matrix) }}
     steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          remove-dotnet: 'true'
+          build-mount-path: /nix
+
+      - name: Set /nix permissions
+        run: |
+          sudo chown root:root /nix
+
       - uses: actions/checkout@v4.1.7
 
       - uses: DeterminateSystems/nix-installer-action@v14
