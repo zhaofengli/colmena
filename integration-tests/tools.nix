@@ -165,6 +165,9 @@ let
         exec "$@" 2> >(tee /dev/stderr)
       '')
     ];
+
+    # Re-enable switch-to-configuration
+    system.switch.enable = true;
   };
 
   # Setup for target nodes
@@ -180,6 +183,9 @@ let
       sshKeys.snakeOilPublicKey
     ];
     virtualisation.writableStore = true;
+
+    # Re-enable switch-to-configuration
+    system.switch.enable = true;
   };
 
   nodes = let
