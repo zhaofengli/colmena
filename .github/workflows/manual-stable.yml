@@ -16,7 +16,7 @@ jobs:
     if: github.repository == 'zhaofengli/colmena'
 
     steps:
-      - uses: actions/checkout@v3.3.0
+      - uses: actions/checkout@v4.2.2
 
       - name: Install Nix
         uses: DeterminateSystems/nix-installer-action@b92f66560d6f97d6576405a7bae901ab57e72b6a # v15
