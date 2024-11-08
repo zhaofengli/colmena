@@ -20,7 +20,7 @@ jobs:
       - uses: actions/checkout@v3.3.0
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@9b252454a8d70586c4ee7f163bf4bb1e9de3d763 # v2
+        uses: DeterminateSystems/nix-installer-action@b92f66560d6f97d6576405a7bae901ab57e72b6a # v15
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2.1.0
@@ -56,7 +56,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4.1.7
 
-      - uses: DeterminateSystems/nix-installer-action@v14
+      - uses: DeterminateSystems/nix-installer-action@v15
         continue-on-error: true # Self-hosted runners already have Nix installed
 
       - name: Enable Binary Cache
@@ -93,7 +93,7 @@ jobs:
 
       - uses: actions/checkout@v4.1.7
 
-      - uses: DeterminateSystems/nix-installer-action@v14
+      - uses: DeterminateSystems/nix-installer-action@v15
         continue-on-error: true # Self-hosted runners already have Nix installed
 
       - name: Enable Binary Cache
