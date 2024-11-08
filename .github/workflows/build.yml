@@ -13,7 +13,11 @@ jobs:
             image: ubuntu-latest
             system: aarch64-linux
           - label: x86_64-darwin
-            image: macos-12
+            image: macos-latest
+            system: x86_64-darwin
+          - label: aarch64-darwin
+            image: macos-latest
+            system: aarch64-darwin
 
     name: ${{ matrix.label }}
     runs-on: ${{ matrix.image }}
@@ -25,7 +29,7 @@ jobs:
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2.1.0
-        if: matrix.system != ''
+        if: matrix.system == 'aarch64-linux'
 
       - name: Generate System Flags
         run: |
