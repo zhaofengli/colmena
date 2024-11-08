@@ -7,6 +7,8 @@
 pub mod plain;
 pub mod spinner;
 
+use std::io::IsTerminal;
+
 use async_trait::async_trait;
 use tokio::sync::mpsc::{self, UnboundedReceiver as TokioReceiver, UnboundedSender as TokioSender};
 
@@ -90,7 +92,7 @@ pub enum LineStyle {
 
 impl SimpleProgressOutput {
     pub fn new(verbose: bool) -> Self {
-        let tty = atty::is(atty::Stream::Stdout);
+        let tty = std::io::stdout().is_terminal();
 
         if verbose || !tty {
             Self::Plain(PlainOutput::new())
