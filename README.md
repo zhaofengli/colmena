@@ -3,7 +3,7 @@
 [![Matrix Channel](https://img.shields.io/badge/Matrix-%23colmena%3Anixos.org-blueviolet)](https://matrix.to/#/#colmena:nixos.org)
 [![Stable Manual](https://img.shields.io/badge/Manual-Stable-informational)](https://colmena.cli.rs/stable)
 [![Unstable Manual](https://img.shields.io/badge/Manual-Unstable-orange)](https://colmena.cli.rs/unstable)
-[![Build](https://github.com/zhaofengli/colmena/workflows/Build/badge.svg)](https://github.com/zhaofengli/colmena/actions/workflows/build.yml)
+[![Build](https://github.com/zhaofengli/colmena/actions/workflows/build.yml/badge.svg)](https://github.com/zhaofengli/colmena/actions/workflows/build.yml)
 
 Colmena is a simple, stateless [NixOS](https://nixos.org) deployment tool modeled after [NixOps](https://github.com/NixOS/nixops) and [morph](https://github.com/DBCDK/morph), written in Rust.
 It's a thin wrapper over Nix commands like `nix-instantiate` and `nix-copy-closure`, and supports parallel deployment.
