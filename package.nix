@@ -1,18 +1,16 @@
-{ lib, stdenv, rustPlatform, installShellFiles, nix-eval-jobs }:
+{ lib
+, stdenv
+, rustPlatform
+, nix-gitignore
+, installShellFiles
+, nix-eval-jobs
+}:
 
 rustPlatform.buildRustPackage rec {
   pname = "colmena";
   version = "0.5.0-pre";
 
-  src = lib.cleanSourceWith {
-    filter = name: type: !(type == "directory" && builtins.elem (baseNameOf name) [
-      ".github"
-      "target"
-      "manual"
-      "integration-tests"
-    ]);
-    src = lib.cleanSource ./.;
-  };
+  src = nix-gitignore.gitignoreSource [ ./.srcignore ] ./.;
 
   cargoLock = {
     lockFile = ./Cargo.lock;
