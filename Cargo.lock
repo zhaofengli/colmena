@@ -234,7 +234,6 @@ version = "0.5.0-pre"
 dependencies = [
  "async-stream",
  "async-trait",
- "atty",
  "clap",
  "clap_complete",
  "clicolors-control",
