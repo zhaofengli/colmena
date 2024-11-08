@@ -87,14 +87,14 @@ pub struct Key {
     #[serde(flatten)]
     source: KeySource,
 
-    #[validate(custom = "validate_dest_dir")]
+    #[validate(custom(function = "validate_dest_dir"))]
     #[serde(rename = "destDir")]
     dest_dir: PathBuf,
 
-    #[validate(custom = "validate_unix_name")]
+    #[validate(custom(function = "validate_unix_name"))]
     user: String,
 
-    #[validate(custom = "validate_unix_name")]
+    #[validate(custom(function = "validate_unix_name"))]
     group: String,
 
     permissions: String,

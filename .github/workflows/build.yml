@@ -58,7 +58,7 @@ jobs:
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v4.1.7
+      - uses: actions/checkout@v4.2.2
 
       - uses: DeterminateSystems/nix-installer-action@v15
         continue-on-error: true # Self-hosted runners already have Nix installed
@@ -95,7 +95,7 @@ jobs:
         run: |
           sudo chown root:root /nix
 
-      - uses: actions/checkout@v4.1.7
+      - uses: actions/checkout@v4.2.2
 
       - uses: DeterminateSystems/nix-installer-action@v15
         continue-on-error: true # Self-hosted runners already have Nix installed
