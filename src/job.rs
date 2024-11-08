@@ -101,6 +101,9 @@ pub enum JobType {
 
     /// Rebooting a host.
     Reboot,
+
+    /// Delete old NixOS generations.
+    DeleteOld,
 }
 
 /// A handle to a job.
