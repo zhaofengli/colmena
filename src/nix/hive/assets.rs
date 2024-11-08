@@ -51,7 +51,10 @@ impl Assets {
             // We explicitly specify `path:` instead of letting Nix resolve
             // automatically, which would involve checking parent directories
             // for a git repository.
-            let uri = format!("path:{}", temp_dir.path().to_str().unwrap());
+            let uri = format!(
+                "path:{}",
+                temp_dir.path().canonicalize().unwrap().to_str().unwrap()
+            );
             let _ = lock_flake_quiet(&uri).await;
             let assets_flake = Flake::from_uri(uri).await?;
             assets_flake_uri = Some(assets_flake.locked_uri().to_owned());
