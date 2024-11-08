@@ -81,7 +81,7 @@ pub struct NodeConfig {
     #[serde(rename = "sshOptions")]
     extra_ssh_options: Vec<String>,
 
-    #[validate(custom = "validate_keys")]
+    #[validate(custom(function = "validate_keys"))]
     keys: HashMap<String, Key>,
 }
 
