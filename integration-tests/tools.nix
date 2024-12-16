@@ -29,7 +29,7 @@ let
   nixosLib = import (pkgs.path + "/nixos/lib") { };
 
   inputClosureOf = pkg: pkgs.runCommand "full-closure" {
-    refs = pkgs.writeReferencesToFile pkg.drvPath;
+    refs = pkgs.writeClosure [ pkg.drvPath ];
   } ''
     touch $out
 

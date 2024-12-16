@@ -36,11 +36,11 @@
       patched = prev.nix-eval-jobs.overrideAttrs (old: {
         version = old.version + "-colmena";
         patches = (old.patches or []) ++ [
-          # Allows NIX_PATH to be honored
-          (final.fetchpatch {
-            url = "https://github.com/zhaofengli/nix-eval-jobs/commit/6ff5972724230ac2b96eb1ec355cd25ca512ef57.patch";
-            hash = "sha256-2NiMYpw27N+X7Ixh2HkP3fcWvopDJWQDVjgRdhOL2QQ";
-          })
+          (if builtins.compareVersions old.version "2.25.0" >= 0 then
+            ./nix-eval-jobs-unstable.patch
+          else
+            ./nix-eval-jobs-stable.patch
+          )
         ];
       });
     in {
