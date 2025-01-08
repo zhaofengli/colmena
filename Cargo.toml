@@ -9,7 +9,7 @@ edition = "2021"
 [dependencies]
 async-stream = "0.3.5"
 async-trait = "0.1.68"
-clap = { version = "4.3", features = ["derive"] }
+clap = { version = "4.3", features = ["derive", "wrap_help"] }
 clap_complete = "4.3"
 clicolors-control = "1"
 console = "0.15.5"
