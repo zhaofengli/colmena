@@ -5,20 +5,15 @@ use clap::Args;
 use crate::error::ColmenaError;
 use crate::nix::Hive;
 
+/// Evaluate an expression using the complete configuration
+///
+/// Your expression should take an attribute set with keys `pkgs`, `lib` and `nodes` (like a NixOS
+/// module) and return a JSON-serializable value. For example, to retrieve the configuration of one
+/// node, you may write something like:
+///
+///    { nodes, ... }: nodes.node-a.config.networking.hostName
 #[derive(Debug, Args)]
-#[command(
-    name = "eval",
-    alias = "introspect",
-    about = "Evaluate an expression using the complete configuration",
-    long_about = r#"Evaluate an expression using the complete configuration
-
-Your expression should take an attribute set with keys `pkgs`, `lib` and `nodes` (like a NixOS module) and return a JSON-serializable value.
-
-For example, to retrieve the configuration of one node, you may write something like:
-
-    { nodes, ... }: nodes.node-a.config.networking.hostName
-"#
-)]
+#[command(name = "eval", alias = "introspect")]
 pub struct Opts {
     /// The Nix expression
     #[arg(short = 'E', value_name = "EXPRESSION")]

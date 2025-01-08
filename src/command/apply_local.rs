@@ -11,11 +11,9 @@ use crate::nix::Hive;
 use crate::nix::{host::Local as LocalHost, NodeName};
 use crate::progress::SimpleProgressOutput;
 
+/// Apply configurations on the local machine
 #[derive(Debug, Args)]
-#[command(
-    name = "apply-local",
-    about = "Apply configurations on the local machine"
-)]
+#[command(name = "apply-local")]
 pub struct Opts {
     /// Deployment goal
     ///

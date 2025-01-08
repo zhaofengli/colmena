@@ -105,8 +105,9 @@ pub struct DeployOpts {
     node_filter: NodeFilterOpts,
 }
 
+/// Apply configurations on remote machines
 #[derive(Debug, Args)]
-#[command(name = "apply", about = "Apply configurations on remote machines")]
+#[command(name = "apply")]
 pub struct Opts {
     /// Deployment goal
     ///

@@ -13,8 +13,9 @@ use crate::nix::Hive;
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
+/// Run a command on remote machines
 #[derive(Debug, Args)]
-#[command(name = "exec", about = "Run a command on remote machines")]
+#[command(name = "exec")]
 pub struct Opts {
     /// Deploy parallelism limit
     ///
