@@ -20,15 +20,16 @@ For example, to retrieve the configuration of one node, you may write something 
 "#
 )]
 pub struct Opts {
-    #[arg(short = 'E', value_name = "EXPRESSION", help = "The Nix expression")]
+    /// The Nix expression
+    #[arg(short = 'E', value_name = "EXPRESSION")]
     expression: Option<String>,
-    #[arg(long, help = "Actually instantiate the expression")]
+
+    /// Actually instantiate the expression
+    #[arg(long)]
     instantiate: bool,
-    #[arg(
-        value_name = "FILE",
-        help = "The .nix file containing the expression",
-        conflicts_with("expression")
-    )]
+
+    /// The .nix file containing the expression
+    #[arg(value_name = "FILE", conflicts_with("expression"))]
     expression_file: Option<PathBuf>,
 }
 

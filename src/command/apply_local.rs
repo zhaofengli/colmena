@@ -17,39 +17,36 @@ use crate::progress::SimpleProgressOutput;
     about = "Apply configurations on the local machine"
 )]
 pub struct Opts {
-    #[arg(
-        help = "Deployment goal",
-        value_name = "GOAL",
-        default_value_t,
-        long_help = "Same as the targets for switch-to-configuration.\n\"push\" is noop in apply-local."
-    )]
+    /// Deployment goal
+    ///
+    /// Same as the targets for switch-to-configuration.
+    /// "push" is noop in apply-local.
+    #[arg(value_name = "GOAL", default_value_t)]
     goal: Goal,
-    #[arg(long, help = "Attempt to escalate privileges if not run as root")]
-    sudo: bool,
-    #[arg(
-        short,
-        long,
-        help = "Be verbose",
-        long_help = "Deactivates the progress spinner and prints every line of output."
-    )]
-    verbose: bool,
-    #[arg(
-        long,
-        help = "Do not deploy keys",
-        long_help = r#"Do not deploy secret keys set in `deployment.keys`.
 
-By default, Colmena will deploy keys set in `deployment.keys` before activating the profile on this host.
-"#
-    )]
+    /// Attempt to escalate privileges if not run as root
+    #[arg(long)]
+    sudo: bool,
+
+    /// Be verbose
+    ///
+    /// Deactivates the progress spinner and prints every line of output.
+    #[arg(short, long)]
+    verbose: bool,
+
+    /// Do not deploy keys
+    ///
+    /// Do not deploy secret keys set in `deployment.keys`. By default, Colmena will deploy keys
+    /// set in `deployment.keys` before activating the profile on this host.
+    #[arg(long)]
     no_keys: bool,
-    #[arg(long, help = "Override the node name to use")]
+
+    /// Override the node name to use
+    #[arg(long)]
     node: Option<String>,
-    #[arg(
-        long,
-        value_name = "COMMAND",
-        hide = true,
-        help = "Removed: Configure deployment.privilegeEscalationCommand in node configuration"
-    )]
+
+    /// Removed: Configure deployment.privilegeEscalationCommand in node configuration
+    #[arg(long, value_name = "COMMAND", hide = true)]
     sudo_command: Option<String>,
 }
 

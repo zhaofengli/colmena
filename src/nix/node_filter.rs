@@ -12,19 +12,16 @@ use super::{ColmenaError, ColmenaResult, NodeConfig, NodeName};
 
 #[derive(Debug, Default, Args)]
 pub struct NodeFilterOpts {
-    #[arg(
-        long,
-        value_name = "NODES",
-        help = "Node selector",
-        long_help = r#"Select a list of nodes to deploy to.
-
-The list is comma-separated and globs are supported. To match tags, prepend the filter by @. Valid examples:
-
-- host1,host2,host3
-- edge-*
-- edge-*,core-*
-- @a-tag,@tags-can-have-*"#
-    )]
+    /// Node selector
+    ///
+    /// Select a list of nodes to deploy to. The list is comma-separated and globs are supported.
+    /// To match tags, prepend the filter by @. Valid examples:
+    ///
+    /// - host1,host2,host3
+    /// - edge-*
+    /// - edge-*,core-*
+    /// - @a-tag,@tags-can-have-*
+    #[arg(long, value_name = "NODES")]
     pub on: Option<NodeFilter>,
 }
 
