@@ -99,6 +99,7 @@ impl std::fmt::Display for ColorWhen {
     version = env!("CARGO_PKG_VERSION"),
     about = "NixOS deployment tool",
     long_about = LONG_ABOUT,
+    max_term_width = 100,
 )]
 struct Opts {
     /// Path to a Hive expression, a flake.nix, or a Nix Flake URI
