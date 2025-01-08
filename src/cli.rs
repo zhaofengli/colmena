@@ -91,13 +91,13 @@ impl std::fmt::Display for ColorWhen {
     }
 }
 
+/// NixOS deployment tool
 #[derive(Parser)]
 #[command(
     name = "Colmena",
     bin_name = "colmena",
     author = "Zhaofeng Li <hello@zhaofeng.li>",
     version = env!("CARGO_PKG_VERSION"),
-    about = "NixOS deployment tool",
     long_about = LONG_ABOUT,
     max_term_width = 100,
 )]
@@ -175,45 +175,47 @@ struct Opts {
 #[derive(Subcommand)]
 enum Command {
     Apply(command::apply::Opts),
+
     #[cfg(target_os = "linux")]
     ApplyLocal(command::apply_local::Opts),
-    #[command(
-        about = "Build configurations but not push to remote machines",
-        long_about = r#"Build configurations but not push to remote machines
 
-This subcommand behaves as if you invoked `apply` with the `build` goal."#
-    )]
+    /// Build configurations but not push to remote machines
+    ///
+    /// This subcommand behaves as if you invoked `apply` with the `build` goal.
     Build {
         #[command(flatten)]
         deploy: DeployOpts,
     },
-    Eval(command::eval::Opts),
-    #[command(
-        about = "Upload keys to remote hosts",
-        long_about = r#"Upload keys to remote hosts
 
-This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal."#
-    )]
+    Eval(command::eval::Opts),
+
+    /// Upload keys to remote hosts
+    ///
+    /// This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
     UploadKeys {
         #[command(flatten)]
         deploy: DeployOpts,
     },
-    Exec(command::exec::Opts),
-    #[command(
-        about = "Start an interactive REPL with the complete configuration",
-        long_about = r#"Start an interactive REPL with the complete configuration
 
-In the REPL, you can inspect the configuration interactively with tab
-completion. The node configurations are accessible under the `nodes`
-attribute set."#
-    )]
+    Exec(command::exec::Opts),
+
+    /// Start an interactive REPL with the complete configuration
+    ///
+    /// In the REPL, you can inspect the configuration interactively with tab
+    /// completion. The node configurations are accessible under the `nodes`
+    /// attribute set.
     Repl,
-    #[command(about = "Show information about the current Nix installation")]
+
+    /// Show information about the current Nix installation
     NixInfo,
+
+    /// Run progress spinner tests
     #[cfg(debug_assertions)]
-    #[command(about = "Run progress spinner tests", hide = true)]
+    #[command(hide = true)]
     TestProgress,
-    #[command(about = "Generate shell auto-completion files (Internal)", hide = true)]
+
+    /// Generate shell auto-completion files (Internal)
+    #[command(hide = true)]
     GenCompletions {
         shell: Shell,
     },
