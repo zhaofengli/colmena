@@ -278,13 +278,16 @@ impl Ssh {
                 "--no-check-sigs",
             ]);
 
-            if options.use_substitutes {
-                command.args([
-                    "--substitute-on-destination",
-                    // needed due to UX bug in ssh-ng://
-                    "--builders-use-substitutes",
-                ]);
-            }
+            match options.use_substitutes {
+                None | Some(true) => {
+                    command.args([
+                        "--substitute-on-destination",
+                        // needed due to UX bug in ssh-ng://
+                        "--builders-use-substitutes",
+                    ]);
+                }
+                Some(false) => {}
+            };
 
             if let Some("drv") = path.extension().and_then(OsStr::to_str) {
                 command.arg("--derivation");
@@ -325,9 +328,14 @@ impl Ssh {
             if options.include_outputs {
                 command.arg("--include-outputs");
             }
-            if options.use_substitutes {
-                command.arg("--use-substitutes");
-            }
+
+            match options.use_substitutes {
+                None | Some(true) => {
+                    command.arg("--use-substitutes");
+                }
+                Some(false) => {}
+            };
+
             if options.gzip {
                 command.arg("--gzip");
             }
