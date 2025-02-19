@@ -91,80 +91,80 @@ impl std::fmt::Display for ColorWhen {
     }
 }
 
+/// NixOS deployment tool
 #[derive(Parser)]
 #[command(
     name = "Colmena",
     bin_name = "colmena",
     author = "Zhaofeng Li <hello@zhaofeng.li>",
     version = env!("CARGO_PKG_VERSION"),
-    about = "NixOS deployment tool",
     long_about = LONG_ABOUT,
+    max_term_width = 100,
 )]
 struct Opts {
+    /// Path to a Hive expression, a flake.nix, or a Nix Flake URI
     #[arg(
         short = 'f',
         long,
         value_name = "CONFIG",
-        help = "Path to a Hive expression, a flake.nix, or a Nix Flake URI",
         long_help = CONFIG_HELP,
         display_order = HELP_ORDER_FIRST,
         global = true,
     )]
     config: Option<HivePath>,
-    #[arg(
-        long,
-        help = "Show debug information for Nix commands",
-        long_help = "Passes --show-trace to Nix commands",
-        global = true
-    )]
-    show_trace: bool,
-    #[arg(
-        long,
-        help = "Allow impure expressions",
-        long_help = "Passes --impure to Nix commands",
-        global = true
-    )]
-    impure: bool,
-    #[arg(
-        long,
-        help = "Passes an arbitrary option to Nix commands",
-        long_help = r#"Passes arbitrary options to Nix commands
 
-This only works when building locally.
-"#,
+    /// Show debug information for Nix commands
+    ///
+    /// Passes --show-trace to Nix commands
+    #[arg(long, global = true)]
+    show_trace: bool,
+
+    /// Allow impure expressions
+    ///
+    /// Passes --impure to Nix commands
+    #[arg(long, global = true)]
+    impure: bool,
+
+    /// Passes an arbitrary option to Nix commands
+    ///
+    /// This only works when building locally.
+    #[arg(
+        long,
         global = true,
         num_args = 2,
         value_names = ["NAME", "VALUE"],
     )]
     nix_option: Vec<String>,
-    #[arg(
-        long,
-        default_value_t,
-        help = "Use direct flake evaluation (experimental)",
-        long_help = r#"If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
 
-  outputs = { self, colmena, ... }: {
-    colmenaHive = colmena.lib.makeHive self.outputs.colmena;
-    colmena = ...;
-  };
-
-This is an experimental feature."#,
-        global = true
-    )]
+    /// Use direct flake evaluation (experimental)
+    ///
+    /// If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on
+    /// Colmena as an input and expose a compatible `colmenaHive` output:
+    ///
+    /// outputs = { self, colmena, ... }: {
+    ///   colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+    ///   colmena = ...;
+    /// };
+    ///
+    /// This is an experimental feature.
+    #[arg(long, default_value_t, global = true)]
     experimental_flake_eval: bool,
+
+    /// When to colorize the output
+    ///
+    /// By default, Colmena enables colorized output when the terminal supports it.
+    ///
+    /// It's also possible to specify the preference using environment variables. See
+    /// <https://bixense.com/clicolors>.
     #[arg(
         long,
         value_name = "WHEN",
         default_value_t,
         global = true,
         display_order = HELP_ORDER_LOW,
-        help = "When to colorize the output",
-        long_help = r#"When to colorize the output. By default, Colmena enables colorized output when the terminal supports it.
-
-It's also possible to specify the preference using environment variables. See <https://bixense.com/clicolors>.
-"#,
     )]
     color: ColorWhen,
+
     #[command(subcommand)]
     command: Command,
 }
@@ -172,45 +172,47 @@ It's also possible to specify the preference using environment variables. See <h
 #[derive(Subcommand)]
 enum Command {
     Apply(command::apply::Opts),
+
     #[cfg(target_os = "linux")]
     ApplyLocal(command::apply_local::Opts),
-    #[command(
-        about = "Build configurations but not push to remote machines",
-        long_about = r#"Build configurations but not push to remote machines
 
-This subcommand behaves as if you invoked `apply` with the `build` goal."#
-    )]
+    /// Build configurations but not push to remote machines
+    ///
+    /// This subcommand behaves as if you invoked `apply` with the `build` goal.
     Build {
         #[command(flatten)]
         deploy: DeployOpts,
     },
-    Eval(command::eval::Opts),
-    #[command(
-        about = "Upload keys to remote hosts",
-        long_about = r#"Upload keys to remote hosts
 
-This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal."#
-    )]
+    Eval(command::eval::Opts),
+
+    /// Upload keys to remote hosts
+    ///
+    /// This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
     UploadKeys {
         #[command(flatten)]
         deploy: DeployOpts,
     },
-    Exec(command::exec::Opts),
-    #[command(
-        about = "Start an interactive REPL with the complete configuration",
-        long_about = r#"Start an interactive REPL with the complete configuration
 
-In the REPL, you can inspect the configuration interactively with tab
-completion. The node configurations are accessible under the `nodes`
-attribute set."#
-    )]
+    Exec(command::exec::Opts),
+
+    /// Start an interactive REPL with the complete configuration
+    ///
+    /// In the REPL, you can inspect the configuration interactively with tab
+    /// completion. The node configurations are accessible under the `nodes`
+    /// attribute set.
     Repl,
-    #[command(about = "Show information about the current Nix installation")]
+
+    /// Show information about the current Nix installation
     NixInfo,
+
+    /// Run progress spinner tests
     #[cfg(debug_assertions)]
-    #[command(about = "Run progress spinner tests", hide = true)]
+    #[command(hide = true)]
     TestProgress,
-    #[command(about = "Generate shell auto-completion files (Internal)", hide = true)]
+
+    /// Generate shell auto-completion files (Internal)
+    #[command(hide = true)]
     GenCompletions {
         shell: Shell,
     },

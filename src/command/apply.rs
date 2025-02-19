@@ -13,129 +13,119 @@ use crate::progress::SimpleProgressOutput;
 
 #[derive(Debug, Args)]
 pub struct DeployOpts {
-    #[arg(
-        value_name = "LIMIT",
-        default_value_t,
-        long,
-        help = "Evaluation node limit",
-        long_help = r#"Limits the maximum number of hosts to be evaluated at once.
-
-The evaluation process is RAM-intensive. The default behavior is to limit the maximum number of host evaluated at the same time based on naive heuristics.
-
-Set to 0 to disable the limit.
-"#
-    )]
+    /// Evaluation node limit
+    ///
+    /// Limits the maximum number of hosts to be evaluated at once. The evaluation process is
+    /// RAM-intensive. The default behavior is to limit the maximum number of hosts evaluated at
+    /// the same time based on naive heuristics.
+    ///
+    /// Set to 0 to disable the limit.
+    #[arg(value_name = "LIMIT", default_value_t, long)]
     eval_node_limit: EvaluationNodeLimit,
-    #[arg(
-        value_name = "LIMIT",
-        default_value_t = 10,
-        long,
-        short,
-        help = "Deploy parallelism limit",
-        long_help = r#"Limits the maximum number of hosts to be deployed in parallel.
 
-Set to 0 to disable parallelism limit.
-"#
-    )]
+    /// Deploy parallelism limit
+    ///
+    /// Limits the maximum number of hosts to be deployed in parallel.
+    ///
+    /// Set to 0 to disable parallelism limit.
+    #[arg(value_name = "LIMIT", default_value_t = 10, long, short)]
     parallel: usize,
-    #[arg(
-        long,
-        help = "Create GC roots for built profiles",
-        long_help = r#"Create GC roots for built profiles.
 
-The built system profiles will be added as GC roots so that they will not be removed by the garbage collector.
-The links will be created under .gcroots in the directory the Hive configuration is located.
-"#
-    )]
+    /// Create GC roots for built profiles.
+    ///
+    /// The built system profiles will be added as GC roots so that they will not be
+    /// removed by the garbage collector. The links will be created under `.gcroots`
+    /// in the directory the Hive configuration is located.
+    #[arg(long)]
     keep_result: bool,
-    #[arg(
-        short,
-        long,
-        help = "Be verbose",
-        long_help = "Deactivates the progress spinner and prints every line of output."
-    )]
+
+    /// Be verbose
+    ///
+    /// Deactivates the progress spinner and prints every line of output.
+    #[arg(short, long)]
     verbose: bool,
-    #[arg(
-        long,
-        help = "Do not upload keys",
-        long_help = r#"Do not upload secret keys set in `deployment.keys`.
 
-By default, Colmena will upload keys set in `deployment.keys` before deploying the new profile on a node.
-To upload keys without building or deploying the rest of the configuration, use `colmena upload-keys`.
-"#
-    )]
+    /// Do not upload keys
+    ///
+    /// By default, Colmena will upload secret keys set in `deployment.keys` before deploying
+    /// the new profile on a node. To upload keys without building or deploying the rest
+    /// of the configuration, use `colmena upload-keys`.
+    #[arg(long)]
     no_keys: bool,
-    #[arg(
-        long,
-        help = "Reboot nodes after activation",
-        long_help = "Reboots nodes after activation and waits for them to come back up."
-    )]
-    reboot: bool,
-    #[arg(
-        long,
-        alias = "no-substitutes",
-        help = "Do not use substitutes",
-        long_help = "Disables the use of substituters when copying closures to the remote host."
-    )]
-    no_substitute: bool,
-    #[arg(
-        long,
-        help = "Do not use gzip",
-        long_help = "Disables the use of gzip when copying closures to the remote host."
-    )]
-    no_gzip: bool,
-    #[arg(
-        long,
-        help = "Build the system profiles on the target nodes",
-        long_help = r#"Build the system profiles on the target nodes themselves.
 
-If enabled, the system profiles will be built on the target nodes themselves, not on the host running Colmena itself.
-This overrides per-node perferences set in `deployment.buildOnTarget`.
-To temporarily disable remote build on all nodes, use `--no-build-on-target`.
-"#
-    )]
+    /// Reboot nodes after activation
+    ///
+    /// Reboots nodes after activation and waits for them to come back up.
+    #[arg(long)]
+    reboot: bool,
+
+    /// Do not use substitutes
+    ///
+    /// Disables the use of substituters when copying closures to the remote host.
+    #[arg(long, alias = "no-substitutes")]
+    no_substitute: bool,
+
+    /// Do not use gzip
+    ///
+    /// Disables the use of gzip when copying closures to the remote host.
+    #[arg(long)]
+    no_gzip: bool,
+
+    /// Build the system profiles on the target nodes
+    ///
+    /// If enabled, the system profiles will be built on the target nodes themselves,
+    /// not on the host running Colmena. This overrides per-node preferences set in
+    /// `deployment.buildOnTarget`. To temporarily disable remote build on all nodes,
+    /// use `--no-build-on-target`.
+    #[arg(long)]
     build_on_target: bool,
+
     #[arg(long, hide = true)]
     no_build_on_target: bool,
-    #[arg(
-        long,
-        help = "Ignore all targeted nodes deployment.replaceUnknownProfiles setting",
-        long_help = r#"If `deployment.replaceUnknownProfiles` is set for a target, using this switch
-will treat deployment.replaceUnknownProfiles as though it was set true and perform unknown profile replacement."#
-    )]
-    force_replace_unknown_profiles: bool,
-    #[arg(
-        long,
-        default_value_t,
-        help = "The evaluator to use (experimental)",
-        long_help = r#"If set to `chunked` (default), evaluation of nodes will happen in batches. If set to `streaming`, the experimental streaming evaluator (nix-eval-jobs) will be used and nodes will be evaluated in parallel.
 
-This is an experimental feature."#
-    )]
+    /// Ignore all targeted nodes `deployment.replaceUnknownProfiles` setting
+    ///
+    /// If `deployment.replaceUnknownProfiles` is set for a target, using this switch
+    /// will treat `deployment.replaceUnknownProfiles` as though it was set to `true`
+    /// and perform unknown profile replacement.
+    #[arg(long)]
+    force_replace_unknown_profiles: bool,
+
+    /// The evaluator to use (experimental)
+    ///
+    /// If set to `chunked` (default), evaluation of nodes will happen in batches. If
+    /// set to `streaming`, the experimental streaming evaluator (nix-eval-jobs) will
+    /// be used and nodes will be evaluated in parallel.
+    ///
+    /// This is an experimental feature.
+    #[arg(long, default_value_t)]
     evaluator: EvaluatorType,
+
     #[command(flatten)]
     node_filter: NodeFilterOpts,
 }
 
+/// Apply configurations on remote machines
 #[derive(Debug, Args)]
-#[command(name = "apply", about = "Apply configurations on remote machines")]
+#[command(name = "apply")]
 pub struct Opts {
+    /// Deployment goal
+    ///
+    /// Same as the targets for switch-to-configuration, with the following extra
+    /// pseudo-goals:
+    ///
+    /// - build: Only build the system profiles
+    /// - push: Only copy the closures to remote nodes
+    /// - keys: Only upload the keys to the remote nodes
+    ///
+    /// `switch` is the default goal unless `--reboot` is passed, in which case
+    /// `boot` is the default.
     #[arg(
-        help = "Deployment goal",
-        long_help = r#"The goal of the deployment.
-
-Same as the targets for switch-to-configuration, with the following extra pseudo-goals:
-
-- build: Only build the system profiles
-- push: Only copy the closures to remote nodes
-- keys: Only upload the keys to the remote nodes
-
-`switch` is the default goal unless `--reboot` is passed, in which case `boot` is the default.
-"#,
         default_value_t,
         default_value_if("reboot", ArgPredicate::IsPresent, Some("boot"))
     )]
     pub goal: Goal,
+
     #[command(flatten)]
     pub deploy: DeployOpts,
 }

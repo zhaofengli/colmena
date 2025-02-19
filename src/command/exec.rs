@@ -13,42 +13,34 @@ use crate::nix::Hive;
 use crate::progress::SimpleProgressOutput;
 use crate::util;
 
+/// Run a command on remote machines
 #[derive(Debug, Args)]
-#[command(name = "exec", about = "Run a command on remote machines")]
+#[command(name = "exec")]
 pub struct Opts {
-    #[arg(
-        short,
-        long,
-        default_value_t = 0,
-        value_name = "LIMIT",
-        help = "Deploy parallelism limit",
-        long_help = r#"Limits the maximum number of hosts to run the command in parallel.
-
-In `colmena exec`, the parallelism limit is disabled (0) by default.
-"#
-    )]
+    /// Deploy parallelism limit
+    ///
+    /// Limits the maximum number of hosts to run the command in parallel.
+    ///
+    /// In `colmena exec`, the parallelism limit is disabled (0) by default.
+    #[arg(short, long, default_value_t = 0, value_name = "LIMIT")]
     parallel: usize,
-    #[arg(
-        short,
-        long,
-        help = "Be verbose",
-        long_help = "Deactivates the progress spinner and prints every line of output."
-    )]
+
+    /// Be verbose
+    ///
+    /// Deactivates the progress spinner and prints every line of output.
+    #[arg(short, long)]
     verbose: bool,
+
     #[command(flatten)]
     nodes: NodeFilterOpts,
-    #[arg(
-        trailing_var_arg = true,
-        required = true,
-        value_name = "COMMAND",
-        help = "Command",
-        long_help = r#"Command to run
 
-It's recommended to use -- to separate Colmena options from the command to run. For example:
-
-    colmena exec --on @routers -- tcpdump -vni any ip[9] == 89
-"#
-    )]
+    /// Command to run
+    ///
+    /// It's recommended to use -- to separate Colmena options from the command to run. For
+    /// example:
+    ///
+    /// colmena exec --on @routers -- tcpdump -vni any ip[9] == 89
+    #[arg(trailing_var_arg = true, required = true, value_name = "COMMAND")]
     command: Vec<String>,
 }
 
