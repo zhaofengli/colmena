@@ -75,9 +75,20 @@ To upload keys without building or deploying the rest of the configuration, use 
         long,
         alias = "no-substitutes",
         help = "Do not use substitutes",
-        long_help = "Disables the use of substituters when copying closures to the remote host."
+        long_help = "Disables the use of substituters when copying closures to the remote host.",
+        overrides_with = "use_substitute"
     )]
     no_substitute: bool,
+    #[arg(
+        long,
+        alias = "use-substitutes",
+        help = "Use substitutes",
+        long_help = r#"Enable the use of substituters when copying closures to the remote host.
+
+By default, Colmena enables the use of substitutes. This can be disabled via the per-node
+`deployment.noSubstitutes` option, which can be overridden with this flag."#
+    )]
+    use_substitute: bool,
     #[arg(
         long,
         help = "Do not use gzip",
@@ -154,6 +165,7 @@ pub async fn run(hive: Hive, opts: Opts) -> Result<(), ColmenaError> {
                 no_keys,
                 reboot,
                 no_substitute,
+                use_substitute,
                 no_gzip,
                 build_on_target,
                 no_build_on_target,
@@ -191,12 +203,17 @@ pub async fn run(hive: Hive, opts: Opts) -> Result<(), ColmenaError> {
     // FIXME: Configure limits
     let options = {
         let mut options = Options::default();
-        options.set_substituters_push(!no_substitute);
         options.set_gzip(!no_gzip);
         options.set_upload_keys(!no_keys);
         options.set_reboot(reboot);
         options.set_force_replace_unknown_profiles(force_replace_unknown_profiles);
         options.set_evaluator(evaluator);
+
+        if no_substitute {
+            options.set_substituters_push(!no_substitute);
+        } else if use_substitute {
+            options.set_substituters_push(use_substitute);
+        }
 
         if keep_result {
             options.set_create_gc_roots(true);
