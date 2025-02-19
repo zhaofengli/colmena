@@ -19,6 +19,9 @@ pub struct Options {
     /// Whether to reboot the hosts after activation.
     pub(super) reboot: bool,
 
+    /// Whether to automatically delete previous NixOS generations.
+    pub(super) delete_old: bool,
+
     /// Whether to create GC roots for node profiles.
     ///
     /// If true, .gc_roots will be created under the hive's context
@@ -69,6 +72,10 @@ impl Options {
         self.reboot = enable;
     }
 
+    pub fn set_delete_old(&mut self, enable: bool) {
+        self.delete_old = enable;
+    }
+
     pub fn set_create_gc_roots(&mut self, enable: bool) {
         self.create_gc_roots = enable;
     }
@@ -101,6 +108,7 @@ impl Default for Options {
             gzip: true,
             upload_keys: true,
             reboot: false,
+            delete_old: false,
             create_gc_roots: false,
             force_build_on_target: None,
             force_replace_unknown_profiles: false,
