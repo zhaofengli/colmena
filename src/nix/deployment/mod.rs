@@ -89,6 +89,14 @@ impl TargetNode {
     pub fn into_host(self) -> Option<Box<dyn Host>> {
         self.host
     }
+
+    pub fn name(&self) -> &str {
+        &self.name.0
+    }
+
+    pub fn config(&self) -> &NodeConfig {
+        &self.config
+    }
 }
 
 impl Deployment {
