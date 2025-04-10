@@ -210,6 +210,7 @@ attribute set."#
     #[cfg(debug_assertions)]
     #[command(about = "Run progress spinner tests", hide = true)]
     TestProgress,
+    List(command::list::Opts),
     #[command(about = "Generate shell auto-completion files (Internal)", hide = true)]
     GenCompletions {
         shell: Shell,
@@ -331,6 +332,7 @@ pub async fn run() {
             };
             r(command::apply::run(hive, args), opts.config).await
         }
+        Command::List(args) => r(command::list::run(hive, args), opts.config).await,
         Command::GenCompletions { .. } => unreachable!(),
     }
 }

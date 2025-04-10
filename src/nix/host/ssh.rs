@@ -251,7 +251,7 @@ impl Ssh {
         execution.run().await
     }
 
-    fn ssh_target(&self) -> String {
+    pub(crate) fn ssh_target(&self) -> String {
         match &self.user {
             Some(n) => format!("{}@{}", n, self.host),
             None => self.host.clone(),
