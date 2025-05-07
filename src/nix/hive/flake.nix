@@ -1,5 +1,6 @@
+# Only used for --legacy-flake-eval
 {
-  description = "Internal Colmena expressions";
+  description = "Internal Colmena expressions (deprecated)";
 
   inputs = {
     hive.url = "%hive%";
