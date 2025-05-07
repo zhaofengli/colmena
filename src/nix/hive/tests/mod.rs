@@ -204,7 +204,7 @@ fn test_parse_makehive_flake() {
     fs::write(flake_nix, patched_flake).unwrap();
 
     // run the test
-    let flake = block_on(Flake::from_dir(flake_dir)).unwrap();
+    let flake = block_on(Flake::from_dir(flake_dir.as_ref())).unwrap();
 
     let hive_path = HivePath::Flake(flake);
     let mut hive = block_on(Hive::new(hive_path)).unwrap();
@@ -216,6 +216,8 @@ fn test_parse_makehive_flake() {
         &["host-a", "host-b"],
         &nodes.keys().map(NodeName::as_str).collect::<Vec<&str>>(),
     ));
+
+    drop(flake_dir);
 }
 
 #[test]
