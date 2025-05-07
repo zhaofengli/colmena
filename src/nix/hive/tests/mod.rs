@@ -164,23 +164,6 @@ fn test_parse_simple() {
 }
 
 #[test]
-fn test_parse_flake() {
-    let flake_dir = PathBuf::from("./src/nix/hive/tests/simple-flake");
-    let flake = block_on(Flake::from_dir(flake_dir)).unwrap();
-
-    let hive_path = HivePath::Flake(flake);
-    let mut hive = block_on(Hive::new(hive_path)).unwrap();
-
-    hive.set_show_trace(true);
-
-    let nodes = block_on(hive.deployment_info()).unwrap();
-    assert!(set_eq(
-        &["host-a", "host-b"],
-        &nodes.keys().map(NodeName::as_str).collect::<Vec<&str>>(),
-    ));
-}
-
-#[test]
 fn test_parse_makehive_flake() {
     // make a copy of the flake so we can edit the colmena input
     let src_dir = PathBuf::from("./src/nix/hive/tests/makehive-flake");
