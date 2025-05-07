@@ -9,10 +9,8 @@
   build-on-target = import ./build-on-target { inherit pkgs; };
   exec = import ./exec { inherit pkgs; };
 
-  # FIXME: The old evaluation method doesn't work purely with Nix 2.21+
   flakes = import ./flakes {
     inherit pkgs;
-    extraApplyFlags = "--experimental-flake-eval";
   };
   flakes-impure = import ./flakes {
     inherit pkgs;
