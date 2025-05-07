@@ -7,7 +7,7 @@
 
   outputs = { self, hive }: {
     processFlake = let
-      compatibleSchema = "v0.20241006";
+      compatibleSchema = "v0.5";
 
       # Evaluates a raw hive.
       #

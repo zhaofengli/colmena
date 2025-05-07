@@ -26,7 +26,7 @@ use assets::Assets;
 /// The version of the Hive schema we are compatible with.
 ///
 /// Currently we are tied to one specific version.
-const HIVE_SCHEMA: &str = "v0.20241006";
+const HIVE_SCHEMA: &str = "v0.5";
 
 /// The snippet to be used for `nix eval --apply`.
 const FLAKE_APPLY_SNIPPET: &str = formatcp!(
