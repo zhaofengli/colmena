@@ -1,5 +1,5 @@
 <!DOCTYPE HTML>
-<html lang="en" class="light" dir="ltr">
+<html lang="en" class="light sidebar-visible" dir="ltr">
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
@@ -8,7 +8,7 @@
 
 
         <!-- Custom HTML head -->
-        
+
         <meta name="description" content="">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
@@ -25,26 +25,29 @@
         <link rel="stylesheet" href="fonts/fonts.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" href="highlight.css">
-        <link rel="stylesheet" href="tomorrow-night.css">
-        <link rel="stylesheet" href="ayu-highlight.css">
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
 
         <!-- Custom theme stylesheets -->
 
-    </head>
-    <body class="sidebar-visible no-js">
-    <div id="body-container">
-        <!-- Provide site root to javascript -->
-        <script>
-            var path_to_root = "";
-            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
-        </script>
 
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="body-container">
         <!-- Work around some values being stored in localStorage wrapped in quotes -->
         <script>
             try {
-                var theme = localStorage.getItem('mdbook-theme');
-                var sidebar = localStorage.getItem('mdbook-sidebar');
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
 
                 if (theme.startsWith('"') && theme.endsWith('"')) {
                     localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
@@ -58,24 +61,22 @@
 
         <!-- Set the theme before any content is loaded, prevents flash -->
         <script>
-            var theme;
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
             try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
             if (theme === null || theme === undefined) { theme = default_theme; }
-            var html = document.querySelector('html');
+            const html = document.documentElement;
             html.classList.remove('light')
             html.classList.add(theme);
-            var body = document.querySelector('body');
-            body.classList.remove('no-js')
-            body.classList.add('js');
+            html.classList.add("js");
         </script>
 
         <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
 
         <!-- Hide / unhide sidebar before it is displayed -->
         <script>
-            var body = document.querySelector('body');
-            var sidebar = null;
-            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
             if (document.body.clientWidth >= 1080) {
                 try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
                 sidebar = sidebar || 'visible';
@@ -83,45 +84,25 @@
                 sidebar = 'hidden';
             }
             sidebar_toggle.checked = sidebar === 'visible';
-            body.classList.remove('sidebar-visible');
-            body.classList.add("sidebar-" + sidebar);
+            html.classList.remove('sidebar-visible');
+            html.classList.add("sidebar-" + sidebar);
         </script>
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
-            <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="introduction.html"><strong aria-hidden="true">1.</strong> Introduction</a></li><li class="chapter-item expanded "><a href="tutorial/index.html"><strong aria-hidden="true">2.</strong> Tutorial</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="tutorial/flakes.html"><strong aria-hidden="true">2.1.</strong> Usage with Flakes</a></li><li class="chapter-item expanded "><a href="tutorial/migration.html"><strong aria-hidden="true">2.2.</strong> Migrating from NixOps/morph</a></li></ol></li><li class="chapter-item expanded "><a href="features/index.html"><strong aria-hidden="true">3.</strong> Features</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="features/tags.html"><strong aria-hidden="true">3.1.</strong> Node Tagging</a></li><li class="chapter-item expanded "><a href="features/apply-local.html"><strong aria-hidden="true">3.2.</strong> Local Deployment</a></li><li class="chapter-item expanded "><a href="features/keys.html"><strong aria-hidden="true">3.3.</strong> Secrets</a></li><li class="chapter-item expanded "><a href="features/eval.html"><strong aria-hidden="true">3.4.</strong> Ad Hoc Evaluation</a></li><li class="chapter-item expanded "><a href="features/parallelism.html"><strong aria-hidden="true">3.5.</strong> Parallelism</a></li><li class="chapter-item expanded "><a href="features/remote-builds.html"><strong aria-hidden="true">3.6.</strong> Remote Builds</a></li></ol></li><li class="chapter-item expanded "><a href="examples/index.html"><strong aria-hidden="true">4.</strong> Examples</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="examples/multi-arch.html"><strong aria-hidden="true">4.1.</strong> Multi-Architecture Deployments</a></li></ol></li><li class="chapter-item expanded "><a href="reference/index.html"><strong aria-hidden="true">5.</strong> Reference</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="reference/deployment.html"><strong aria-hidden="true">5.1.</strong> Deployment Options</a></li><li class="chapter-item expanded "><a href="reference/meta.html"><strong aria-hidden="true">5.2.</strong> Meta Options</a></li><li class="chapter-item expanded "><a href="reference/cli.html"><strong aria-hidden="true">5.3.</strong> Command Line Options</a></li></ol></li><li class="chapter-item expanded "><a href="release-notes.html"><strong aria-hidden="true">6.</strong> Release Notes</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">7.</strong> Contributing</a></li></ol>
-            </div>
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
             </div>
         </nav>
 
-        <!-- Track and set sidebar scroll position -->
-        <script>
-            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
-            sidebarScrollbox.addEventListener('click', function(e) {
-                if (e.target.tagName === 'A') {
-                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
-                }
-            }, { passive: true });
-            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
-            sessionStorage.removeItem('sidebar-scroll');
-            if (sidebarScrollTop) {
-                // preserve sidebar scroll position when navigating via links within sidebar
-                sidebarScrollbox.scrollTop = sidebarScrollTop;
-            } else {
-                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
-                var activeSection = document.querySelector('#sidebar .active');
-                if (activeSection) {
-                    activeSection.scrollIntoView({ block: 'center' });
-                }
-            }
-        </script>
-
         <div id="page-wrapper" class="page-wrapper">
 
             <div class="page">
-                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar-hover-placeholder"></div>
                 <div id="menu-bar" class="menu-bar sticky">
                     <div class="left-buttons">
                         <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
@@ -131,6 +112,7 @@
                             <i class="fa fa-paint-brush"></i>
                         </button>
                         <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
                             <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
@@ -334,14 +316,15 @@ This binary cache contains unstable versions of Colmena built by <a href="https:
 This binary cache contains unstable versions of Colmena built by <a href="https://github.com/zhaofengli/colmena/actions">GitHub Actions</a>.</p>
 <!-- UNSTABLE_END -->
 <h2 id="basic-configuration-1"><a class="header" href="#basic-configuration-1">Basic Configuration</a></h2>
-<p>Colmena reads the <code>colmena</code> output in your Flake.</p>
+<p>Colmena reads the <code>colmenaHive</code> output in your Flake, generated with <code>colmena.lib.makeHive</code>.</p>
 <p>Here is a short example:</p>
 <pre><code class="language-nix">{
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    colmena.url = "github:zhaofengli/colmena";
   };
-  outputs = { nixpkgs, ... }: {
-    colmena = {
+  outputs = { nixpkgs, colmena, ... }: {
+    colmenaHive = colmena.lib.makeHive {
       meta = {
         nixpkgs = import nixpkgs {
           system = "x86_64-linux";
@@ -374,10 +357,12 @@ You can also check out the example in <a href="tutorial/index.html">the main tut
 <p>To build and deploy to all nodes:</p>
 <pre><code class="language-bash">colmena apply
 </code></pre>
-<h2 id="direct-flake-evaluation-experimental"><a class="header" href="#direct-flake-evaluation-experimental">Direct Flake Evaluation (Experimental)</a></h2>
-<p>By default, Colmena uses <code>nix-instantiate</code> to evaluate your flake which does not work purely on Nix 2.21+, necessitating the use of <code>--impure</code>.
-There is experimental support for evaluating flakes directly with <code>nix eval</code>, enabled via <code>--experimental-flake-eval</code>.</p>
-<p>To use this new evaluation mode, your flake needs to depend on Colmena itself as an input and expose a new output called <code>colmenaHive</code>:</p>
+<h2 id="migrating-to-direct-flake-evaluation"><a class="header" href="#migrating-to-direct-flake-evaluation">Migrating to Direct Flake Evaluation</a></h2>
+<blockquote>
+<p>error: flake 'git+file:///path/to/flake' does not provide attribute 'packages.x86_64-linux.colmenaHive', 'legacyPackages.x86_64-linux.colmenaHive' or 'colmenaHive'</p>
+</blockquote>
+<p>Colmena now uses <code>nix eval</code> to evaluate flakes.
+Your flake needs to depend on Colmena itself as an input and expose a new output called <code>colmenaHive</code>:</p>
 <pre><code class="language-diff"> {
    inputs = {
 +    # ADDED: Colmena input
@@ -396,6 +381,10 @@ There is experimental support for evaluating flakes directly with <code>nix eval
    };
  }
 </code></pre>
+<h2 id="using-legacy-flake-evaluation-deprecated"><a class="header" href="#using-legacy-flake-evaluation-deprecated">Using Legacy Flake Evaluation (Deprecated)</a></h2>
+<p>By default, Colmena uses <code>nix eval</code> to evaluate your flake.
+If you need to use the old evaluation method based on <code>nix-instantiate</code> and <code>builtins.getFlake</code>, add the <code>--legacy-flake-eval</code> flag.
+The legacy flake evaluator uses the <code>colmena</code> output and does not work purely on Nix 2.21+.</p>
 <h2 id="next-steps-1"><a class="header" href="#next-steps-1">Next Steps</a></h2>
 <ul>
 <li>Head to the <a href="tutorial/../features/index.html">Features</a> section to see what else Colmena can do.</li>
@@ -721,7 +710,7 @@ attribute set of (submodule)</p>
 <h2 id="deploymentkeysnamedestdir"><a class="header" href="#deploymentkeysnamedestdir">deployment.keys.&lt;name&gt;.destDir</a></h2>
 <p>Destination directory on the host.</p>
 <p><em>Type:</em>
-path</p>
+absolute path</p>
 <p><em>Default:</em>
 <code>"/run/keys"</code></p>
 <h2 id="deploymentkeysnamegroup"><a class="header" href="#deploymentkeysnamegroup">deployment.keys.&lt;name&gt;.group</a></h2>
@@ -741,7 +730,7 @@ null or (list of string)</p>
 <p>Path of the local file to read the key from.
 One of <code>text</code>, <code>keyCommand</code> and <code>keyFile</code> must be set.</p>
 <p><em>Type:</em>
-null or path</p>
+null or absolute path</p>
 <p><em>Default:</em>
 <code>null</code></p>
 <h2 id="deploymentkeysnamename"><a class="header" href="#deploymentkeysnamename">deployment.keys.&lt;name&gt;.name</a></h2>
@@ -889,7 +878,7 @@ themselves via <code>deployment.buildOnTarget</code> or <code>--build-on-target<
 still use the Nix distributed build functionality, configure the
 builders on the target nodes with <code>nix.buildMachines</code>.</p>
 <p><em>Type:</em>
-null or path</p>
+null or absolute path</p>
 <p><em>Default:</em>
 <code>null</code></p>
 <h2 id="name"><a class="header" href="#name">name</a></h2>
@@ -2082,16 +2071,6 @@ Note: You are using a pre-release version of Colmena, so the supported options m
           This only works when building locally.
           
 
-      <span class="ansi1">--experimental-flake-eval</span>
-          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
-          
-            outputs = { self, colmena, ... }: {
-              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
-              colmena = ...;
-            };
-          
-          This is an experimental feature.
-
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
@@ -2186,16 +2165,6 @@ Note: You are using a pre-release version of Colmena, so the supported options m
 
   <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
           Deactivates the progress spinner and prints every line of output.
-
-      <span class="ansi1">--experimental-flake-eval</span>
-          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
-          
-            outputs = { self, colmena, ... }: {
-              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
-              colmena = ...;
-            };
-          
-          This is an experimental feature.
 
       <span class="ansi1">--no-keys</span>
           Do not upload secret keys set in `deployment.keys`.
@@ -2314,16 +2283,6 @@ Note: You are using a pre-release version of Colmena, so the supported options m
       <span class="ansi1">--node</span> &lt;NODE&gt;
           Override the node name to use
 
-      <span class="ansi1">--experimental-flake-eval</span>
-          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
-          
-            outputs = { self, colmena, ... }: {
-              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
-              colmena = ...;
-            };
-          
-          This is an experimental feature.
-
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
@@ -2393,16 +2352,6 @@ This subcommand behaves as if you invoked `apply` with the `build` goal.
 
   <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
           Deactivates the progress spinner and prints every line of output.
-
-      <span class="ansi1">--experimental-flake-eval</span>
-          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
-          
-            outputs = { self, colmena, ... }: {
-              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
-              colmena = ...;
-            };
-          
-          This is an experimental feature.
 
       <span class="ansi1">--no-keys</span>
           Do not upload secret keys set in `deployment.keys`.
@@ -2520,16 +2469,6 @@ This subcommand behaves as if you invoked `apply` with the pseudo `keys` goal.
   <span class="ansi1">-v</span>, <span class="ansi1">--verbose</span>
           Deactivates the progress spinner and prints every line of output.
 
-      <span class="ansi1">--experimental-flake-eval</span>
-          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
-          
-            outputs = { self, colmena, ... }: {
-              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
-              colmena = ...;
-            };
-          
-          This is an experimental feature.
-
       <span class="ansi1">--no-keys</span>
           Do not upload secret keys set in `deployment.keys`.
           
@@ -2633,16 +2572,6 @@ For example, to retrieve the configuration of one node, you may write something 
           This only works when building locally.
           
 
-      <span class="ansi1">--experimental-flake-eval</span>
-          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
-          
-            outputs = { self, colmena, ... }: {
-              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
-              colmena = ...;
-            };
-          
-          This is an experimental feature.
-
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
@@ -2713,16 +2642,6 @@ For example, to retrieve the configuration of one node, you may write something 
           This only works when building locally.
           
 
-      <span class="ansi1">--experimental-flake-eval</span>
-          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
-          
-            outputs = { self, colmena, ... }: {
-              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
-              colmena = ...;
-            };
-          
-          This is an experimental feature.
-
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
           
@@ -2762,16 +2681,6 @@ For example, to retrieve the configuration of one node, you may write something 
           
           This only works when building locally.
           
-
-      <span class="ansi1">--experimental-flake-eval</span>
-          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
-          
-            outputs = { self, colmena, ... }: {
-              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
-              colmena = ...;
-            };
-          
-          This is an experimental feature.
 
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
@@ -2816,16 +2725,6 @@ attribute set.
           
           This only works when building locally.
           
-
-      <span class="ansi1">--experimental-flake-eval</span>
-          If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
-          
-            outputs = { self, colmena, ... }: {
-              colmenaHive = colmena.lib.makeHive self.outputs.colmena;
-              colmena = ...;
-            };
-          
-          This is an experimental feature.
 
   <span class="ansi1">-f</span>, <span class="ansi1">--config</span> &lt;CONFIG&gt;
           If this argument is not specified, Colmena will search upwards from the current working directory for a file named "flake.nix" or "hive.nix". This behavior is disabled if --config/-f is given explicitly.
