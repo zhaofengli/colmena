@@ -46,7 +46,7 @@ impl Host for Local {
     async fn realize_remote(&mut self, derivation: &StorePath) -> ColmenaResult<Vec<StorePath>> {
         let mut command = Command::new("nix-store");
 
-        command.args(self.nix_options.to_args());
+        command.args(self.nix_options.to_nix_store_args());
         command
             .arg("--no-gc-warning")
             .arg("--realise")

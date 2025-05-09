@@ -237,8 +237,7 @@ impl Hive {
 
     /// Returns Nix flags to set for this Hive, with configured remote builders.
     pub async fn nix_flags_with_builders(&self) -> ColmenaResult<NixFlags> {
-        let mut flags = NixFlags::default();
-        flags.set_show_trace(self.show_trace);
+        let mut flags = self.nix_flags();
 
         if let Some(machines_file) = &self.get_meta_config().await?.machines_file {
             flags.set_builders(Some(format!("@{}", machines_file)));
