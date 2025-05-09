@@ -9,7 +9,7 @@ use env_logger::fmt::WriteStyle;
 
 use crate::{
     command::{self, apply::DeployOpts},
-    error::ColmenaResult,
+    error::{ColmenaError, ColmenaResult},
     nix::{hive::EvaluationMethod, Hive, HivePath},
 };
 
@@ -140,18 +140,21 @@ This only works when building locally.
     #[arg(
         long,
         default_value_t,
-        help = "Use direct flake evaluation (experimental)",
-        long_help = r#"If enabled, flakes will be evaluated using `nix eval`. This requires the flake to depend on Colmena as an input and expose a compatible `colmenaHive` output:
-
-  outputs = { self, colmena, ... }: {
-    colmenaHive = colmena.lib.makeHive self.outputs.colmena;
-    colmena = ...;
-  };
-
-This is an experimental feature."#,
-        global = true
+        help = "Use legacy flake evaluation (deprecated)",
+        long_help = "If enabled, flakes will be evaluated using `builtins.getFlake` with the `nix-instantiate` CLI.",
+        global = true,
+        hide = true
     )]
-    experimental_flake_eval: bool,
+    legacy_flake_eval: bool,
+    #[arg(
+        long = "experimental-flake-eval",
+        default_value_t,
+        help = "This flag no longer has an effect",
+        long_help = "Previously it enabled direct flake evaluation which is now the default",
+        global = true,
+        hide = true
+    )]
+    deprecated_experimental_flake_eval_flag: bool,
     #[arg(
         long,
         value_name = "WHEN",
@@ -277,9 +280,24 @@ async fn get_hive(opts: &Opts) -> ColmenaResult<Hive> {
         hive.set_impure(true);
     }
 
-    if opts.experimental_flake_eval {
-        log::warn!("Using direct flake evaluation (experimental)");
-        hive.set_evaluation_method(EvaluationMethod::DirectFlakeEval);
+    if opts.deprecated_experimental_flake_eval_flag {
+        log::error!(
+            "--experimental-flake-eval is now the default and this flag no longer has an effect"
+        );
+        return Err(ColmenaError::Unsupported);
+    }
+
+    if opts.legacy_flake_eval {
+        log::warn!("Using legacy flake eval (deprecated)");
+        log::warn!(
+            r#"Consider upgrading to the new evaluator by adding Colmena as an input and expose the `colmenaHive` output:
+  outputs = {{ self, colmena, ... }}: {{
+    colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+    colmena = ...;
+    }};
+"#
+        );
+        hive.set_evaluation_method(EvaluationMethod::NixInstantiate);
     }
 
     for chunks in opts.nix_option.chunks_exact(2) {

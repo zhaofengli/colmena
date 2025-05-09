@@ -26,7 +26,7 @@ use assets::Assets;
 /// The version of the Hive schema we are compatible with.
 ///
 /// Currently we are tied to one specific version.
-const HIVE_SCHEMA: &str = "v0.20241006";
+const HIVE_SCHEMA: &str = "v0.5";
 
 /// The snippet to be used for `nix eval --apply`.
 const FLAKE_APPLY_SNIPPET: &str = formatcp!(
@@ -83,7 +83,8 @@ impl FromStr for HivePath {
 pub enum EvaluationMethod {
     /// Use nix-instantiate and specify the entire Nix expression.
     ///
-    /// This is the default method.
+    /// This is the default method for non-flake configs. It's also used
+    /// used for flakes with --legacy-flake-eval.
     ///
     /// For flakes, we use `builtins.getFlakes`. Pure evaluation no longer works
     /// with this method in Nix 2.21+.
@@ -91,7 +92,7 @@ pub enum EvaluationMethod {
 
     /// Use `nix eval --apply` on top of a flake.
     ///
-    /// This can be activated with --experimental-flake-eval.
+    /// This is the default method for flakes.
     ///
     /// In this method, we can no longer pull in our bundled assets and
     /// the flake must expose a compatible `colmenaHive` output.
@@ -168,11 +169,18 @@ impl HivePath {
 impl Hive {
     pub async fn new(path: HivePath) -> ColmenaResult<Self> {
         let context_dir = path.context_dir();
+        // TODO: Skip asset extraction for direct flake eval
         let assets = Assets::new(path.clone()).await?;
+
+        let evaluation_method = if path.is_flake() {
+            EvaluationMethod::DirectFlakeEval
+        } else {
+            EvaluationMethod::NixInstantiate
+        };
 
         Ok(Self {
             path,
-            evaluation_method: EvaluationMethod::NixInstantiate,
+            evaluation_method,
             context_dir,
             assets,
             show_trace: false,
