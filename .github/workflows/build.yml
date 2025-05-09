@@ -28,7 +28,7 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@b92f66560d6f97d6576405a7bae901ab57e72b6a # v15
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3.2.0
+        uses: docker/setup-qemu-action@v3.6.0
         if: matrix.system == 'aarch64-linux'
 
       - name: Generate System Flags
