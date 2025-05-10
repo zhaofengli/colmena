@@ -5,7 +5,6 @@ use std::env;
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use const_format::{concatcp, formatcp};
-use env_logger::fmt::WriteStyle;
 
 use crate::{
     command::{self, apply::DeployOpts},
@@ -371,22 +370,11 @@ fn set_color_pref(when: &ColorWhen) {
 }
 
 fn init_logging() {
-    if env::var("RUST_LOG").is_err() {
-        // HACK
-        env::set_var("RUST_LOG", "info")
-    }
-
-    // make env_logger conform to our detection logic
-    let style = if clicolors_control::colors_enabled() {
-        WriteStyle::Always
-    } else {
-        WriteStyle::Never
-    };
-
-    env_logger::builder()
-        .format_timestamp(None)
-        .format_module_path(false)
-        .format_target(false)
-        .write_style(style)
+    let colors_enabled = clicolors_control::colors_enabled();
+    tracing_subscriber::fmt()
+        .with_target(false)
+        .with_level(true)
+        .without_time()
+        .with_ansi(colors_enabled)
         .init();
 }
