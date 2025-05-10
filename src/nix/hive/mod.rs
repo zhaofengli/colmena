@@ -63,7 +63,7 @@ impl FromStr for HivePath {
                 // Treat as flake URI
                 let flake = Flake::from_uri(s).await?;
 
-                log::info!("Using flake: {}", flake.uri());
+                tracing::info!("Using flake: {}", flake.uri());
 
                 Ok(Self::Flake(flake))
             } else {
@@ -255,13 +255,13 @@ impl Hive {
     ) -> ColmenaResult<HashMap<NodeName, TargetNode>> {
         let mut node_configs = None;
 
-        log::info!("Enumerating nodes...");
+        tracing::info!("Enumerating nodes...");
 
         let all_nodes = self.node_names().await?;
         let selected_nodes = match filter {
             Some(filter) => {
                 if filter.has_node_config_rules() {
-                    log::debug!("Retrieving deployment info for all nodes...");
+                    tracing::debug!("Retrieving deployment info for all nodes...");
 
                     let all_node_configs = self.deployment_info().await?;
                     let filtered = filter
@@ -284,7 +284,7 @@ impl Hive {
         let mut node_configs = if let Some(configs) = node_configs {
             configs
         } else {
-            log::debug!("Retrieving deployment info for selected nodes...");
+            tracing::debug!("Retrieving deployment info for selected nodes...");
             self.deployment_info_selected(&selected_nodes).await?
         };
 
@@ -318,20 +318,20 @@ impl Hive {
 
         if targets.is_empty() {
             if skipped != 0 {
-                log::warn!("No hosts selected.");
+                tracing::warn!("No hosts selected.");
             } else {
-                log::warn!("No hosts selected ({} skipped).", skipped);
+                tracing::warn!("No hosts selected ({} skipped).", skipped);
             }
         } else if targets.len() == all_nodes.len() {
-            log::info!("Selected all {} nodes.", targets.len());
+            tracing::info!("Selected all {} nodes.", targets.len());
         } else if !ssh_only || skipped == 0 {
-            log::info!(
+            tracing::info!(
                 "Selected {} out of {} hosts.",
                 targets.len(),
                 all_nodes.len()
             );
         } else {
-            log::info!(
+            tracing::info!(
                 "Selected {} out of {} hosts ({} skipped).",
                 targets.len(),
                 all_nodes.len(),

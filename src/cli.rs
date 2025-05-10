@@ -252,7 +252,7 @@ async fn get_hive(opts: &Opts) -> ColmenaResult<Hive> {
             }
 
             if file_path.is_none() {
-                log::error!(
+                tracing::error!(
                     "Could not find `hive.nix` or `flake.nix` in {:?} or any parent directory",
                     std::env::current_dir()?
                 );
@@ -264,10 +264,10 @@ async fn get_hive(opts: &Opts) -> ColmenaResult<Hive> {
 
     match &path {
         HivePath::Legacy(p) => {
-            log::info!("Using configuration: {}", p.to_string_lossy());
+            tracing::info!("Using configuration: {}", p.to_string_lossy());
         }
         HivePath::Flake(flake) => {
-            log::info!("Using flake: {}", flake.uri());
+            tracing::info!("Using flake: {}", flake.uri());
         }
     }
 
@@ -282,15 +282,15 @@ async fn get_hive(opts: &Opts) -> ColmenaResult<Hive> {
     }
 
     if opts.deprecated_experimental_flake_eval_flag {
-        log::error!(
+        tracing::error!(
             "--experimental-flake-eval is now the default and this flag no longer has an effect"
         );
         return Err(ColmenaError::Unsupported);
     }
 
     if opts.legacy_flake_eval {
-        log::warn!("Using legacy flake eval (deprecated)");
-        log::warn!(
+        tracing::warn!("Using legacy flake eval (deprecated)");
+        tracing::warn!(
             r#"Consider upgrading to the new evaluator by adding Colmena as an input and expose the `colmenaHive` output:
   outputs = {{ self, colmena, ... }}: {{
     colmenaHive = colmena.lib.makeHive self.outputs.colmena;

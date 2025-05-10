@@ -8,9 +8,9 @@ pub async fn run() -> ColmenaResult<()> {
     check.print_flakes_info(false);
 
     if let Some(pinned) = get_pinned_nix_eval_jobs() {
-        log::info!("Using pinned nix-eval-jobs: {}", pinned);
+        tracing::info!("Using pinned nix-eval-jobs: {}", pinned);
     } else {
-        log::info!("Using nix-eval-jobs from PATH");
+        tracing::info!("Using nix-eval-jobs from PATH");
     }
 
     Ok(())

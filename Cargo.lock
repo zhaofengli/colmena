@@ -253,7 +253,6 @@ dependencies = [
  "indicatif",
  "itertools",
  "libc",
- "log",
  "ntest",
  "quit",
  "regex",

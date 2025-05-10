@@ -60,7 +60,7 @@ pub async fn run(
     }: Opts,
 ) -> Result<(), ColmenaError> {
     if sudo_command.is_some() {
-        log::error!("--sudo-command has been removed. Please configure it in deployment.privilegeEscalationCommand in the node configuration.");
+        tracing::error!("--sudo-command has been removed. Please configure it in deployment.privilegeEscalationCommand in the node configuration.");
         quit::with_code(1);
     }
 
@@ -68,11 +68,11 @@ pub async fn run(
     if let Ok(os_release) = fs::read_to_string("/etc/os-release").await {
         let re = Regex::new(r#"ID="?nixos"?"#).unwrap();
         if !re.is_match(&os_release) {
-            log::error!("\"apply-local\" only works on NixOS machines.");
+            tracing::error!("\"apply-local\" only works on NixOS machines.");
             quit::with_code(5);
         }
     } else {
-        log::error!("Could not detect the OS version from /etc/os-release.");
+        tracing::error!("Could not detect the OS version from /etc/os-release.");
         quit::with_code(5);
     }
 
@@ -81,8 +81,8 @@ pub async fn run(
     {
         let euid: u32 = unsafe { libc::geteuid() };
         if euid != 0 && !sudo {
-            log::warn!("Colmena was not started by root. This is probably not going to work.");
-            log::warn!("Hint: Add the --sudo flag.");
+            tracing::warn!("Colmena was not started by root. This is probably not going to work.");
+            tracing::warn!("Hint: Add the --sudo flag.");
         }
     }
 
@@ -97,11 +97,11 @@ pub async fn run(
         if let Some(info) = hive.deployment_info_single(&hostname).await.unwrap() {
             let nix_options = hive.nix_flags_with_builders().await.unwrap();
             if !info.allows_local_deployment() {
-                log::error!(
+                tracing::error!(
                     "Local deployment is not enabled for host {}.",
                     hostname.as_str()
                 );
-                log::error!("Hint: Set deployment.allowLocalDeployment to true.");
+                tracing::error!("Hint: Set deployment.allowLocalDeployment to true.");
                 quit::with_code(2);
             }
             let mut host = LocalHost::new(nix_options);
@@ -112,7 +112,7 @@ pub async fn run(
 
             TargetNode::new(hostname.clone(), Some(host.upcast()), info.clone())
         } else {
-            log::error!(
+            tracing::error!(
                 "Host \"{}\" is not present in the Hive configuration.",
                 hostname.as_str()
             );
