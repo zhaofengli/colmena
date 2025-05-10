@@ -157,8 +157,8 @@ pub async fn run(hive: Hive, opts: Opts) -> Result<(), ColmenaError> {
         // User did not specify node, we should check meta and see rules
         let meta = hive.get_meta_config().await?;
         if !meta.allow_apply_all {
-            log::error!("No node filter is specified and meta.allowApplyAll is set to false.");
-            log::error!("Hint: Filter the nodes with --on.");
+            tracing::error!("No node filter is specified and meta.allowApplyAll is set to false.");
+            tracing::error!("Hint: Filter the nodes with --on.");
             quit::with_code(1);
         }
     }
@@ -204,7 +204,7 @@ pub async fn run(hive: Hive, opts: Opts) -> Result<(), ColmenaError> {
     deployment.set_options(options);
 
     if no_keys && goal == Goal::UploadKeys {
-        log::error!("--no-keys cannot be used when the goal is to upload keys");
+        tracing::error!("--no-keys cannot be used when the goal is to upload keys");
         quit::with_code(1);
     }
 

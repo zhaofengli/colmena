@@ -166,7 +166,7 @@ impl Deployment {
                         deployment.execute_chunked(meta.clone(), targets).await?;
                     }
                     EvaluatorType::Streaming => {
-                        log::warn!("Streaming evaluation is an experimental feature");
+                        tracing::warn!("Streaming evaluation is an experimental feature");
                         deployment.execute_streaming(meta.clone(), targets).await?;
                     }
                 }

@@ -1,7 +1,6 @@
 use std::fmt;
 use std::process::Stdio;
 
-use log::Level;
 use regex::Regex;
 use tokio::process::Command;
 
@@ -113,37 +112,37 @@ impl NixCheck {
 
     pub fn print_version_info(&self) {
         if let Some(v) = &self.version {
-            log::info!("Nix Version: {}", v);
+            tracing::info!("Nix Version: {}", v);
         } else {
-            log::info!("Nix Version: Not found");
+            tracing::info!("Nix Version: Not found");
         }
     }
 
     pub fn print_flakes_info(&self, required: bool) {
         if self.version.is_none() {
-            log::error!("Nix doesn't appear to be installed.");
+            tracing::error!("Nix doesn't appear to be installed.");
             return;
         }
 
         if self.flakes_enabled {
-            log::info!("The Nix version you are using supports Flakes and it's enabled.");
+            tracing::info!("The Nix version you are using supports Flakes and it's enabled.");
         } else if self.flakes_supported {
-            log::warn!("The Nix version you are using supports Flakes but it's disabled.");
-            log::warn!("Colmena will automatically enable Flakes for its operations, but you should enable it in your Nix configuration:");
-            log::warn!("    experimental-features = nix-command flakes");
+            tracing::warn!("The Nix version you are using supports Flakes but it's disabled.");
+            tracing::warn!("Colmena will automatically enable Flakes for its operations, but you should enable it in your Nix configuration:");
+            tracing::warn!("    experimental-features = nix-command flakes");
         } else {
-            let level = if required { Level::Error } else { Level::Warn };
-            log::log!(
-                level,
-                "The Nix version you are using does not support Flakes."
-            );
-            log::log!(level, "If you are using a Nixpkgs version before 21.11, please install nixUnstable for a version that includes Flakes support.");
+            let emit_log = |s: &str| {
+                if required {
+                    tracing::error!(s);
+                } else {
+                    tracing::warn!(s);
+                }
+            };
 
+            emit_log("The Nix version you are using does not support Flakes.");
+            emit_log("If you are using a Nixpkgs version before 21.11, please install nixUnstable for a version that includes Flakes support.");
             if required {
-                log::log!(
-                    level,
-                    "Cannot continue since Flakes support is required for this operation."
-                );
+                emit_log("Cannot continue since Flakes support is required for this operation.");
             }
         }
     }
