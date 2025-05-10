@@ -57,7 +57,7 @@ impl NodeFilter {
         let trimmed = filter.trim();
 
         if trimmed.is_empty() {
-            log::warn!("Filter \"{}\" is blank and will match nothing", filter);
+            tracing::warn!("Filter \"{}\" is blank and will match nothing", filter);
 
             return Ok(Self { rules: Vec::new() });
         }

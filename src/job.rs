@@ -373,7 +373,7 @@ impl JobMonitor {
         if old_state == new_state {
             return;
         } else if old_state.is_final() {
-            log::debug!("Tried to update the state of a finished job");
+            tracing::debug!("Tried to update the state of a finished job");
             return;
         }
 
@@ -487,13 +487,13 @@ impl JobMonitor {
                     .rev()
                     .collect();
 
-                log::error!(
+                tracing::error!(
                     "{} - Last {} lines of logs:",
                     job.get_failure_summary(),
                     last_logs.len()
                 );
                 for event in last_logs {
-                    log::error!("{}", event.payload);
+                    tracing::error!("{}", event.payload);
                 }
             }
         }
@@ -637,7 +637,7 @@ impl JobHandleInner {
                 .send(event)
                 .map_err(|e| ColmenaError::unknown(Box::new(e)))?;
         } else {
-            log::debug!("Sending event: {:?}", event);
+            tracing::debug!("Sending event: {:?}", event);
         }
 
         Ok(())
