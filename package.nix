@@ -1,9 +1,10 @@
-{ lib
-, stdenv
-, rustPlatform
-, nix-gitignore
-, installShellFiles
-, nix-eval-jobs
+{
+  lib,
+  stdenv,
+  rustPlatform,
+  nix-gitignore,
+  installShellFiles,
+  nix-eval-jobs,
 }:
 
 rustPlatform.buildRustPackage rec {

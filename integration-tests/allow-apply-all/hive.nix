@@ -1,9 +1,10 @@
 let
   tools = import ./tools.nix {
     insideVm = true;
-    targets = ["alpha"];
+    targets = [ "alpha" ];
   };
-in {
+in
+{
   meta = {
     nixpkgs = tools.pkgs;
     allowApplyAll = false;
