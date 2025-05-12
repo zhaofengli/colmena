@@ -6,7 +6,8 @@ let
     insideVm = true;
     targets = [ "alpha" ];
   };
-in {
+in
+{
   meta = {
     nixpkgs = tools.pkgs;
   };

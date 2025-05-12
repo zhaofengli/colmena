@@ -4,7 +4,8 @@ let
   tools = pkgs.callPackage ../tools.nix {
     targets = [ "alpha" ];
   };
-in tools.runTest {
+in
+tools.runTest {
   name = "colmena-allow-apply-all";
 
   colmena.test = {
