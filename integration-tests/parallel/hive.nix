@@ -1,6 +1,7 @@
 let
   tools = import ./tools.nix { insideVm = true; };
-in {
+in
+{
   meta = {
     nixpkgs = tools.pkgs;
   };

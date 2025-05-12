@@ -2,10 +2,15 @@
 
 let
   tools = pkgs.callPackage ../tools.nix {
-    deployers = [ "deployer" "alpha" "beta" ];
-    targets = [];
+    deployers = [
+      "deployer"
+      "alpha"
+      "beta"
+    ];
+    targets = [ ];
   };
-in tools.runTest {
+in
+tools.runTest {
   name = "colmena-build-on-target";
 
   colmena.test = {

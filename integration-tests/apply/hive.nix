@@ -1,13 +1,16 @@
 let
   tools = import ./tools.nix { insideVm = true; };
 
-  testPkg = let
-    text = builtins.trace "must appear during evaluation" ''
-      echo "must appear during build"
-      mkdir -p $out
-    '';
-  in tools.pkgs.runCommand "test-package" {} text;
-in {
+  testPkg =
+    let
+      text = builtins.trace "must appear during evaluation" ''
+        echo "must appear during build"
+        mkdir -p $out
+      '';
+    in
+    tools.pkgs.runCommand "test-package" { } text;
+in
+{
   meta = {
     nixpkgs = tools.pkgs;
   };
@@ -20,7 +23,7 @@ in {
       isSystemUser = true;
       group = "testgroup";
     };
-    users.groups.testgroup = {};
+    users.groups.testgroup = { };
 
     # /run/keys/custom-name
     deployment.keys.original-name = {
@@ -72,29 +75,33 @@ in {
     };
   };
 
-  alpha = { lib, ... }: {
-    imports = [
-      (tools.getStandaloneConfigFor "alpha")
-    ];
+  alpha =
+    { lib, ... }:
+    {
+      imports = [
+        (tools.getStandaloneConfigFor "alpha")
+      ];
 
-    environment.systemPackages = [ testPkg ];
+      environment.systemPackages = [ testPkg ];
 
-    documentation.nixos.enable = lib.mkForce true;
+      documentation.nixos.enable = lib.mkForce true;
 
-    system.activationScripts.colmena-test.text = ''
-      echo "must appear during activation"
-    '';
-  };
+      system.activationScripts.colmena-test.text = ''
+        echo "must appear during activation"
+      '';
+    };
 
   deployer = tools.getStandaloneConfigFor "deployer";
   beta = tools.getStandaloneConfigFor "beta";
   gamma = tools.getStandaloneConfigFor "gamma";
 
-  "gamma.tld" = { lib, ... }: {
-    imports = [
-      (tools.getStandaloneConfigFor "gamma")
-    ];
+  "gamma.tld" =
+    { lib, ... }:
+    {
+      imports = [
+        (tools.getStandaloneConfigFor "gamma")
+      ];
 
-    deployment.tags = lib.mkForce [];
-  };
+      deployment.tags = lib.mkForce [ ];
+    };
 }
