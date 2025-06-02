@@ -1,23 +1,33 @@
-{ lib, stdenv, nix-gitignore, mdbook, mdbook-linkcheck, python3, callPackage, writeScript
-, deploymentOptionsMd ? null
-, metaOptionsMd ? null
-, colmena ? null
+{
+  lib,
+  stdenv,
+  nix-gitignore,
+  mdbook,
+  mdbook-linkcheck,
+  python3,
+  callPackage,
+  writeScript,
+  deploymentOptionsMd ? null,
+  metaOptionsMd ? null,
+  colmena ? null,
 
-# Full version
-, version ? if colmena != null then colmena.version else "unstable"
+  # Full version
+  version ? if colmena != null then colmena.version else "unstable",
 
-# Whether this build is unstable
-, unstable ? version == "unstable" || lib.hasInfix "-" version
+  # Whether this build is unstable
+  unstable ? version == "unstable" || lib.hasInfix "-" version,
 }:
 
 let
   apiVersion = builtins.concatStringsSep "." (lib.take 2 (lib.splitString "." version));
 
-  colorizedHelp = let
-    help = callPackage ./colorized-help.nix {
-      inherit colmena;
-    };
-  in if colmena != null then help else null;
+  colorizedHelp =
+    let
+      help = callPackage ./colorized-help.nix {
+        inherit colmena;
+      };
+    in
+    if colmena != null then help else null;
 
   redirectTemplate = lib.escapeShellArg ''
     <!doctype html>
@@ -33,16 +43,29 @@ let
     </html>
   '';
 
-in stdenv.mkDerivation {
-  inherit version deploymentOptionsMd metaOptionsMd colorizedHelp;
+in
+stdenv.mkDerivation {
+  inherit
+    version
+    deploymentOptionsMd
+    metaOptionsMd
+    colorizedHelp
+    ;
 
   pname = "colmena-manual" + (if unstable then "-unstable" else "");
 
-  src = nix-gitignore.gitignoreSource [] ./.;
+  src = nix-gitignore.gitignoreSource [ ] ./.;
 
-  nativeBuildInputs = [ mdbook mdbook-linkcheck python3 ];
+  nativeBuildInputs = [
+    mdbook
+    mdbook-linkcheck
+    python3
+  ];
 
-  outputs = [ "out" "redirectFarm" ];
+  outputs = [
+    "out"
+    "redirectFarm"
+  ];
 
   COLMENA_VERSION = version;
   COLMENA_UNSTABLE = unstable;

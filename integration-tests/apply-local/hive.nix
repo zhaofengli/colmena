@@ -1,26 +1,29 @@
 let
   tools = import ./tools.nix {
     insideVm = true;
-    targets = [];
+    targets = [ ];
     prebuiltTarget = "deployer";
   };
-in {
+in
+{
   meta = {
     nixpkgs = tools.pkgs;
   };
 
-  deployer = { lib, ... }: {
-    imports = [
-      (tools.getStandaloneConfigFor "deployer")
-    ];
+  deployer =
+    { lib, ... }:
+    {
+      imports = [
+        (tools.getStandaloneConfigFor "deployer")
+      ];
 
-    deployment = {
-      allowLocalDeployment = true;
+      deployment = {
+        allowLocalDeployment = true;
+      };
+
+      environment.etc."deployment".text = "SUCCESS";
+
+      # /run/keys/key-text
+      deployment.keys."key-text".text = "SECRET";
     };
-
-    environment.etc."deployment".text = "SUCCESS";
-
-    # /run/keys/key-text
-    deployment.keys."key-text".text = "SECRET";
-  };
 }

@@ -1,10 +1,15 @@
 let
   tools = import ./tools.nix {
     insideVm = true;
-    deployers = [ "deployer" "alpha" "beta" ];
-    targets = [];
+    deployers = [
+      "deployer"
+      "alpha"
+      "beta"
+    ];
+    targets = [ ];
   };
-in {
+in
+{
   meta = {
     nixpkgs = tools.pkgs;
   };
