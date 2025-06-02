@@ -53,6 +53,7 @@
                   ./nix-eval-jobs-stable.patch
               )
             ];
+            __intentionallyOverridingVersion = true;
           });
         in
         {
