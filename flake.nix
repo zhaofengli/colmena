@@ -42,6 +42,8 @@
             ./nix-eval-jobs-stable.patch
           )
         ];
+        # To silence the warning, since we intend to change the version without overriding the src.
+        __intentionallyOverridingVersion = true;
       });
     in {
       nix-eval-jobs = patched;
