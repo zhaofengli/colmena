@@ -1,0 +1,25 @@
+name: Debug
+on:
+  push:
+jobs:
+  debug:
+    name: Debug
+    runs-on: ubuntu-latest
+    steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          remove-dotnet: 'true'
+          build-mount-path: /nix
+
+      - name: Set /nix permissions
+        run: |
+          sudo chown root:root /nix
+
+      - uses: actions/checkout@v4.2.2
+
+      - uses: DeterminateSystems/nix-installer-action@v17
+        continue-on-error: true # Self-hosted runners already have Nix installed
+
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
