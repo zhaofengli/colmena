@@ -49,7 +49,9 @@ pub async fn run(
         .or(expression);
 
     let Some(expression) = expression else {
-        log::error!("Provide either an expression (-E) or a .nix file containing an expression.");
+        tracing::error!(
+            "Provide either an expression (-E) or a .nix file containing an expression."
+        );
         quit::with_code(1);
     };
 
