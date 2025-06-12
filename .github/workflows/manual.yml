@@ -32,7 +32,7 @@ jobs:
         run: nix build .#manual -L
 
       - name: Deploy manual
-        uses: JamesIves/github-pages-deploy-action@v4.6.9
+        uses: JamesIves/github-pages-deploy-action@v4.7.3
         with:
           branch: gh-pages
           folder: result
@@ -47,7 +47,7 @@ jobs:
         run: nix build .#manual.redirectFarm -L
 
       - name: Deploy redirect farm
-        uses: JamesIves/github-pages-deploy-action@v4.6.9
+        uses: JamesIves/github-pages-deploy-action@v4.7.3
         with:
           branch: gh-pages
           folder: result-redirectFarm
