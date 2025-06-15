@@ -21,7 +21,7 @@ jobs:
         uses: DeterminateSystems/nix-installer-action@21a544727d0c62386e78b4befe52d19ad12692e3 # v17
 
       - name: Enable Binary Cache
-        uses: cachix/cachix-action@v15
+        uses: cachix/cachix-action@v16
         with:
           name: colmena
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'
