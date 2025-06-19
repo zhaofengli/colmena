@@ -138,7 +138,7 @@
         };
 
         devShell = pkgs.mkShell {
-          RUST_SRC_PATH = "${pkgs.rustPlatform.rustcSrc}/library";
+          RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
           NIX_PATH = "nixpkgs=${pkgs.path}";
 
           inputsFrom = [
