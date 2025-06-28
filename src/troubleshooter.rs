@@ -17,11 +17,11 @@ where
     match f.await {
         Ok(r) => r,
         Err(error) => {
-            log::error!("-----");
-            log::error!("Operation failed with error: {}", error);
+            tracing::error!("-----");
+            tracing::error!("Operation failed with error: {}", error);
 
             if let Err(own_error) = troubleshoot(hive_config, &error) {
-                log::error!(
+                tracing::error!(
                     "Error occurred while trying to troubleshoot another error: {}",
                     own_error
                 );
