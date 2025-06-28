@@ -1,8 +1,9 @@
 { pkgs }:
 
 let
-  tools = pkgs.callPackage ../tools.nix {};
-in tools.runTest {
+  tools = pkgs.callPackage ../tools.nix { };
+in
+tools.runTest {
   name = "colmena-parallel";
 
   colmena.test = {
