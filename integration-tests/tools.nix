@@ -136,6 +136,15 @@ let
 
   ## Common setup
 
+  commonConfig =
+    { pkgs, ... }:
+    {
+      nix.settings.substituters = lib.mkForce [ ];
+
+      # Re-enable switch-to-configuration
+      system.switch.enable = true;
+    };
+
   # Setup for deployer nodes
   #
   # We include the input closure of a prebuilt system profile
@@ -150,6 +159,7 @@ let
     }:
     {
       imports = [
+        commonConfig
         extraDeployerConfig
       ];
 
@@ -160,8 +170,6 @@ let
       nix.nixPath = [
         "nixpkgs=${pkgs.path}"
       ];
-
-      nix.settings.substituters = lib.mkForce [ ];
 
       virtualisation = {
         memorySize = 6144;
@@ -191,9 +199,6 @@ let
           exec "$@" 2> >(tee /dev/stderr)
         '')
       ];
-
-      # Re-enable switch-to-configuration
-      system.switch.enable = true;
     };
 
   # Setup for target nodes
@@ -202,7 +207,9 @@ let
   targetConfig =
     { lib, ... }:
     {
-      nix.settings.substituters = lib.mkForce [ ];
+      imports = [
+        commonConfig
+      ];
 
       documentation.nixos.enable = lib.mkOverride 60 true;
 
@@ -211,9 +218,6 @@ let
         sshKeys.snakeOilPublicKey
       ];
       virtualisation.writableStore = true;
-
-      # Re-enable switch-to-configuration
-      system.switch.enable = true;
     };
 
   nodes =
