@@ -246,6 +246,7 @@ mod tests {
             replace_unknown_profiles: false,
             privilege_escalation_command: vec![],
             extra_ssh_options: vec![],
+            ssh_proto: "ssh-ng",
             keys: HashMap::new(),
         };
 
