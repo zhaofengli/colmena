@@ -307,7 +307,7 @@ impl Ssh {
                 }
             }
 
-            let mut store_uri = format!("{}://{}", self.ssh_proto ,self.ssh_target());
+            let mut store_uri = format!("{}://{}", self.ssh_proto, self.ssh_target());
             if options.gzip {
                 store_uri += "?compress=true";
             }
