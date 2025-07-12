@@ -1,6 +1,7 @@
 //! Global CLI Setup.
 
 use std::env;
+use std::io;
 
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
@@ -374,6 +375,7 @@ fn init_logging() {
     tracing_subscriber::fmt()
         .with_target(false)
         .with_level(true)
+        .with_writer(io::stderr)
         .without_time()
         .with_ansi(colors_enabled)
         .init();
