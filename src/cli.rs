@@ -1,10 +1,12 @@
 //! Global CLI Setup.
 
 use std::env;
+use std::io;
 
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum};
 use clap_complete::Shell;
 use const_format::{concatcp, formatcp};
+use tracing_subscriber::EnvFilter;
 
 use crate::{
     command::{self, apply::DeployOpts},
@@ -374,6 +376,8 @@ fn init_logging() {
     tracing_subscriber::fmt()
         .with_target(false)
         .with_level(true)
+        .with_writer(io::stderr)
+        .with_env_filter(EnvFilter::from_default_env())
         .without_time()
         .with_ansi(colors_enabled)
         .init();
