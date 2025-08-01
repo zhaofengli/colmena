@@ -64,12 +64,18 @@
     flake-utils.lib.eachSystem supportedSystems (
       system:
       let
-        pkgs = import nixpkgs {
-          inherit system;
-          overlays = [
-            _evalJobsOverlay
-          ];
-        };
+        nix-eval-jobs = nixpkgs.legacyPackages.${system}.nix-eval-jobs;
+
+        pkgs =
+          if builtins.compareVersions nix-eval-jobs.version "2.30.0" >= 0 then
+            nixpkgs.legacyPackages.${system}
+          else
+            import nixpkgs {
+              inherit system;
+              overlays = [
+                _evalJobsOverlay
+              ];
+            };
       in
       rec {
         # We still maintain the expression in a Nixpkgs-acceptable form
