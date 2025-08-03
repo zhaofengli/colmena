@@ -45,14 +45,14 @@
         let
           patched = prev.nix-eval-jobs.overrideAttrs (old: {
             version = old.version + "-colmena";
-            patches = (old.patches or [ ]) ++ [
-              (
-                if builtins.compareVersions old.version "2.25.0" >= 0 then
-                  ./nix-eval-jobs-unstable.patch
-                else
-                  ./nix-eval-jobs-stable.patch
-              )
-            ];
+            patches = (old.patches or [ ]) ++ (
+              if builtins.compareVersions old.version "2.30.0" >= 0 then
+                [ ]
+              else if builtins.compareVersions old.version "2.25.0" >= 0 then
+                [ ./nix-eval-jobs-unstable.patch ]
+              else
+                [ ./nix-eval-jobs-stable.patch ]
+            );
             # To silence the warning, since we intend to change the version without overriding the src.
             __intentionallyOverridingVersion = true;
           });
