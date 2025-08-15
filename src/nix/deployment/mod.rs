@@ -203,7 +203,7 @@ impl Deployment {
         let eval_limit = self
             .evaluation_node_limit
             .get_limit()
-            .unwrap_or(self.targets.len());
+            .unwrap_or(targets.len());
 
         let mut futures = Vec::new();
 
