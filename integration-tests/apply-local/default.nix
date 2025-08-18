@@ -2,7 +2,7 @@
 
 let
   tools = pkgs.callPackage ../tools.nix {
-    targets = [];
+    targets = [ ];
     prebuiltTarget = "deployer";
     extraDeployerConfig = {
       users.users.colmena = {
@@ -12,7 +12,8 @@ let
       security.sudo.wheelNeedsPassword = false;
     };
   };
-in tools.runTest {
+in
+tools.runTest {
   name = "colmena-apply-local";
 
   colmena.test = {

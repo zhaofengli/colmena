@@ -39,7 +39,7 @@ This binary cache contains unstable versions of Colmena built by [GitHub Actions
 
 ## Basic Configuration
 
-Colmena reads the `colmena` output in your Flake.
+Colmena reads the `colmenaHive` output in your Flake, generated with `colmena.lib.makeHive`.
 
 Here is a short example:
 
@@ -47,9 +47,10 @@ Here is a short example:
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    colmena.url = "github:zhaofengli/colmena";
   };
-  outputs = { nixpkgs, ... }: {
-    colmena = {
+  outputs = { nixpkgs, colmena, ... }: {
+    colmenaHive = colmena.lib.makeHive {
       meta = {
         nixpkgs = import nixpkgs {
           system = "x86_64-linux";
@@ -90,12 +91,12 @@ To build and deploy to all nodes:
 colmena apply
 ```
 
-## Direct Flake Evaluation (Experimental)
+## Migrating to Direct Flake Evaluation
 
-By default, Colmena uses `nix-instantiate` to evaluate your flake which does not work purely on Nix 2.21+, necessitating the use of `--impure`.
-There is experimental support for evaluating flakes directly with `nix eval`, enabled via `--experimental-flake-eval`.
+> error: flake 'git+file:///path/to/flake' does not provide attribute 'packages.x86_64-linux.colmenaHive', 'legacyPackages.x86_64-linux.colmenaHive' or 'colmenaHive'
 
-To use this new evaluation mode, your flake needs to depend on Colmena itself as an input and expose a new output called `colmenaHive`:
+Colmena now uses `nix eval` to evaluate flakes.
+Your flake needs to depend on Colmena itself as an input and expose a new output called `colmenaHive`:
 
 ```diff
  {
@@ -117,6 +118,11 @@ To use this new evaluation mode, your flake needs to depend on Colmena itself as
  }
 ```
 
+## Using Legacy Flake Evaluation (Deprecated)
+
+By default, Colmena uses `nix eval` to evaluate your flake.
+If you need to use the old evaluation method based on `nix-instantiate` and `builtins.getFlake`, add the `--legacy-flake-eval` flag.
+The legacy flake evaluator uses the `colmena` output and does not work purely on Nix 2.21+.
 
 ## Next Steps
 

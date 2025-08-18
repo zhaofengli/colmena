@@ -26,7 +26,7 @@ use assets::Assets;
 /// The version of the Hive schema we are compatible with.
 ///
 /// Currently we are tied to one specific version.
-const HIVE_SCHEMA: &str = "v0.20241006";
+const HIVE_SCHEMA: &str = "v0.5";
 
 /// The snippet to be used for `nix eval --apply`.
 const FLAKE_APPLY_SNIPPET: &str = formatcp!(
@@ -63,7 +63,7 @@ impl FromStr for HivePath {
                 // Treat as flake URI
                 let flake = Flake::from_uri(s).await?;
 
-                log::info!("Using flake: {}", flake.uri());
+                tracing::info!("Using flake: {}", flake.uri());
 
                 Ok(Self::Flake(flake))
             } else {
@@ -83,7 +83,8 @@ impl FromStr for HivePath {
 pub enum EvaluationMethod {
     /// Use nix-instantiate and specify the entire Nix expression.
     ///
-    /// This is the default method.
+    /// This is the default method for non-flake configs. It's also used
+    /// used for flakes with --legacy-flake-eval.
     ///
     /// For flakes, we use `builtins.getFlakes`. Pure evaluation no longer works
     /// with this method in Nix 2.21+.
@@ -91,7 +92,7 @@ pub enum EvaluationMethod {
 
     /// Use `nix eval --apply` on top of a flake.
     ///
-    /// This can be activated with --experimental-flake-eval.
+    /// This is the default method for flakes.
     ///
     /// In this method, we can no longer pull in our bundled assets and
     /// the flake must expose a compatible `colmenaHive` output.
@@ -168,11 +169,18 @@ impl HivePath {
 impl Hive {
     pub async fn new(path: HivePath) -> ColmenaResult<Self> {
         let context_dir = path.context_dir();
+        // TODO: Skip asset extraction for direct flake eval
         let assets = Assets::new(path.clone()).await?;
+
+        let evaluation_method = if path.is_flake() {
+            EvaluationMethod::DirectFlakeEval
+        } else {
+            EvaluationMethod::NixInstantiate
+        };
 
         Ok(Self {
             path,
-            evaluation_method: EvaluationMethod::NixInstantiate,
+            evaluation_method,
             context_dir,
             assets,
             show_trace: false,
@@ -229,8 +237,7 @@ impl Hive {
 
     /// Returns Nix flags to set for this Hive, with configured remote builders.
     pub async fn nix_flags_with_builders(&self) -> ColmenaResult<NixFlags> {
-        let mut flags = NixFlags::default();
-        flags.set_show_trace(self.show_trace);
+        let mut flags = self.nix_flags();
 
         if let Some(machines_file) = &self.get_meta_config().await?.machines_file {
             flags.set_builders(Some(format!("@{}", machines_file)));
@@ -248,13 +255,13 @@ impl Hive {
     ) -> ColmenaResult<HashMap<NodeName, TargetNode>> {
         let mut node_configs = None;
 
-        log::info!("Enumerating nodes...");
+        tracing::info!("Enumerating nodes...");
 
         let all_nodes = self.node_names().await?;
         let selected_nodes = match filter {
             Some(filter) => {
                 if filter.has_node_config_rules() {
-                    log::debug!("Retrieving deployment info for all nodes...");
+                    tracing::debug!("Retrieving deployment info for all nodes...");
 
                     let all_node_configs = self.deployment_info().await?;
                     let filtered = filter
@@ -277,7 +284,7 @@ impl Hive {
         let mut node_configs = if let Some(configs) = node_configs {
             configs
         } else {
-            log::debug!("Retrieving deployment info for selected nodes...");
+            tracing::debug!("Retrieving deployment info for selected nodes...");
             self.deployment_info_selected(&selected_nodes).await?
         };
 
@@ -311,20 +318,20 @@ impl Hive {
 
         if targets.is_empty() {
             if skipped != 0 {
-                log::warn!("No hosts selected.");
+                tracing::warn!("No hosts selected.");
             } else {
-                log::warn!("No hosts selected ({} skipped).", skipped);
+                tracing::warn!("No hosts selected ({} skipped).", skipped);
             }
         } else if targets.len() == all_nodes.len() {
-            log::info!("Selected all {} nodes.", targets.len());
+            tracing::info!("Selected all {} nodes.", targets.len());
         } else if !ssh_only || skipped == 0 {
-            log::info!(
+            tracing::info!(
                 "Selected {} out of {} hosts.",
                 targets.len(),
                 all_nodes.len()
             );
         } else {
-            log::info!(
+            tracing::info!(
                 "Selected {} out of {} hosts ({} skipped).",
                 targets.len(),
                 all_nodes.len(),

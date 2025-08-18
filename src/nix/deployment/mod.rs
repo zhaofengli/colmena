@@ -166,7 +166,7 @@ impl Deployment {
                         deployment.execute_chunked(meta.clone(), targets).await?;
                     }
                     EvaluatorType::Streaming => {
-                        log::warn!("Streaming evaluation is an experimental feature");
+                        tracing::warn!("Streaming evaluation is an experimental feature");
                         deployment.execute_streaming(meta.clone(), targets).await?;
                     }
                 }
@@ -203,7 +203,7 @@ impl Deployment {
         let eval_limit = self
             .evaluation_node_limit
             .get_limit()
-            .unwrap_or(self.targets.len());
+            .unwrap_or(targets.len());
 
         let mut futures = Vec::new();
 

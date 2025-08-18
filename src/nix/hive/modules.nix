@@ -19,7 +19,7 @@ with builtins; {
       scriptDeps = if config.system.activationScripts ? groups then [ "groups" ] else [ "users" ];
 
       commands = lib.mapAttrsToList (name: key: let
-        keyPath = "${key.destDir}/${name}";
+        keyPath = "${key.destDir}/${key.name}";
       in ''
         if [ -f "${keyPath}" ]; then
           if ! chown ${key.user}:${key.group} "${keyPath}"; then

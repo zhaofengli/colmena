@@ -18,10 +18,10 @@ jobs:
           fetch-depth: 0
 
       - name: Install Nix
-        uses: DeterminateSystems/nix-installer-action@b92f66560d6f97d6576405a7bae901ab57e72b6a # v15
+        uses: DeterminateSystems/nix-installer-action@c723f3a885e3f1d866d91f4f0c33dd44b1fc7c60 # v18
 
       - name: Enable Binary Cache
-        uses: cachix/cachix-action@v15
+        uses: cachix/cachix-action@v16
         with:
           name: colmena
           authToken: '${{ secrets.CACHIX_AUTH_TOKEN }}'

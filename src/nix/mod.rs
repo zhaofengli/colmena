@@ -217,6 +217,15 @@ impl NixFlags {
     }
 
     pub fn to_args(&self) -> Vec<String> {
+        self.to_args_inner(false)
+    }
+
+    /// Returns arguments for `nix-store`.
+    pub fn to_nix_store_args(&self) -> Vec<String> {
+        self.to_args_inner(true)
+    }
+
+    fn to_args_inner(&self, nix_store: bool) -> Vec<String> {
         let mut args = Vec::new();
 
         if let Some(builders) = &self.builders {
@@ -235,7 +244,10 @@ impl NixFlags {
             args.push("--pure-eval".to_string());
         }
 
-        if self.impure {
+        // The `nix-store` command does not accept `--impure`
+        // TODO: Not happy about this solution - Have a better Nix abstraction that hides
+        // CLI details (e.g., nix3 CLI differences)
+        if self.impure && !nix_store {
             args.push("--impure".to_string());
         }
 

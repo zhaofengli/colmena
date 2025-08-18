@@ -150,7 +150,7 @@ Run `colmena build` in the same directory to build the configuration, or do `col
 
 ## Tutorial with Flakes
 
-To use with Nix Flakes, create `outputs.colmena` in your `flake.nix`.
+To use with Nix Flakes, create `outputs.colmenaHive` in your `flake.nix`.
 
 Here is a short example:
 
@@ -158,12 +158,14 @@ Here is a short example:
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    colmena.url = "github:zhaofengli/colmena";
   };
-  outputs = { nixpkgs, ... }: {
-    colmena = {
+  outputs = { nixpkgs, colmena, ... }: {
+    colmenaHive = colmena.lib.makeHive {
       meta = {
         nixpkgs = import nixpkgs {
           system = "x86_64-linux";
+          overlays = [];
         };
       };
 
@@ -188,6 +190,33 @@ Here is a short example:
 
 The full set of options can be found in [the manual](https://colmena.cli.rs/unstable/reference).
 Run `colmena build` in the same directory to build the configuration, or do `colmena apply` to build and deploy it to all nodes.
+
+### Migrating to Direct Flake Evaluation
+
+> error: flake 'git+file:///path/to/flake' does not provide attribute 'packages.x86_64-linux.colmenaHive', 'legacyPackages.x86_64-linux.colmenaHive' or 'colmenaHive'
+
+Colmena now uses `nix eval` to evaluate flakes.
+Your flake needs to depend on Colmena itself as an input and expose a new output called `colmenaHive`:
+
+```diff
+ {
+   inputs = {
++    # ADDED: Colmena input
++    colmena.url = "github:zhaofengli/colmena";
+
+     # ... Rest of configuration ...
+   };
+   outputs = { self, colmena, ... }: {
++    # ADDED: New colmenaHive output
++    colmenaHive = colmena.lib.makeHive self.outputs.colmena;
+
+     # Your existing colmena output
+     colmena = {
+       # ... Rest of configuration ...
+     };
+   };
+ }
+```
 
 ## Manual
 

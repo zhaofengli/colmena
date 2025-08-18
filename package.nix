@@ -1,16 +1,37 @@
-{ lib
-, stdenv
-, rustPlatform
-, nix-gitignore
-, installShellFiles
-, nix-eval-jobs
+{
+  lib,
+  stdenv,
+  rustPlatform,
+  nix-gitignore,
+  installShellFiles,
+  nix-eval-jobs,
 }:
 
-rustPlatform.buildRustPackage rec {
+let
+  fs = lib.fileset;
+  srcIgnored = fs.unions [
+    ./.github
+    ./CNAME
+    ./renovate.json
+
+    ./manual
+    ./integration-tests
+
+    ./nix
+    ./default.nix
+    ./flake-compat.nix
+    ./package.nix
+    ./shell.nix
+  ];
+  srcFiles = fs.difference ./. srcIgnored;
+in rustPlatform.buildRustPackage rec {
   pname = "colmena";
   version = "0.5.0-pre";
 
-  src = nix-gitignore.gitignoreSource [ ./.srcignore ] ./.;
+  src = fs.toSource {
+    root = ./.;
+    fileset = srcFiles;
+  };
 
   cargoLock = {
     lockFile = ./Cargo.lock;

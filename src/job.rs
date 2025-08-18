@@ -9,8 +9,10 @@ use std::future::Future;
 use std::sync::Arc;
 use std::time::Duration;
 
+use futures::future::Either;
 use tokio::sync::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use tokio::time;
+use tracing::{Instrument, Span};
 use uuid::Uuid;
 
 use crate::error::{ColmenaError, ColmenaResult};
@@ -113,6 +115,9 @@ pub struct JobHandleInner {
 
     /// Handle to the mpsc channel.
     sender: Option<Sender>,
+
+    /// Tracing span for the future.
+    span: Option<Span>,
 }
 
 /// A handle to the meta job.
@@ -373,7 +378,7 @@ impl JobMonitor {
         if old_state == new_state {
             return;
         } else if old_state.is_final() {
-            log::debug!("Tried to update the state of a finished job");
+            tracing::debug!("Tried to update the state of a finished job");
             return;
         }
 
@@ -487,13 +492,13 @@ impl JobMonitor {
                     .rev()
                     .collect();
 
-                log::error!(
+                tracing::error!(
                     "{} - Last {} lines of logs:",
                     job.get_failure_summary(),
                     last_logs.len()
                 );
                 for event in last_logs {
-                    log::error!("{}", event.payload);
+                    tracing::error!("{}", event.payload);
                 }
             }
         }
@@ -515,6 +520,7 @@ impl JobHandleInner {
         Self {
             job_id: JobId::new(),
             sender: None,
+            span: None,
         }
     }
 
@@ -534,6 +540,7 @@ impl JobHandleInner {
         let new_handle = Arc::new(Self {
             job_id,
             sender: self.sender.clone(),
+            span: Some(make_span(job_type)),
         });
 
         new_handle.send_payload(EventPayload::Creation(creation))?;
@@ -609,7 +616,12 @@ impl JobHandleInner {
             self.send_payload(EventPayload::NewState(JobState::Running))?;
         }
 
-        match f(self.clone()).await {
+        let fut = match &self.span {
+            Some(span) => Either::Left(f(self.clone()).instrument(span.clone())),
+            None => Either::Right(f(self.clone())),
+        };
+
+        match fut.await {
             Ok(val) => {
                 // Success!
                 self.state(JobState::Succeeded)?;
@@ -637,7 +649,7 @@ impl JobHandleInner {
                 .send(event)
                 .map_err(|e| ColmenaError::unknown(Box::new(e)))?;
         } else {
-            log::debug!("Sending event: {:?}", event);
+            tracing::debug!("Sending event: {:?}", event);
         }
 
         Ok(())
@@ -654,6 +666,7 @@ impl MetaJobHandle {
         let normal_handle = Arc::new(JobHandleInner {
             job_id: self.job_id,
             sender: Some(self.sender.clone()),
+            span: Some(make_span(JobType::Meta)),
         });
 
         match f(normal_handle).await {
@@ -889,6 +902,21 @@ fn describe_node_list(nodes: &[NodeName]) -> Option<String> {
     }
 
     Some(s)
+}
+
+fn make_span(job_type: JobType) -> Span {
+    let job_type_str = match job_type {
+        JobType::Meta => "meta",
+        JobType::Evaluate => "evaluate",
+        JobType::Build => "build",
+        JobType::UploadKeys => "upload-keys",
+        JobType::Push => "push",
+        JobType::Activate => "activate",
+        JobType::Execute => "execute",
+        JobType::CreateGcRoots => "create-gc-roots",
+        JobType::Reboot => "reboot",
+    };
+    tracing::info_span!("job", job_type = job_type_str)
 }
 
 #[cfg(test)]

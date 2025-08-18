@@ -11,45 +11,40 @@ use crate::nix::Hive;
 use crate::nix::{host::Local as LocalHost, NodeName};
 use crate::progress::SimpleProgressOutput;
 
+/// Apply configurations on the local machine
 #[derive(Debug, Args)]
-#[command(
-    name = "apply-local",
-    about = "Apply configurations on the local machine"
-)]
+#[command(name = "apply-local")]
 pub struct Opts {
-    #[arg(
-        help = "Deployment goal",
-        value_name = "GOAL",
-        default_value_t,
-        long_help = "Same as the targets for switch-to-configuration.\n\"push\" is noop in apply-local."
-    )]
+    /// Deployment goal
+    ///
+    /// Same as the targets for switch-to-configuration.
+    /// "push" is noop in apply-local.
+    #[arg(value_name = "GOAL", default_value_t)]
     goal: Goal,
-    #[arg(long, help = "Attempt to escalate privileges if not run as root")]
-    sudo: bool,
-    #[arg(
-        short,
-        long,
-        help = "Be verbose",
-        long_help = "Deactivates the progress spinner and prints every line of output."
-    )]
-    verbose: bool,
-    #[arg(
-        long,
-        help = "Do not deploy keys",
-        long_help = r#"Do not deploy secret keys set in `deployment.keys`.
 
-By default, Colmena will deploy keys set in `deployment.keys` before activating the profile on this host.
-"#
-    )]
+    /// Attempt to escalate privileges if not run as root
+    #[arg(long)]
+    sudo: bool,
+
+    /// Be verbose
+    ///
+    /// Deactivates the progress spinner and prints every line of output.
+    #[arg(short, long)]
+    verbose: bool,
+
+    /// Do not deploy keys
+    ///
+    /// Do not deploy secret keys set in `deployment.keys`. By default, Colmena will deploy keys
+    /// set in `deployment.keys` before activating the profile on this host.
+    #[arg(long)]
     no_keys: bool,
-    #[arg(long, help = "Override the node name to use")]
+
+    /// Override the node name to use
+    #[arg(long)]
     node: Option<String>,
-    #[arg(
-        long,
-        value_name = "COMMAND",
-        hide = true,
-        help = "Removed: Configure deployment.privilegeEscalationCommand in node configuration"
-    )]
+
+    /// Removed: Configure deployment.privilegeEscalationCommand in node configuration
+    #[arg(long, value_name = "COMMAND", hide = true)]
     sudo_command: Option<String>,
 }
 
@@ -65,7 +60,7 @@ pub async fn run(
     }: Opts,
 ) -> Result<(), ColmenaError> {
     if sudo_command.is_some() {
-        log::error!("--sudo-command has been removed. Please configure it in deployment.privilegeEscalationCommand in the node configuration.");
+        tracing::error!("--sudo-command has been removed. Please configure it in deployment.privilegeEscalationCommand in the node configuration.");
         quit::with_code(1);
     }
 
@@ -73,11 +68,11 @@ pub async fn run(
     if let Ok(os_release) = fs::read_to_string("/etc/os-release").await {
         let re = Regex::new(r#"ID="?nixos"?"#).unwrap();
         if !re.is_match(&os_release) {
-            log::error!("\"apply-local\" only works on NixOS machines.");
+            tracing::error!("\"apply-local\" only works on NixOS machines.");
             quit::with_code(5);
         }
     } else {
-        log::error!("Could not detect the OS version from /etc/os-release.");
+        tracing::error!("Could not detect the OS version from /etc/os-release.");
         quit::with_code(5);
     }
 
@@ -86,8 +81,8 @@ pub async fn run(
     {
         let euid: u32 = unsafe { libc::geteuid() };
         if euid != 0 && !sudo {
-            log::warn!("Colmena was not started by root. This is probably not going to work.");
-            log::warn!("Hint: Add the --sudo flag.");
+            tracing::warn!("Colmena was not started by root. This is probably not going to work.");
+            tracing::warn!("Hint: Add the --sudo flag.");
         }
     }
 
@@ -102,11 +97,11 @@ pub async fn run(
         if let Some(info) = hive.deployment_info_single(&hostname).await.unwrap() {
             let nix_options = hive.nix_flags_with_builders().await.unwrap();
             if !info.allows_local_deployment() {
-                log::error!(
+                tracing::error!(
                     "Local deployment is not enabled for host {}.",
                     hostname.as_str()
                 );
-                log::error!("Hint: Set deployment.allowLocalDeployment to true.");
+                tracing::error!("Hint: Set deployment.allowLocalDeployment to true.");
                 quit::with_code(2);
             }
             let mut host = LocalHost::new(nix_options);
@@ -117,7 +112,7 @@ pub async fn run(
 
             TargetNode::new(hostname.clone(), Some(host.upcast()), info.clone())
         } else {
-            log::error!(
+            tracing::error!(
                 "Host \"{}\" is not present in the Hive configuration.",
                 hostname.as_str()
             );
