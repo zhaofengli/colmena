@@ -367,12 +367,13 @@ fn print_completions(shell: Shell, cmd: &mut clap::Command) {
 
 fn set_color_pref(when: &ColorWhen) {
     if when != &ColorWhen::Auto {
-        clicolors_control::set_colors_enabled(when == &ColorWhen::Always);
+        console::set_colors_enabled(when == &ColorWhen::Always);
+        console::set_colors_enabled_stderr(when == &ColorWhen::Always);
     }
 }
 
 fn init_logging() {
-    let colors_enabled = clicolors_control::colors_enabled();
+    let colors_enabled = console::colors_enabled_stderr();
     tracing_subscriber::fmt()
         .with_target(false)
         .with_level(true)
