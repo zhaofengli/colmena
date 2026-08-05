@@ -1,0 +1,391 @@
+//! Nix command builder.
+//!
+//! All invocations of Nix related binaries in Colmena go through [`NixCommand`],
+//! which projects a single set of [`NixFlags`] onto each binary according to
+//! what that binary actually accepts (see [`NixExe::caps`]).
+
+use std::borrow::Cow;
+use std::ffi::{OsStr, OsString};
+use std::path::PathBuf;
+
+use tokio::process::Command;
+
+use super::NixFlags;
+
+/// A Nix executable.
+#[derive(Debug, Clone)]
+enum NixExe {
+    /// The nix3 CLI (`nix eval`, `nix copy`, `nix flake`, `nix repl`, ...).
+    Nix,
+    NixInstantiate,
+    NixStore,
+    NixEnv,
+    NixCopyClosure,
+    /// `nix-eval-jobs`, possibly at a pinned path.
+    NixEvalJobs(PathBuf),
+}
+
+/// The flags accepted by a Nix executable.
+struct Caps {
+    /// Whether `--option NAME VALUE` is accepted.
+    options: bool,
+
+    /// Whether `--show-trace` is accepted.
+    show_trace: bool,
+
+    /// Whether `--pure-eval` is accepted.
+    ///
+    /// `pure-eval` is a Nix setting, and the legacy binaries accept
+    /// setting flags even when they do not evaluate anything.
+    pure_eval: bool,
+
+    /// Whether `--impure` is accepted.
+    ///
+    /// Unlike `--pure-eval`, `--impure` is not a setting but an
+    /// evaluator flag: `nix-store` rejects it and `nix-copy-closure`
+    /// misparses it as a positional argument. `nix-env --set` performs
+    /// no evaluation, so the flag is conservatively omitted there
+    /// as well (acceptance varies across Nix versions).
+    impure: bool,
+
+    /// Experimental features to enable by default via
+    /// `--extra-experimental-features`.
+    features: &'static [&'static str],
+}
+
+impl NixExe {
+    fn executable(&self) -> Cow<'static, OsStr> {
+        match self {
+            Self::Nix => OsStr::new("nix").into(),
+            Self::NixInstantiate => OsStr::new("nix-instantiate").into(),
+            Self::NixStore => OsStr::new("nix-store").into(),
+            Self::NixEnv => OsStr::new("nix-env").into(),
+            Self::NixCopyClosure => OsStr::new("nix-copy-closure").into(),
+            Self::NixEvalJobs(path) => path.clone().into_os_string().into(),
+        }
+    }
+
+    fn caps(&self) -> Caps {
+        match self {
+            Self::Nix => Caps {
+                options: true,
+                show_trace: true,
+                pure_eval: true,
+                impure: true,
+                features: &["nix-command", "flakes"],
+            },
+            Self::NixInstantiate => Caps {
+                options: true,
+                show_trace: true,
+                pure_eval: true,
+                impure: true,
+                // The "flakes" feature is only needed with `builtins.getFlake`
+                // and is enabled by call sites when evaluating a flake.
+                features: &[],
+            },
+            Self::NixStore | Self::NixEnv | Self::NixCopyClosure => Caps {
+                options: true,
+                show_trace: true,
+                pure_eval: true,
+                impure: false,
+                features: &[],
+            },
+            Self::NixEvalJobs(_) => Caps {
+                options: true,
+                show_trace: true,
+                pure_eval: true,
+                impure: true,
+                features: &[],
+            },
+        }
+    }
+}
+
+/// A builder for a Nix command invocation.
+///
+/// The builder holds a shared set of [`NixFlags`] and only emits the
+/// flags the target executable accepts, so the same flags can be
+/// threaded into every Nix invocation regardless of CLI dialect.
+#[derive(Debug, Clone)]
+#[must_use]
+pub struct NixCommand {
+    exe: NixExe,
+    flags: NixFlags,
+    extra_features: Vec<&'static str>,
+    args: Vec<OsString>,
+}
+
+impl NixCommand {
+    /// Creates an invocation of the nix3 CLI (`nix`).
+    pub fn nix(flags: NixFlags) -> Self {
+        Self::new(NixExe::Nix, flags)
+    }
+
+    /// Creates an invocation of `nix-instantiate`.
+    pub fn nix_instantiate(flags: NixFlags) -> Self {
+        Self::new(NixExe::NixInstantiate, flags)
+    }
+
+    /// Creates an invocation of `nix-store`.
+    pub fn nix_store(flags: NixFlags) -> Self {
+        Self::new(NixExe::NixStore, flags)
+    }
+
+    /// Creates an invocation of `nix-env`.
+    pub fn nix_env(flags: NixFlags) -> Self {
+        Self::new(NixExe::NixEnv, flags)
+    }
+
+    /// Creates an invocation of `nix-copy-closure`.
+    pub fn nix_copy_closure(flags: NixFlags) -> Self {
+        Self::new(NixExe::NixCopyClosure, flags)
+    }
+
+    /// Creates an invocation of `nix-eval-jobs` at the given path.
+    pub fn nix_eval_jobs(executable: PathBuf, flags: NixFlags) -> Self {
+        Self::new(NixExe::NixEvalJobs(executable), flags)
+    }
+
+    fn new(exe: NixExe, flags: NixFlags) -> Self {
+        Self {
+            exe,
+            flags,
+            extra_features: Vec::new(),
+            args: Vec::new(),
+        }
+    }
+
+    pub fn arg(mut self, arg: impl Into<OsString>) -> Self {
+        self.args.push(arg.into());
+        self
+    }
+
+    pub fn args<I>(mut self, args: I) -> Self
+    where
+        I: IntoIterator,
+        I::Item: Into<OsString>,
+    {
+        self.args.extend(args.into_iter().map(Into::into));
+        self
+    }
+
+    /// Enables additional experimental features.
+    pub fn extra_features(mut self, features: &[&'static str]) -> Self {
+        self.extra_features.extend_from_slice(features);
+        self
+    }
+
+    /// Builds a [`Command`] ready to be spawned locally.
+    pub fn build(self) -> Command {
+        let mut command = Command::new(self.exe.executable());
+        command.args(&self.args);
+        command.args(self.render_flags());
+        command
+    }
+
+    /// Returns the full argv, for execution on another host.
+    ///
+    /// All arguments must be valid UTF-8. The argv is unquoted:
+    /// transports that pass through a shell (like ssh) must escape
+    /// each element.
+    pub fn into_argv(self) -> Vec<String> {
+        let flags = self.render_flags();
+
+        let executable = self
+            .exe
+            .executable()
+            .into_owned()
+            .into_string()
+            .expect("Executable path must be valid UTF-8");
+
+        let mut argv = vec![executable];
+        argv.extend(
+            self.args
+                .into_iter()
+                .map(|arg| arg.into_string().expect("Arguments must be valid UTF-8")),
+        );
+        argv.extend(flags);
+        argv
+    }
+
+    /// Renders the [`NixFlags`] the executable accepts, followed by
+    /// the experimental features.
+    fn render_flags(&self) -> Vec<String> {
+        let caps = self.exe.caps();
+        let mut out = Vec::new();
+
+        let flags = &self.flags;
+
+        if caps.show_trace && flags.show_trace {
+            out.push("--show-trace".to_string());
+        }
+
+        if caps.pure_eval && flags.pure_eval {
+            out.push("--pure-eval".to_string());
+        }
+
+        if caps.impure && flags.impure {
+            out.push("--impure".to_string());
+        }
+
+        if caps.options {
+            for (name, value) in flags.options.iter() {
+                out.push("--option".to_string());
+                out.push(name.to_string());
+                out.push(value.to_string());
+            }
+        }
+
+        // --extra-experimental-features appends to the setting while
+        // --option experimental-features replaces it, and Nix applies
+        // flags left to right, so the features must come after the
+        // options to survive a user-supplied experimental-features
+        let mut features: Vec<&str> = caps.features.to_vec();
+        for feature in &self.extra_features {
+            if !features.contains(feature) {
+                features.push(feature);
+            }
+        }
+        if !features.is_empty() {
+            out.push("--extra-experimental-features".to_string());
+            out.push(features.join(" "));
+        }
+
+        out
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_flags() -> NixFlags {
+        let mut flags = NixFlags::default();
+        flags.set_show_trace(true);
+        flags.set_impure(true);
+        flags.add_option("cores".to_string(), "4".to_string());
+        flags.add_option(
+            "substituters".to_string(),
+            "https://a https://b".to_string(),
+        );
+        flags
+    }
+
+    #[test]
+    fn test_nix_receives_all_flags() {
+        let argv = NixCommand::nix(test_flags()).arg("eval").into_argv();
+
+        assert_eq!(
+            argv,
+            vec![
+                "nix",
+                "eval",
+                "--show-trace",
+                "--impure",
+                "--option",
+                "cores",
+                "4",
+                "--option",
+                "substituters",
+                "https://a https://b",
+                "--extra-experimental-features",
+                "nix-command flakes",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_features_survive_user_experimental_features() {
+        let mut flags = NixFlags::default();
+        flags.add_option(
+            "experimental-features".to_string(),
+            "ca-derivations".to_string(),
+        );
+
+        let argv = NixCommand::nix(flags).into_argv();
+
+        // the appending --extra-experimental-features must come after
+        // the replacing --option to keep nix-command and flakes enabled
+        assert_eq!(
+            argv,
+            vec![
+                "nix",
+                "--option",
+                "experimental-features",
+                "ca-derivations",
+                "--extra-experimental-features",
+                "nix-command flakes",
+            ]
+        );
+    }
+
+    #[test]
+    fn test_nix_store_drops_impure() {
+        let argv = NixCommand::nix_store(test_flags())
+            .args(["--no-gc-warning", "--realise"])
+            .into_argv();
+
+        assert!(!argv.contains(&"--impure".to_string()));
+        assert!(argv.contains(&"--show-trace".to_string()));
+        assert!(argv.contains(&"cores".to_string()));
+    }
+
+    #[test]
+    fn test_nix_env_drops_impure() {
+        let argv = NixCommand::nix_env(test_flags())
+            .args(["--profile", "/nix/var/nix/profiles/system", "--set"])
+            .into_argv();
+
+        assert!(!argv.contains(&"--impure".to_string()));
+        assert!(argv.contains(&"--show-trace".to_string()));
+        assert!(argv.contains(&"cores".to_string()));
+    }
+
+    #[test]
+    fn test_nix_copy_closure_drops_impure() {
+        let argv = NixCommand::nix_copy_closure(test_flags())
+            .args(["--to", "user@host"])
+            .into_argv();
+
+        // nix-copy-closure would misparse --impure as a positional argument
+        assert!(!argv.contains(&"--impure".to_string()));
+        assert!(argv.contains(&"--show-trace".to_string()));
+        assert!(argv.contains(&"cores".to_string()));
+    }
+
+    #[test]
+    fn test_builders_option() {
+        let mut flags = NixFlags::default();
+        flags.set_builders(Some("@/path/to/machines".to_string()));
+
+        let argv = NixCommand::nix_store(flags).into_argv();
+
+        assert_eq!(
+            argv,
+            vec!["nix-store", "--option", "builders", "@/path/to/machines"]
+        );
+    }
+
+    #[test]
+    fn test_extra_features_dedup() {
+        let argv = NixCommand::nix(NixFlags::default())
+            .extra_features(&["flakes"])
+            .into_argv();
+
+        assert_eq!(
+            argv,
+            vec!["nix", "--extra-experimental-features", "nix-command flakes"]
+        );
+    }
+
+    #[test]
+    fn test_pure_eval() {
+        let mut flags = NixFlags::default();
+        flags.set_pure_eval(true);
+
+        // pure-eval is a setting, and setting flags are accepted by
+        // the legacy binaries as well
+        let argv = NixCommand::nix_store(flags).into_argv();
+        assert_eq!(argv, vec!["nix-store", "--pure-eval"]);
+    }
+}

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::ops::Deref;
 use std::path::Path;
@@ -8,6 +8,10 @@ use serde::{Deserialize, Deserializer, Serialize};
 use validator::{Validate, ValidationError as ValidationErrorType};
 
 use crate::error::{ColmenaError, ColmenaResult};
+
+// TODO: Remove the allow once call sites are ported (following commits)
+#[allow(dead_code)]
+pub mod command;
 
 pub mod host;
 use host::Ssh;
@@ -106,17 +110,10 @@ pub struct NixFlags {
     /// Whether to pass --impure.
     impure: bool,
 
-    /// Designated builders.
-    ///
-    /// See <https://nixos.org/manual/nix/stable/advanced-topics/distributed-builds.html>.
-    ///
-    /// Valid examples:
-    /// - `@/path/to/machines`
-    /// - `builder@host.tld riscv64-linux /home/nix/.ssh/keys/builder.key 8 1 kvm`
-    builders: Option<String>,
-
     /// Options to pass as --option name value.
-    options: HashMap<String, String>,
+    ///
+    /// A BTreeMap is used so the options are emitted deterministically.
+    options: BTreeMap<String, String>,
 }
 
 impl NodeName {
@@ -209,12 +206,32 @@ impl NixFlags {
         self.impure = impure;
     }
 
+    /// Sets the designated builders, a plain `--option builders` value.
+    ///
+    /// See <https://nixos.org/manual/nix/stable/advanced-topics/distributed-builds.html>.
+    ///
+    /// Valid examples:
+    /// - `@/path/to/machines`
+    /// - `builder@host.tld riscv64-linux /home/nix/.ssh/keys/builder.key 8 1 kvm`
     pub fn set_builders(&mut self, builders: Option<String>) {
-        self.builders = builders;
+        match builders {
+            Some(builders) => self.options.insert("builders".to_string(), builders),
+            None => self.options.remove("builders"),
+        };
     }
 
     pub fn set_options(&mut self, options: HashMap<String, String>) {
-        self.options = options;
+        self.options = options.into_iter().collect();
+    }
+
+    // TODO: Remove the allow once call sites are ported (following commits)
+    #[allow(dead_code)]
+    pub fn add_option(&mut self, name: String, value: String) {
+        self.options.insert(name, value);
+    }
+
+    pub fn has_option(&self, name: &str) -> bool {
+        self.options.contains_key(name)
     }
 
     pub fn to_args(&self) -> Vec<String> {
@@ -228,14 +245,6 @@ impl NixFlags {
 
     fn to_args_inner(&self, nix_store: bool) -> Vec<String> {
         let mut args = Vec::new();
-
-        if let Some(builders) = &self.builders {
-            args.append(&mut vec![
-                "--option".to_string(),
-                "builders".to_string(),
-                builders.clone(),
-            ]);
-        }
 
         if self.show_trace {
             args.push("--show-trace".to_string());
