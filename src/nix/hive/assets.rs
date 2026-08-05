@@ -13,6 +13,7 @@ use tempfile::{Builder as TempFileBuilder, TempDir};
 
 use super::{Flake, HivePath};
 use crate::error::ColmenaResult;
+use crate::nix::NixFlags;
 use crate::nix::flake::lock_flake_quiet;
 
 const FLAKE_NIX: &str = include_str!("flake.nix");
@@ -34,7 +35,7 @@ pub(super) struct Assets {
 }
 
 impl Assets {
-    pub async fn new(hive_path: HivePath) -> ColmenaResult<Self> {
+    pub async fn new(hive_path: HivePath, flags: &NixFlags) -> ColmenaResult<Self> {
         let temp_dir = TempFileBuilder::new().prefix("colmena-assets-").tempdir()?;
 
         create_file(&temp_dir, "eval.nix", false, EVAL_NIX)?;
@@ -55,8 +56,8 @@ impl Assets {
                 "path:{}",
                 temp_dir.path().canonicalize().unwrap().to_str().unwrap()
             );
-            let _ = lock_flake_quiet(&uri).await;
-            let assets_flake = Flake::from_uri(uri).await?;
+            let _ = lock_flake_quiet(&uri, flags).await;
+            let assets_flake = Flake::from_uri(uri, flags).await?;
             assets_flake_uri = Some(assets_flake.locked_uri().to_owned());
         }
 

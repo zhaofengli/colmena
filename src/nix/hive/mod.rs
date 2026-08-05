@@ -6,7 +6,6 @@ mod tests;
 use std::collections::HashMap;
 use std::convert::AsRef;
 use std::path::{Path, PathBuf};
-use std::str::FromStr;
 
 use const_format::formatcp;
 use tokio::process::Command;
@@ -15,10 +14,10 @@ use validator::Validate;
 
 use super::deployment::TargetNode;
 use super::{
-    Flake, MetaConfig, NixExpression, NixFlags, NodeConfig, NodeFilter, NodeName,
+    Flake, MetaConfig, NixCommand, NixExpression, NixFlags, NodeConfig, NodeFilter, NodeName,
     ProfileDerivation, SerializedNixExpression, StorePath,
 };
-use crate::error::{ColmenaError, ColmenaResult};
+use crate::error::ColmenaResult;
 use crate::job::JobHandle;
 use crate::util::{CommandExecution, CommandExt};
 use assets::Assets;
@@ -49,33 +48,23 @@ pub enum HivePath {
     Legacy(PathBuf),
 }
 
-impl FromStr for HivePath {
-    type Err = ColmenaError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
+impl HivePath {
+    /// Resolves a path or a flake URI into a HivePath.
+    pub async fn resolve(s: &str, flags: &NixFlags) -> ColmenaResult<Self> {
         // TODO: check for escaped colon maybe?
 
-        let s = s.to_owned();
-        let path = std::path::PathBuf::from(&s);
+        let path = std::path::PathBuf::from(s);
 
-        let fut = async move {
-            if !path.exists() && s.contains(':') {
-                // Treat as flake URI
-                let flake = Flake::from_uri(s).await?;
+        if !path.exists() && s.contains(':') {
+            // Treat as flake URI
+            let flake = Flake::from_uri(s, flags).await?;
 
-                tracing::info!("Using flake: {}", flake.uri());
+            tracing::info!("Using flake: {}", flake.uri());
 
-                Ok(Self::Flake(flake))
-            } else {
-                HivePath::from_path(path).await
-            }
-        };
-
-        let handle = tokio::runtime::Handle::try_current()
-            .expect("We should always be executed after we have a runtime");
-        std::thread::spawn(move || handle.block_on(fut))
-            .join()
-            .expect("Failed to join future")
+            Ok(Self::Flake(flake))
+        } else {
+            Self::from_path(path, flags).await
+        }
     }
 }
 
@@ -116,14 +105,12 @@ pub struct Hive {
     /// Static files required to evaluate a Hive configuration.
     assets: Assets,
 
-    /// Whether to pass --show-trace in Nix commands.
-    show_trace: bool,
-
-    /// Whether to pass --impure in Nix commands.
-    impure: bool,
-
-    /// Options to pass as --option name value.
-    nix_options: HashMap<String, String>,
+    /// Flags to pass to Nix commands.
+    ///
+    /// This is the single source of truth for the flags: every Nix
+    /// invocation made on behalf of this Hive derives its flags from
+    /// here via `nix_flags()` or `nix_flags_with_builders()`.
+    flags: NixFlags,
 
     meta_config: OnceCell<MetaConfig>,
 }
@@ -140,14 +127,14 @@ struct EvalSelectedExpression<'hive> {
 }
 
 impl HivePath {
-    pub async fn from_path<P: AsRef<Path>>(path: P) -> ColmenaResult<Self> {
+    pub async fn from_path<P: AsRef<Path>>(path: P, flags: &NixFlags) -> ColmenaResult<Self> {
         let path = path.as_ref();
 
         if let Some(osstr) = path.file_name()
             && osstr == "flake.nix"
         {
             let parent = path.parent().unwrap();
-            let flake = Flake::from_dir(parent).await?;
+            let flake = Flake::from_dir(parent, flags).await?;
             return Ok(Self::Flake(flake));
         }
 
@@ -167,10 +154,10 @@ impl HivePath {
 }
 
 impl Hive {
-    pub async fn new(path: HivePath) -> ColmenaResult<Self> {
+    pub async fn new(path: HivePath, flags: NixFlags) -> ColmenaResult<Self> {
         let context_dir = path.context_dir();
         // TODO: Skip asset extraction for direct flake eval
-        let assets = Assets::new(path.clone()).await?;
+        let assets = Assets::new(path.clone(), &flags).await?;
 
         let evaluation_method = if path.is_flake() {
             EvaluationMethod::DirectFlakeEval
@@ -183,9 +170,7 @@ impl Hive {
             evaluation_method,
             context_dir,
             assets,
-            show_trace: false,
-            impure: false,
-            nix_options: HashMap::new(),
+            flags,
             meta_config: OnceCell::new(),
         })
     }
@@ -213,25 +198,16 @@ impl Hive {
         self.evaluation_method = method;
     }
 
+    #[cfg(test)]
     pub fn set_show_trace(&mut self, value: bool) {
-        self.show_trace = value;
+        self.flags.set_show_trace(value);
     }
 
-    pub fn set_impure(&mut self, impure: bool) {
-        self.impure = impure;
-    }
-
-    pub fn add_nix_option(&mut self, name: String, value: String) {
-        self.nix_options.insert(name, value);
-    }
-
-    /// Returns Nix options to set for this Hive.
+    /// Returns Nix flags for evaluating this Hive, with pure
+    /// evaluation enabled when the hive is a flake.
     pub fn nix_flags(&self) -> NixFlags {
-        let mut flags = NixFlags::default();
-        flags.set_show_trace(self.show_trace);
+        let mut flags = self.flags.clone();
         flags.set_pure_eval(self.path.is_flake());
-        flags.set_impure(self.impure);
-        flags.set_options(self.nix_options.clone());
         flags
     }
 
@@ -515,50 +491,33 @@ impl<'hive> NixInstantiate<'hive> {
         Self { hive, expression }
     }
 
-    fn instantiate(&self) -> Command {
+    fn instantiate(&self, flags: NixFlags) -> NixCommand {
         // TODO: Better error handling
         if self.hive.evaluation_method == EvaluationMethod::DirectFlakeEval {
             panic!("Instantiation is not supported with DirectFlakeEval");
         }
 
-        let mut command = Command::new("nix-instantiate");
-
-        if self.hive.is_flake() {
-            command.args(["--extra-experimental-features", "flakes"]);
-        }
-
         let mut full_expression = self.hive.get_base_expression();
         full_expression += &self.expression;
 
-        command
-            .arg("--no-gc-warning")
-            .arg("-E")
-            .arg(&full_expression);
+        let mut command = NixCommand::nix_instantiate(flags);
 
-        command
+        if self.hive.is_flake() {
+            command = command.extra_features(&["flakes"]);
+        }
+
+        command.args(["--no-gc-warning", "-E"]).arg(full_expression)
     }
 
-    fn eval(self) -> Command {
-        let flags = self.hive.nix_flags();
-
+    fn eval_command(&self, flags: NixFlags) -> NixCommand {
         match self.hive.evaluation_method {
-            EvaluationMethod::NixInstantiate => {
-                let mut command = self.instantiate();
-
-                command
-                    .arg("--eval")
-                    .arg("--json")
-                    .arg("--strict")
-                    // Ensures the derivations are instantiated
-                    // Required for system profile evaluation and IFD
-                    .arg("--read-write-mode")
-                    .args(flags.to_args());
-
-                command
-            }
+            EvaluationMethod::NixInstantiate => self
+                .instantiate(flags)
+                .args(["--eval", "--json", "--strict"])
+                // Ensures the derivations are instantiated
+                // Required for system profile evaluation and IFD
+                .arg("--read-write-mode"),
             EvaluationMethod::DirectFlakeEval => {
-                let mut command = Command::new("nix");
-
                 let hive_installable = self
                     .hive
                     .flake_installable()
@@ -567,36 +526,28 @@ impl<'hive> NixInstantiate<'hive> {
                 let mut full_expression = self.hive.get_base_expression();
                 full_expression += &self.expression;
 
-                command
+                NixCommand::nix(flags)
                     .arg("eval") // nix eval
-                    .args(["--extra-experimental-features", "flakes nix-command"])
                     .arg(hive_installable)
-                    .arg("--json")
-                    .arg("--apply")
-                    .arg(&full_expression)
-                    .args(flags.to_args());
-
-                command
+                    .args(["--json", "--apply"])
+                    .arg(full_expression)
             }
         }
     }
 
+    fn eval(self) -> Command {
+        let flags = self.hive.nix_flags();
+        self.eval_command(flags).build()
+    }
+
     async fn instantiate_with_builders(self) -> ColmenaResult<Command> {
         let flags = self.hive.nix_flags_with_builders().await?;
-        let mut command = self.instantiate();
-
-        command.args(flags.to_args());
-
-        Ok(command)
+        Ok(self.instantiate(flags).build())
     }
 
     async fn eval_with_builders(self) -> ColmenaResult<Command> {
         let flags = self.hive.nix_flags_with_builders().await?;
-        let mut command = self.eval();
-
-        command.args(flags.to_args());
-
-        Ok(command)
+        Ok(self.eval_command(flags).build())
     }
 }
 

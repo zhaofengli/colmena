@@ -14,12 +14,11 @@ use async_trait::async_trait;
 use futures::Stream;
 use serde::Deserialize;
 use tokio::io::{AsyncBufReadExt, BufReader};
-use tokio::process::Command;
 
 use super::{AttributeError, AttributeOutput, DrvSetEvaluator, EvalError, EvalResult};
 use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::{JobHandle, null_job_handle};
-use crate::nix::{NixExpression, NixFlags, StorePath};
+use crate::nix::{NixCommand, NixExpression, NixFlags, StorePath};
 use crate::util::capture_stream;
 
 /// The pinned nix-eval-jobs binary.
@@ -76,25 +75,25 @@ impl DrvSetEvaluator for NixEvalJobs {
         expression: &dyn NixExpression,
         flags: NixFlags,
     ) -> ColmenaResult<Pin<Box<dyn Stream<Item = EvalResult>>>> {
-        let mut command = Command::new(&self.executable);
-        command.arg("--workers").arg(self.workers.to_string());
+        let mut command = NixCommand::nix_eval_jobs(self.executable.clone(), flags)
+            .arg("--workers")
+            .arg(self.workers.to_string());
 
         if let Some(installable) = expression.installable() {
-            command.args([
-                "--flake",
-                &installable,
-                "--select",
-                &expression.expression(),
-            ]);
+            command = command
+                .arg("--flake")
+                .arg(installable)
+                .arg("--select")
+                .arg(expression.expression());
         } else {
-            command.args(["--expr", &expression.expression()]);
+            command = command.arg("--expr").arg(expression.expression());
         }
-
-        command.args(flags.to_args());
 
         if expression.requires_flakes() {
-            command.args(["--extra-experimental-features", "flakes"]);
+            command = command.extra_features(&["flakes"]);
         }
+
+        let mut command = command.build();
 
         let mut child = command
             .stderr(Stdio::piped())

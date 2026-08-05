@@ -1,9 +1,9 @@
 use crate::error::ColmenaResult;
-use crate::nix::NixCheck;
 use crate::nix::evaluator::nix_eval_jobs::get_pinned_nix_eval_jobs;
+use crate::nix::{NixCheck, NixFlags};
 
-pub async fn run() -> ColmenaResult<()> {
-    let check = NixCheck::detect().await;
+pub async fn run(flags: NixFlags) -> ColmenaResult<()> {
+    let check = NixCheck::detect(&flags).await;
     check.print_version_info();
     check.print_flakes_info();
 

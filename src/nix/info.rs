@@ -2,7 +2,8 @@ use std::fmt;
 use std::process::Stdio;
 
 use regex::Regex;
-use tokio::process::Command;
+
+use super::{NixCommand, NixFlags};
 
 pub struct NixVersion {
     major: usize,
@@ -53,35 +54,36 @@ impl NixCheck {
         flakes_enabled: false,
     };
 
-    pub async fn detect() -> Self {
-        let version_cmd = Command::new("nix-instantiate")
-            .arg("--version")
-            .output()
-            .await;
+    pub async fn detect(flags: &NixFlags) -> Self {
+        // The version probe detects the Nix installation itself, so it
+        // deliberately runs without the user-supplied flags: a bogus
+        // --option must not make the version appear undetectable. The
+        // flakes probe reflects the effective configuration, so the
+        // user-supplied flags apply (e.g., experimental-features
+        // enabled via --nix-option).
+        let (version_cmd, flake_cmd) = tokio::join!(
+            NixCommand::nix_instantiate(NixFlags::default())
+                .arg("--version")
+                .build()
+                .output(),
+            NixCommand::nix_instantiate(flags.clone())
+                .args(["--eval", "-E", "builtins.getFlake"])
+                .build()
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .status(),
+        );
 
-        if version_cmd.is_err() {
+        let (Ok(version_output), Ok(flake_status)) = (version_cmd, flake_cmd) else {
             return Self::NO_NIX;
-        }
+        };
 
         let version =
-            NixVersion::parse(String::from_utf8_lossy(&version_cmd.unwrap().stdout).to_string());
-
-        let flake_cmd = Command::new("nix-instantiate")
-            .args(["--eval", "-E", "builtins.getFlake"])
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .await;
-
-        if flake_cmd.is_err() {
-            return Self::NO_NIX;
-        }
-
-        let flakes_enabled = flake_cmd.unwrap().success();
+            NixVersion::parse(String::from_utf8_lossy(&version_output.stdout).to_string());
 
         Self {
             version: Some(version),
-            flakes_enabled,
+            flakes_enabled: flake_status.success(),
         }
     }
 
