@@ -6,13 +6,16 @@ use std::process::Stdio;
 use std::time::Duration;
 
 use async_trait::async_trait;
+use shell_escape::unix::escape;
 use tokio::process::Command;
 use tokio::time::sleep;
 
 use super::{CopyDirection, CopyOptions, Host, RebootOptions, key_uploader};
 use crate::error::{ColmenaError, ColmenaResult};
 use crate::job::JobHandle;
-use crate::nix::{CURRENT_PROFILE, Goal, Key, Profile, SYSTEM_PROFILE, StorePath};
+use crate::nix::{
+    CURRENT_PROFILE, Goal, Key, NixCommand, NixFlags, Profile, SYSTEM_PROFILE, StorePath,
+};
 use crate::util::{CommandExecution, CommandExt};
 
 /// A remote machine connected over SSH.
@@ -39,6 +42,9 @@ pub struct Ssh {
     /// Whether to use the experimental `nix copy` command.
     use_nix3_copy: bool,
 
+    /// Flags to pass to Nix invocations, local and remote.
+    nix_flags: NixFlags,
+
     job: Option<JobHandle>,
 }
 
@@ -59,12 +65,8 @@ impl Host for Ssh {
     }
 
     async fn realize_remote(&mut self, derivation: &StorePath) -> ColmenaResult<Vec<StorePath>> {
-        let command = self.ssh(&[
-            "nix-store",
-            "--no-gc-warning",
-            "--realise",
-            derivation.as_path().to_str().unwrap(),
-        ]);
+        let argv = derivation.realise_command(&self.nix_flags).into_argv();
+        let command = self.ssh_argv(argv);
 
         let mut execution = CommandExecution::new(command);
         execution.set_job(self.job.clone());
@@ -96,14 +98,13 @@ impl Host for Ssh {
         }
 
         if goal.should_switch_profile() {
-            let path = profile.as_path().to_str().unwrap();
-            let set_profile = self.ssh(&["nix-env", "--profile", SYSTEM_PROFILE, "--set", path]);
+            let argv = profile.switch_profile_command(&self.nix_flags).into_argv();
+            let set_profile = self.ssh_argv(argv);
             self.run_command(set_profile).await?;
         }
 
         let activation_command = profile.activation_command(goal).unwrap();
-        let v: Vec<&str> = activation_command.iter().map(|s| &**s).collect();
-        let command = self.ssh(&v);
+        let command = self.ssh(&activation_command);
         self.run_command(command).await
     }
 
@@ -129,7 +130,10 @@ impl Host for Ssh {
             SYSTEM_PROFILE, CURRENT_PROFILE
         );
 
-        let paths = self.ssh(&["sh", "-c", &command]).capture_output().await?;
+        let paths = self
+            .ssh(&["sh", "-c", command.as_str()])
+            .capture_output()
+            .await?;
 
         let path = paths
             .lines()
@@ -185,7 +189,7 @@ impl Host for Ssh {
 }
 
 impl Ssh {
-    pub fn new(user: Option<String>, host: String) -> Self {
+    pub fn new(user: Option<String>, host: String, nix_flags: NixFlags) -> Self {
         Self {
             user,
             host,
@@ -194,6 +198,7 @@ impl Ssh {
             privilege_escalation_command: Vec::new(),
             extra_ssh_options: Vec::new(),
             use_nix3_copy: false,
+            nix_flags,
             job: None,
         }
     }
@@ -222,8 +227,23 @@ impl Ssh {
         Box::new(self)
     }
 
+    /// Returns a Tokio Command to run a generated command on the host.
+    ///
+    /// ssh(1) concatenates its arguments with spaces and lets the remote
+    /// shell re-split them, so each argument is escaped first. This
+    /// matters for Nix flag values that may contain spaces (e.g.,
+    /// `--option substituters "https://a https://b"`).
+    fn ssh_argv(&self, argv: Vec<String>) -> Command {
+        let escaped: Vec<String> = argv
+            .into_iter()
+            .map(|arg| escape(arg.into()).into_owned())
+            .collect();
+
+        self.ssh(&escaped)
+    }
+
     /// Returns a Tokio Command to run an arbitrary command on the host.
-    pub fn ssh(&self, command: &[&str]) -> Command {
+    pub fn ssh<S: AsRef<OsStr>>(&self, command: &[S]) -> Command {
         let options = self.ssh_options();
         let options_str = options.join(" ");
         let privilege_escalation_command = if self.user.as_deref() != Some("root") {
@@ -269,17 +289,11 @@ impl Ssh {
 
         let mut command = if self.use_nix3_copy {
             // experimental `nix copy` command with ssh-ng://
-            let mut command = Command::new("nix");
-
-            command.args([
-                "--extra-experimental-features",
-                "nix-command",
-                "copy",
-                "--no-check-sigs",
-            ]);
+            let mut command =
+                NixCommand::nix(self.nix_flags.clone()).args(["copy", "--no-check-sigs"]);
 
             if options.use_substitutes {
-                command.args([
+                command = command.args([
                     "--substitute-on-destination",
                     // needed due to UX bug in ssh-ng://
                     "--builders-use-substitutes",
@@ -287,54 +301,41 @@ impl Ssh {
             }
 
             if let Some("drv") = path.extension().and_then(OsStr::to_str) {
-                command.arg("--derivation");
+                command = command.arg("--derivation");
             }
 
-            match direction {
-                CopyDirection::ToRemote => {
-                    command.arg("--to");
-                }
-                CopyDirection::FromRemote => {
-                    command.arg("--from");
-                }
-            }
+            command = match direction {
+                CopyDirection::ToRemote => command.arg("--to"),
+                CopyDirection::FromRemote => command.arg("--from"),
+            };
 
             let mut store_uri = format!("ssh-ng://{}", self.ssh_target());
             if options.gzip {
                 store_uri += "?compress=true";
             }
-            command.arg(store_uri);
 
-            command.arg(path.as_path());
-
-            command
+            command.arg(store_uri).arg(path.as_path()).build()
         } else {
             // nix-copy-closure (ssh://)
-            let mut command = Command::new("nix-copy-closure");
+            let mut command = NixCommand::nix_copy_closure(self.nix_flags.clone());
 
-            match direction {
-                CopyDirection::ToRemote => {
-                    command.arg("--to");
-                }
-                CopyDirection::FromRemote => {
-                    command.arg("--from");
-                }
-            }
+            command = match direction {
+                CopyDirection::ToRemote => command.arg("--to"),
+                CopyDirection::FromRemote => command.arg("--from"),
+            };
 
             // FIXME: Host-agnostic abstraction
             if options.include_outputs {
-                command.arg("--include-outputs");
+                command = command.arg("--include-outputs");
             }
             if options.use_substitutes {
-                command.arg("--use-substitutes");
+                command = command.arg("--use-substitutes");
             }
             if options.gzip {
-                command.arg("--gzip");
+                command = command.arg("--gzip");
             }
 
-            command.arg(self.ssh_target()).arg(path.as_path());
-
-            command
+            command.arg(self.ssh_target()).arg(path.as_path()).build()
         };
 
         command.env("NIX_SSHOPTS", ssh_options_str);
@@ -394,7 +395,7 @@ impl Ssh {
         let path = key.path();
         let key_script = key_uploader::generate_script(key, path, require_ownership);
 
-        let mut command = self.ssh(&["sh", "-c", &key_script]);
+        let mut command = self.ssh(&["sh", "-c", key_script.as_ref()]);
 
         command.stdin(Stdio::piped());
         command.stderr(Stdio::piped());
@@ -426,6 +427,75 @@ impl Ssh {
                     Err(e)
                 }
             }
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ssh_argv_escapes_for_remote_shell() {
+        let mut flags = NixFlags::default();
+        flags.add_option(
+            "substituters".to_string(),
+            "https://a https://b".to_string(),
+        );
+
+        let host = Ssh::new(Some("root".to_string()), "example.com".to_string(), flags);
+
+        let argv = NixCommand::nix_store(host.nix_flags.clone())
+            .args(["--no-gc-warning", "--realise"])
+            .arg("/nix/store/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-x")
+            .into_argv();
+        let command = host.ssh_argv(argv);
+
+        let args: Vec<String> = command
+            .as_std()
+            .get_args()
+            .map(|arg| arg.to_string_lossy().into_owned())
+            .collect();
+
+        // The space-containing option value must be quoted for the
+        // remote shell...
+        assert!(args.contains(&"'https://a https://b'".to_string()));
+        // ...while plain arguments are passed through unchanged.
+        assert!(args.contains(&"--realise".to_string()));
+        assert!(args.contains(&"nix-store".to_string()));
+    }
+
+    #[test]
+    fn test_copy_closure_threads_nix_flags() {
+        let mut flags = NixFlags::default();
+        flags.add_option("cores".to_string(), "4".to_string());
+
+        let mut host = Ssh::new(Some("root".to_string()), "example.com".to_string(), flags);
+
+        let store_path: StorePath = "/nix/store/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa-x"
+            .to_string()
+            .try_into()
+            .unwrap();
+
+        // Exercise the production path for both copy backends.
+        for use_nix3_copy in [false, true] {
+            host.set_use_nix3_copy(use_nix3_copy);
+
+            let command =
+                host.nix_copy_closure(&store_path, CopyDirection::ToRemote, CopyOptions::default());
+
+            let args: Vec<String> = command
+                .as_std()
+                .get_args()
+                .map(|arg| arg.to_string_lossy().into_owned())
+                .collect();
+
+            assert!(
+                args.windows(3).any(|w| w == ["--option", "cores", "4"]),
+                "nix_flags not threaded (use_nix3_copy: {}): {:?}",
+                use_nix3_copy,
+                args
+            );
         }
     }
 }

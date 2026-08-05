@@ -9,8 +9,6 @@ use validator::{Validate, ValidationError as ValidationErrorType};
 
 use crate::error::{ColmenaError, ColmenaResult};
 
-// TODO: Remove the allow once call sites are ported (following commits)
-#[allow(dead_code)]
 pub mod command;
 pub use command::NixCommand;
 
@@ -179,9 +177,9 @@ impl NodeConfig {
         self.build_on_target = enable;
     }
 
-    pub fn to_ssh_host(&self) -> Option<Ssh> {
+    pub fn to_ssh_host(&self, nix_flags: NixFlags) -> Option<Ssh> {
         self.target_host.as_ref().map(|target_host| {
-            let mut host = Ssh::new(self.target_user.clone(), target_host.clone());
+            let mut host = Ssh::new(self.target_user.clone(), target_host.clone(), nix_flags);
             host.set_privilege_escalation_command(self.privilege_escalation_command.clone());
             host.set_extra_ssh_options(self.extra_ssh_options.clone());
 

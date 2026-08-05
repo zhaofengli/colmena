@@ -211,6 +211,17 @@ impl Hive {
         flags
     }
 
+    /// Returns Nix flags for invocations on a deployment target.
+    ///
+    /// Unlike [`Hive::nix_flags`], evaluation-context values are left
+    /// out: --pure-eval only affects evaluation, which never happens
+    /// on the target (and old Nix there may not know the flag), and
+    /// the machines file refers to a path on the local machine that
+    /// most likely does not exist on the target.
+    pub fn nix_flags_for_remote(&self) -> NixFlags {
+        self.flags.clone()
+    }
+
     /// Returns Nix flags to set for this Hive, with configured remote builders.
     pub async fn nix_flags_with_builders(&self) -> ColmenaResult<NixFlags> {
         let mut flags = self.nix_flags();
@@ -269,10 +280,13 @@ impl Hive {
 
         let mut targets = HashMap::new();
         let mut n_ssh = 0;
+
+        let nix_flags = self.nix_flags_for_remote();
+
         for node in selected_nodes.into_iter() {
             let config = node_configs.remove(&node).unwrap();
 
-            let host = config.to_ssh_host().map(|mut host| {
+            let host = config.to_ssh_host(nix_flags.clone()).map(|mut host| {
                 n_ssh += 1;
 
                 if let Some(ssh_config) = &ssh_config {

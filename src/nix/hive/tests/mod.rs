@@ -707,6 +707,34 @@ fn test_hive_get_meta() {
 }
 
 #[test]
+fn test_remote_flags_exclude_machines_file() {
+    let mut flags = NixFlags::default();
+    flags.add_option("cores".to_string(), "4".to_string());
+
+    let hive = TempHive::with_flags(
+        r#"
+      {
+        meta.machinesFile = "/etc/nix/machines";
+      }
+    "#,
+        flags,
+    );
+
+    let with_builders = block_on(hive.nix_flags_with_builders()).unwrap();
+    let argv = NixCommand::nix_store(with_builders).into_argv();
+    assert!(
+        argv.windows(3)
+            .any(|w| w == ["--option", "builders", "@/etc/nix/machines"])
+    );
+    assert!(argv.windows(3).any(|w| w == ["--option", "cores", "4"]));
+
+    // the machines file refers to a local path and --pure-eval only
+    // affects evaluation, so neither may reach a deployment target
+    let remote = NixCommand::nix_store(hive.nix_flags_for_remote()).into_argv();
+    assert_eq!(remote, vec!["nix-store", "--option", "cores", "4"]);
+}
+
+#[test]
 fn test_user_builders_override_machines_file() {
     let mut flags = NixFlags::default();
     flags.add_option("builders".to_string(), "@/custom/machines".to_string());
