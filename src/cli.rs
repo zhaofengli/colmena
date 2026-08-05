@@ -329,28 +329,28 @@ pub async fn run() {
     use crate::troubleshooter::run_wrapped as r;
 
     match opts.command {
-        Command::Apply(args) => r(command::apply::run(hive, args), opts.config).await,
+        Command::Apply(args) => r(command::apply::run(hive, args)).await,
         #[cfg(target_os = "linux")]
-        Command::ApplyLocal(args) => r(command::apply_local::run(hive, args), opts.config).await,
-        Command::Eval(args) => r(command::eval::run(hive, args), opts.config).await,
-        Command::Exec(args) => r(command::exec::run(hive, args), opts.config).await,
-        Command::NixInfo => r(command::nix_info::run(), opts.config).await,
-        Command::Repl => r(command::repl::run(hive), opts.config).await,
+        Command::ApplyLocal(args) => r(command::apply_local::run(hive, args)).await,
+        Command::Eval(args) => r(command::eval::run(hive, args)).await,
+        Command::Exec(args) => r(command::exec::run(hive, args)).await,
+        Command::NixInfo => r(command::nix_info::run()).await,
+        Command::Repl => r(command::repl::run(hive)).await,
         #[cfg(debug_assertions)]
-        Command::TestProgress => r(command::test_progress::run(), opts.config).await,
+        Command::TestProgress => r(command::test_progress::run()).await,
         Command::Build { deploy } => {
             let args = command::apply::Opts {
                 deploy,
                 goal: crate::nix::Goal::Build,
             };
-            r(command::apply::run(hive, args), opts.config).await
+            r(command::apply::run(hive, args)).await
         }
         Command::UploadKeys { deploy } => {
             let args = command::apply::Opts {
                 deploy,
                 goal: crate::nix::Goal::UploadKeys,
             };
-            r(command::apply::run(hive, args), opts.config).await
+            r(command::apply::run(hive, args)).await
         }
         Command::GenCompletions { .. } => unreachable!(),
     }

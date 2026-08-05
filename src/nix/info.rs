@@ -4,8 +4,6 @@ use std::process::Stdio;
 use regex::Regex;
 use tokio::process::Command;
 
-use super::{ColmenaError, ColmenaResult};
-
 pub struct NixVersion {
     major: usize,
     minor: usize,
@@ -32,14 +30,6 @@ impl NixVersion {
             }
         }
     }
-
-    fn has_flakes(&self) -> bool {
-        self.major > 2 || (self.major == 2 && self.minor >= 4)
-    }
-
-    pub fn at_least(&self, major: usize, minor: usize) -> bool {
-        self.major >= major && self.minor >= minor
-    }
 }
 
 impl fmt::Display for NixVersion {
@@ -54,14 +44,12 @@ impl fmt::Display for NixVersion {
 
 pub struct NixCheck {
     version: Option<NixVersion>,
-    flakes_supported: bool,
     flakes_enabled: bool,
 }
 
 impl NixCheck {
     const NO_NIX: Self = Self {
         version: None,
-        flakes_supported: false,
         flakes_enabled: false,
     };
 
@@ -77,7 +65,6 @@ impl NixCheck {
 
         let version =
             NixVersion::parse(String::from_utf8_lossy(&version_cmd.unwrap().stdout).to_string());
-        let flakes_supported = version.has_flakes();
 
         let flake_cmd = Command::new("nix-instantiate")
             .args(["--eval", "-E", "builtins.getFlake"])
@@ -94,19 +81,7 @@ impl NixCheck {
 
         Self {
             version: Some(version),
-            flakes_supported,
             flakes_enabled,
-        }
-    }
-
-    pub async fn require_flake_support() -> ColmenaResult<()> {
-        let check = Self::detect().await;
-
-        if !check.flakes_supported() {
-            check.print_flakes_info(true);
-            Err(ColmenaError::NoFlakesSupport)
-        } else {
-            Ok(())
         }
     }
 
@@ -118,7 +93,7 @@ impl NixCheck {
         }
     }
 
-    pub fn print_flakes_info(&self, required: bool) {
+    pub fn print_flakes_info(&self) {
         if self.version.is_none() {
             tracing::error!("Nix doesn't appear to be installed.");
             return;
@@ -126,36 +101,12 @@ impl NixCheck {
 
         if self.flakes_enabled {
             tracing::info!("The Nix version you are using supports Flakes and it's enabled.");
-        } else if self.flakes_supported {
+        } else {
             tracing::warn!("The Nix version you are using supports Flakes but it's disabled.");
             tracing::warn!(
                 "Colmena will automatically enable Flakes for its operations, but you should enable it in your Nix configuration:"
             );
             tracing::warn!("    experimental-features = nix-command flakes");
-        } else {
-            let emit_log = |s: &str| {
-                if required {
-                    tracing::error!(s);
-                } else {
-                    tracing::warn!(s);
-                }
-            };
-
-            emit_log("The Nix version you are using does not support Flakes.");
-            emit_log(
-                "If you are using a Nixpkgs version before 21.11, please install nixUnstable for a version that includes Flakes support.",
-            );
-            if required {
-                emit_log("Cannot continue since Flakes support is required for this operation.");
-            }
         }
-    }
-
-    pub fn flakes_supported(&self) -> bool {
-        self.flakes_supported
-    }
-
-    pub fn version(&self) -> Option<&NixVersion> {
-        self.version.as_ref()
     }
 }

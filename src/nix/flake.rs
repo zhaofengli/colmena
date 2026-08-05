@@ -7,7 +7,7 @@ use std::process::Stdio;
 use serde::Deserialize;
 use tokio::process::Command;
 
-use super::{ColmenaError, ColmenaResult, NixCheck};
+use super::{ColmenaError, ColmenaResult};
 
 /// A Nix Flake.
 #[derive(Debug, Clone)]
@@ -36,8 +36,6 @@ impl Flake {
     /// This will try to retrieve the resolved URL of the local flake
     /// in the specified directory.
     pub async fn from_dir<P: AsRef<Path>>(dir: P) -> ColmenaResult<Self> {
-        NixCheck::require_flake_support().await?;
-
         let flake = dir
             .as_ref()
             .as_os_str()
@@ -54,8 +52,6 @@ impl Flake {
 
     /// Creates a flake from a Flake URI.
     pub async fn from_uri(uri: impl AsRef<str>) -> ColmenaResult<Self> {
-        NixCheck::require_flake_support().await?;
-
         let metadata = FlakeMetadata::resolve(uri.as_ref()).await?;
 
         Ok(Self {

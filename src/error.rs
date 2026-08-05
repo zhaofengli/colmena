@@ -58,9 +58,6 @@ pub enum ColmenaError {
     #[snafu(display("Could not determine current profile"))]
     FailedToGetCurrentProfile,
 
-    #[snafu(display("Current Nix version does not support Flakes"))]
-    NoFlakesSupport,
-
     #[snafu(display("Don't know how to connect to the node"))]
     NoTargetHost,
 
