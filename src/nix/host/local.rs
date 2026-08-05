@@ -18,15 +18,15 @@ use crate::util::{CommandExecution, CommandExt};
 #[derive(Debug)]
 pub struct Local {
     job: Option<JobHandle>,
-    nix_options: NixFlags,
+    nix_flags: NixFlags,
     privilege_escalation_command: Option<Vec<String>>,
 }
 
 impl Local {
-    pub fn new(nix_options: NixFlags) -> Self {
+    pub fn new(nix_flags: NixFlags) -> Self {
         Self {
             job: None,
-            nix_options,
+            nix_flags,
             privilege_escalation_command: None,
         }
     }
@@ -44,13 +44,7 @@ impl Host for Local {
     }
 
     async fn realize_remote(&mut self, derivation: &StorePath) -> ColmenaResult<Vec<StorePath>> {
-        let mut command = Command::new("nix-store");
-
-        command.args(self.nix_options.to_nix_store_args());
-        command
-            .arg("--no-gc-warning")
-            .arg("--realise")
-            .arg(derivation.as_path());
+        let command = derivation.realise_command(&self.nix_flags).build();
 
         let mut execution = CommandExecution::new(command);
 
@@ -84,10 +78,8 @@ impl Host for Local {
         }
 
         if goal.should_switch_profile() {
-            let path = profile.as_path().to_str().unwrap();
-            self.make_privileged_command(&["nix-env", "--profile", SYSTEM_PROFILE, "--set", path])
-                .passthrough()
-                .await?;
+            let argv = profile.switch_profile_command(&self.nix_flags).into_argv();
+            self.make_privileged_command(&argv).passthrough().await?;
         }
 
         let command = {

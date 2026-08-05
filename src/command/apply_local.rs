@@ -97,7 +97,7 @@ pub async fn run(
 
     let target = {
         if let Some(info) = hive.deployment_info_single(&hostname).await.unwrap() {
-            let nix_options = hive.nix_flags_with_builders().await.unwrap();
+            let nix_flags = hive.nix_flags_with_builders().await.unwrap();
             if !info.allows_local_deployment() {
                 tracing::error!(
                     "Local deployment is not enabled for host {}.",
@@ -106,7 +106,7 @@ pub async fn run(
                 tracing::error!("Hint: Set deployment.allowLocalDeployment to true.");
                 quit::with_code(2);
             }
-            let mut host = LocalHost::new(nix_options);
+            let mut host = LocalHost::new(nix_flags);
             if sudo {
                 let command = info.privilege_escalation_command().to_owned();
                 host.set_privilege_escalation_command(Some(command));

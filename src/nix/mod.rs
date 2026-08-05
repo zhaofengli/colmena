@@ -228,38 +228,6 @@ impl NixFlags {
     pub fn has_option(&self, name: &str) -> bool {
         self.options.contains_key(name)
     }
-
-    /// Returns arguments for `nix-store`.
-    pub fn to_nix_store_args(&self) -> Vec<String> {
-        self.to_args_inner(true)
-    }
-
-    fn to_args_inner(&self, nix_store: bool) -> Vec<String> {
-        let mut args = Vec::new();
-
-        if self.show_trace {
-            args.push("--show-trace".to_string());
-        }
-
-        if self.pure_eval {
-            args.push("--pure-eval".to_string());
-        }
-
-        // The `nix-store` command does not accept `--impure`
-        // TODO: Not happy about this solution - Have a better Nix abstraction that hides
-        // CLI details (e.g., nix3 CLI differences)
-        if self.impure && !nix_store {
-            args.push("--impure".to_string());
-        }
-
-        for (name, value) in self.options.iter() {
-            args.push("--option".to_string());
-            args.push(name.to_string());
-            args.push(value.to_string());
-        }
-
-        args
-    }
 }
 
 fn validate_keys(keys: &HashMap<String, Key>) -> Result<(), ValidationErrorType> {
