@@ -351,6 +351,7 @@ fn test_eval_non_existent_pkg() {
       {
         test = { pkgs, ... }: {
           boot.isContainer = true;
+          nixpkgs.system = "x86_64-linux";
           environment.systemPackages = with pkgs; [ thisPackageDoesNotExist ];
         };
       }
@@ -421,6 +422,7 @@ fn test_nixpkgs_overlay_meta_nixpkgs() {
       {
         meta = {
           nixpkgs = import <nixpkgs> {
+            system = "x86_64-linux";
             overlays = [
               (self: super: { my-coreutils = super.coreutils; })
             ];
@@ -444,6 +446,7 @@ fn test_nixpkgs_overlay_node_config() {
       {
         test = { pkgs, ... }: {
           boot.isContainer = true;
+          nixpkgs.system = "x86_64-linux";
           nixpkgs.overlays = [
             (self: super: { my-coreutils = super.coreutils; })
           ];
@@ -463,6 +466,7 @@ fn test_nixpkgs_overlay_both() {
       {
         meta = {
           nixpkgs = import <nixpkgs> {
+            system = "x86_64-linux";
             overlays = [
               (self: super: { meta-coreutils = super.coreutils; })
             ];
@@ -489,6 +493,7 @@ fn test_nixpkgs_config_meta_nixpkgs() {
       {
         meta = {
           nixpkgs = import <nixpkgs> {
+            system = "x86_64-linux";
             config = {
               allowUnfree = true;
             };
@@ -513,6 +518,7 @@ fn test_nixpkgs_config_node_config() {
         r#"
       {
         test = { pkgs, ... }: {
+          nixpkgs.system = "x86_64-linux";
           nixpkgs.config = {
             allowUnfree = true;
           };
@@ -531,6 +537,7 @@ fn test_nixpkgs_config_override() {
       {
         meta = {
           nixpkgs = import <nixpkgs> {
+            system = "x86_64-linux";
             config = {
               allowUnfree = META_VAL;
             };
