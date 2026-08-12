@@ -157,7 +157,12 @@ impl Key {
 }
 
 fn validate_unix_name(name: &str) -> Result<(), ValidationError> {
-    let re = Regex::new(r"^[a-z][-a-z0-9]*$").unwrap();
+    // systemd's strict user/group name syntax: uppercase/lowercase letters,
+    // digits, underscores and hyphens, not starting with a digit or hyphen,
+    // capped at 31 characters. NixOS itself only enforces the length limit
+    // (nixos/modules/config/users-groups.nix), so this is the more specific
+    // rule. https://github.com/systemd/systemd/blob/main/docs/USER_NAMES.md#strict-mode
+    let re = Regex::new(r"^[a-zA-Z_][a-zA-Z0-9_-]{0,30}$").unwrap();
     if re.is_match(name) {
         Ok(())
     } else {
@@ -172,5 +177,29 @@ fn validate_dest_dir(dir: &Path) -> Result<(), ValidationError> {
         Err(ValidationError::new(
             "Secret key destination directory must be absolute",
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_unix_name_accepts_underscore() {
+        assert!(validate_unix_name("foo_bar").is_ok());
+        assert!(validate_unix_name("_foo").is_ok());
+        assert!(validate_unix_name("foo-bar").is_ok());
+        assert!(validate_unix_name("foo").is_ok());
+        assert!(validate_unix_name("Foo").is_ok());
+        assert!(validate_unix_name(&"a".repeat(31)).is_ok());
+    }
+
+    #[test]
+    fn test_validate_unix_name_rejects_invalid() {
+        assert!(validate_unix_name("-foo").is_err());
+        assert!(validate_unix_name("1foo").is_err());
+        assert!(validate_unix_name("").is_err());
+        assert!(validate_unix_name("foo123$").is_err());
+        assert!(validate_unix_name(&"a".repeat(32)).is_err());
     }
 }
