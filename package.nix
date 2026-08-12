@@ -2,7 +2,6 @@
   lib,
   stdenv,
   rustPlatform,
-  nix-gitignore,
   installShellFiles,
   nix-eval-jobs,
 }:
@@ -12,7 +11,6 @@ let
   srcIgnored = fs.unions [
     ./.github
     ./CNAME
-    ./renovate.json
 
     ./manual
     ./integration-tests
