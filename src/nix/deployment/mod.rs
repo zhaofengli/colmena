@@ -49,8 +49,8 @@ pub struct Deployment {
     /// Deployment options.
     options: Options,
 
-    /// Options passed to Nix invocations.
-    nix_options: NixFlags,
+    /// Flags passed to Nix invocations.
+    nix_flags: NixFlags,
 
     /// Handle to send messages to the ProgressOutput.
     progress: Option<ProgressSender>,
@@ -103,7 +103,7 @@ impl Deployment {
             hive,
             goal,
             options: Options::default(),
-            nix_options: NixFlags::default(),
+            nix_flags: NixFlags::default(),
             progress,
             targets,
             parallelism_limit: ParallelismLimit::default(),
@@ -129,8 +129,7 @@ impl Deployment {
             monitor.set_label_width(width);
         }
 
-        let nix_options = self.hive.nix_flags_with_builders().await?;
-        self.nix_options = nix_options;
+        self.nix_flags = self.hive.nix_flags_with_builders().await?;
 
         if self.goal == Goal::UploadKeys {
             // Just upload keys
@@ -505,7 +504,7 @@ impl Deployment {
         let profile: Profile = build_job
             .run(|job| async move {
                 // FIXME: Remote builder?
-                let mut builder = LocalHost::new(arc_self.nix_options.clone()).upcast();
+                let mut builder = LocalHost::new(arc_self.nix_flags.clone()).upcast();
                 builder.set_job(Some(job.clone()));
 
                 let profile = profile_drv.realize(&mut builder).await?;
@@ -525,7 +524,7 @@ impl Deployment {
                     job.state(JobState::Running)?;
                     let path = dir.join(".gcroots").join(format!("node-{}", &*target.name));
 
-                    profile_r.create_gc_root(&path).await?;
+                    profile_r.create_gc_root(&path, &arc_self.nix_flags).await?;
                 } else {
                     job.noop("No context directory to create GC roots in".to_string())?;
                 }

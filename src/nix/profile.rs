@@ -2,9 +2,10 @@ use std::convert::TryFrom;
 use std::path::Path;
 use std::process::Stdio;
 
-use tokio::process::Command;
-
-use super::{BuildResult, ColmenaError, ColmenaResult, Goal, StoreDerivation, StorePath};
+use super::{
+    BuildResult, ColmenaError, ColmenaResult, Goal, NixCommand, NixFlags, SYSTEM_PROFILE,
+    StoreDerivation, StorePath,
+};
 
 pub type ProfileDerivation = StoreDerivation<Profile>;
 
@@ -23,6 +24,14 @@ impl Profile {
         } else {
             Ok(Self(path))
         }
+    }
+
+    /// Returns the command to switch the system profile to this profile,
+    /// shared by the local and remote activation paths.
+    pub fn switch_profile_command(&self, flags: &NixFlags) -> NixCommand {
+        NixCommand::nix_env(flags.clone())
+            .args(["--profile", SYSTEM_PROFILE, "--set"])
+            .arg(self.as_path())
     }
 
     /// Returns the command to activate this profile.
@@ -51,15 +60,13 @@ impl Profile {
     }
 
     /// Create a GC root for this profile.
-    pub async fn create_gc_root(&self, path: &Path) -> ColmenaResult<()> {
-        let mut command = Command::new("nix-store");
-        command.args([
-            "--no-build-output",
-            "--indirect",
-            "--add-root",
-            path.to_str().unwrap(),
-        ]);
-        command.args(["--realise", self.as_path().to_str().unwrap()]);
+    pub async fn create_gc_root(&self, path: &Path, flags: &NixFlags) -> ColmenaResult<()> {
+        let mut command = NixCommand::nix_store(flags.clone())
+            .args(["--no-build-output", "--indirect", "--add-root"])
+            .arg(path)
+            .arg("--realise")
+            .arg(self.as_path())
+            .build();
         command.stdout(Stdio::null());
 
         let status = command.status().await?;

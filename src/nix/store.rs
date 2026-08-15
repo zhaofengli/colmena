@@ -5,11 +5,9 @@ use std::ops::Deref;
 use std::path::{Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
-use tokio::process::Command;
 
-use super::Host;
+use super::{Host, NixCommand, NixFlags};
 use crate::error::{ColmenaError, ColmenaResult};
-use crate::util::CommandExt;
 
 /// A Nix store path.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -43,19 +41,12 @@ impl StorePath {
         }
     }
 
-    /// Returns the immediate dependencies of the store path.
-    pub async fn references(&self) -> ColmenaResult<Vec<StorePath>> {
-        let references = Command::new("nix-store")
-            .args(["--query", "--references"])
-            .arg(&self.0)
-            .capture_output()
-            .await?
-            .trim_end()
-            .split('\n')
-            .map(|p| StorePath(PathBuf::from(p)))
-            .collect();
-
-        Ok(references)
+    /// Returns a command realising the store path, shared by the
+    /// local and remote build paths.
+    pub fn realise_command(&self, flags: &NixFlags) -> NixCommand {
+        NixCommand::nix_store(flags.clone())
+            .args(["--no-gc-warning", "--realise"])
+            .arg(self.as_path())
     }
 
     /// Converts the store path into a store derivation.

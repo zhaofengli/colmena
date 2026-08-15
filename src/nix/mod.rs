@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::hash::Hash;
 use std::ops::Deref;
 use std::path::Path;
@@ -8,6 +8,9 @@ use serde::{Deserialize, Deserializer, Serialize};
 use validator::{Validate, ValidationError as ValidationErrorType};
 
 use crate::error::{ColmenaError, ColmenaResult};
+
+pub mod command;
+pub use command::NixCommand;
 
 pub mod host;
 use host::Ssh;
@@ -106,17 +109,10 @@ pub struct NixFlags {
     /// Whether to pass --impure.
     impure: bool,
 
-    /// Designated builders.
-    ///
-    /// See <https://nixos.org/manual/nix/stable/advanced-topics/distributed-builds.html>.
-    ///
-    /// Valid examples:
-    /// - `@/path/to/machines`
-    /// - `builder@host.tld riscv64-linux /home/nix/.ssh/keys/builder.key 8 1 kvm`
-    builders: Option<String>,
-
     /// Options to pass as --option name value.
-    options: HashMap<String, String>,
+    ///
+    /// A BTreeMap is used so the options are emitted deterministically.
+    options: BTreeMap<String, String>,
 }
 
 impl NodeName {
@@ -181,9 +177,9 @@ impl NodeConfig {
         self.build_on_target = enable;
     }
 
-    pub fn to_ssh_host(&self) -> Option<Ssh> {
+    pub fn to_ssh_host(&self, nix_flags: NixFlags) -> Option<Ssh> {
         self.target_host.as_ref().map(|target_host| {
-            let mut host = Ssh::new(self.target_user.clone(), target_host.clone());
+            let mut host = Ssh::new(self.target_user.clone(), target_host.clone(), nix_flags);
             host.set_privilege_escalation_command(self.privilege_escalation_command.clone());
             host.set_extra_ssh_options(self.extra_ssh_options.clone());
 
@@ -209,56 +205,26 @@ impl NixFlags {
         self.impure = impure;
     }
 
+    /// Sets the designated builders, a plain `--option builders` value.
+    ///
+    /// See <https://nixos.org/manual/nix/stable/advanced-topics/distributed-builds.html>.
+    ///
+    /// Valid examples:
+    /// - `@/path/to/machines`
+    /// - `builder@host.tld riscv64-linux /home/nix/.ssh/keys/builder.key 8 1 kvm`
     pub fn set_builders(&mut self, builders: Option<String>) {
-        self.builders = builders;
+        match builders {
+            Some(builders) => self.options.insert("builders".to_string(), builders),
+            None => self.options.remove("builders"),
+        };
     }
 
-    pub fn set_options(&mut self, options: HashMap<String, String>) {
-        self.options = options;
+    pub fn add_option(&mut self, name: String, value: String) {
+        self.options.insert(name, value);
     }
 
-    pub fn to_args(&self) -> Vec<String> {
-        self.to_args_inner(false)
-    }
-
-    /// Returns arguments for `nix-store`.
-    pub fn to_nix_store_args(&self) -> Vec<String> {
-        self.to_args_inner(true)
-    }
-
-    fn to_args_inner(&self, nix_store: bool) -> Vec<String> {
-        let mut args = Vec::new();
-
-        if let Some(builders) = &self.builders {
-            args.append(&mut vec![
-                "--option".to_string(),
-                "builders".to_string(),
-                builders.clone(),
-            ]);
-        }
-
-        if self.show_trace {
-            args.push("--show-trace".to_string());
-        }
-
-        if self.pure_eval {
-            args.push("--pure-eval".to_string());
-        }
-
-        // The `nix-store` command does not accept `--impure`
-        // TODO: Not happy about this solution - Have a better Nix abstraction that hides
-        // CLI details (e.g., nix3 CLI differences)
-        if self.impure && !nix_store {
-            args.push("--impure".to_string());
-        }
-
-        for (name, value) in self.options.iter() {
-            args.push("--option".to_string());
-            args.push(name.to_string());
-            args.push(value.to_string());
-        }
-
-        args
+    pub fn has_option(&self, name: &str) -> bool {
+        self.options.contains_key(name)
     }
 }
 

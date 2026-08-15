@@ -5,9 +5,8 @@ use std::path::{Path, PathBuf};
 use std::process::Stdio;
 
 use serde::Deserialize;
-use tokio::process::Command;
 
-use super::{ColmenaError, ColmenaResult, NixCheck};
+use super::{ColmenaError, ColmenaResult, NixCommand, NixFlags};
 
 /// A Nix Flake.
 #[derive(Debug, Clone)]
@@ -35,16 +34,14 @@ impl Flake {
     ///
     /// This will try to retrieve the resolved URL of the local flake
     /// in the specified directory.
-    pub async fn from_dir<P: AsRef<Path>>(dir: P) -> ColmenaResult<Self> {
-        NixCheck::require_flake_support().await?;
-
+    pub async fn from_dir<P: AsRef<Path>>(dir: P, flags: &NixFlags) -> ColmenaResult<Self> {
         let flake = dir
             .as_ref()
             .as_os_str()
             .to_str()
             .expect("Flake directory path contains non-UTF-8 characters");
 
-        let metadata = FlakeMetadata::resolve(flake).await?;
+        let metadata = FlakeMetadata::resolve(flake, flags).await?;
 
         Ok(Self {
             metadata,
@@ -53,10 +50,8 @@ impl Flake {
     }
 
     /// Creates a flake from a Flake URI.
-    pub async fn from_uri(uri: impl AsRef<str>) -> ColmenaResult<Self> {
-        NixCheck::require_flake_support().await?;
-
-        let metadata = FlakeMetadata::resolve(uri.as_ref()).await?;
+    pub async fn from_uri(uri: impl AsRef<str>, flags: &NixFlags) -> ColmenaResult<Self> {
+        let metadata = FlakeMetadata::resolve(uri.as_ref(), flags).await?;
 
         Ok(Self {
             metadata,
@@ -85,12 +80,11 @@ impl Flake {
 
 impl FlakeMetadata {
     /// Resolves a flake.
-    async fn resolve(flake: &str) -> ColmenaResult<Self> {
-        let child = Command::new("nix")
-            .args(["flake", "metadata", "--json"])
-            .args(["--extra-experimental-features", "nix-command flakes"])
-            .args(["--no-write-lock-file"])
+    async fn resolve(flake: &str, flags: &NixFlags) -> ColmenaResult<Self> {
+        let child = NixCommand::nix(flags.clone())
+            .args(["flake", "metadata", "--json", "--no-write-lock-file"])
             .arg(flake)
+            .build()
             .stdout(Stdio::piped())
             .spawn()?;
 
@@ -108,11 +102,11 @@ impl FlakeMetadata {
 }
 
 /// Quietly locks the dependencies of a flake.
-pub async fn lock_flake_quiet(uri: &str) -> ColmenaResult<()> {
-    let status = Command::new("nix")
+pub async fn lock_flake_quiet(uri: &str, flags: &NixFlags) -> ColmenaResult<()> {
+    let status = NixCommand::nix(flags.clone())
         .args(["flake", "lock"])
-        .args(["--extra-experimental-features", "nix-command flakes"])
         .arg(uri)
+        .build()
         .stderr(Stdio::null())
         .status()
         .await?;

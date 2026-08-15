@@ -11,7 +11,7 @@ use tracing_subscriber::EnvFilter;
 use crate::{
     command::{self, apply::DeployOpts},
     error::{ColmenaError, ColmenaResult},
-    nix::{Hive, HivePath, hive::EvaluationMethod},
+    nix::{Hive, HivePath, NixFlags, hive::EvaluationMethod},
 };
 
 /// Base URL of the manual, without the trailing slash.
@@ -112,7 +112,7 @@ struct Opts {
         display_order = HELP_ORDER_FIRST,
         global = true,
     )]
-    config: Option<HivePath>,
+    config: Option<String>,
 
     /// Show debug information for Nix commands
     ///
@@ -128,7 +128,9 @@ struct Opts {
 
     /// Passes an arbitrary option to Nix commands
     ///
-    /// This only works when building locally.
+    /// The option applies to all Nix invocations made by Colmena (local and remote).
+    /// Values referring to local paths (e.g., extra-builtins-file) are also passed to
+    /// deployment targets, where those paths may not exist.
     #[arg(
         long,
         global = true,
@@ -222,9 +224,39 @@ enum Command {
     },
 }
 
-async fn get_hive(opts: &Opts) -> ColmenaResult<Hive> {
-    let path = match &opts.config {
-        Some(path) => path.clone(),
+/// Builds Nix flags from CLI options.
+///
+/// This derives CLI flags for all Nix invocations.
+fn get_nix_flags(opts: &Opts) -> NixFlags {
+    let mut flags = NixFlags::default();
+    flags.set_show_trace(opts.show_trace);
+    flags.set_impure(opts.impure);
+
+    for chunks in opts.nix_option.chunks_exact(2) {
+        let [name, value] = chunks else {
+            unreachable!()
+        };
+        flags.add_option(name.clone(), value.clone());
+    }
+
+    flags
+}
+
+/// Resolves the configured HivePath, if -f/--config was given.
+async fn get_config_path(opts: &Opts, flags: &NixFlags) -> ColmenaResult<Option<HivePath>> {
+    match &opts.config {
+        Some(config) => Ok(Some(HivePath::resolve(config, flags).await?)),
+        None => Ok(None),
+    }
+}
+
+async fn get_hive(
+    opts: &Opts,
+    config_path: Option<HivePath>,
+    flags: NixFlags,
+) -> ColmenaResult<Hive> {
+    let path = match config_path {
+        Some(path) => path,
         None => {
             // traverse upwards until we find hive.nix
             let mut cur = std::env::current_dir()?;
@@ -260,7 +292,7 @@ async fn get_hive(opts: &Opts) -> ColmenaResult<Hive> {
                 );
             }
 
-            HivePath::from_path(file_path.unwrap()).await?
+            HivePath::from_path(file_path.unwrap(), &flags).await?
         }
     };
 
@@ -273,15 +305,7 @@ async fn get_hive(opts: &Opts) -> ColmenaResult<Hive> {
         }
     }
 
-    let mut hive = Hive::new(path).await?;
-
-    if opts.show_trace {
-        hive.set_show_trace(true);
-    }
-
-    if opts.impure {
-        hive.set_impure(true);
-    }
+    let mut hive = Hive::new(path, flags).await?;
 
     if opts.deprecated_experimental_flake_eval_flag {
         tracing::error!(
@@ -303,13 +327,6 @@ async fn get_hive(opts: &Opts) -> ColmenaResult<Hive> {
         hive.set_evaluation_method(EvaluationMethod::NixInstantiate);
     }
 
-    for chunks in opts.nix_option.chunks_exact(2) {
-        let [name, value] = chunks else {
-            unreachable!()
-        };
-        hive.add_nix_option(name.clone(), value.clone());
-    }
-
     Ok(hive)
 }
 
@@ -324,33 +341,53 @@ pub async fn run() {
         return;
     }
 
-    let hive = get_hive(&opts).await.expect("Failed to get flake or hive");
+    let flags = get_nix_flags(&opts);
+
+    let config_path = match get_config_path(&opts, &flags).await {
+        Ok(config_path) => config_path,
+        Err(error) => {
+            tracing::error!(
+                "Failed to resolve configuration \"{}\": {}",
+                opts.config.as_deref().unwrap_or_default(),
+                error
+            );
+            quit::with_code(2);
+        }
+    };
+
+    let hive = match get_hive(&opts, config_path, flags.clone()).await {
+        Ok(hive) => hive,
+        Err(error) => {
+            tracing::error!("Failed to load the hive: {}", error);
+            quit::with_code(2);
+        }
+    };
 
     use crate::troubleshooter::run_wrapped as r;
 
     match opts.command {
-        Command::Apply(args) => r(command::apply::run(hive, args), opts.config).await,
+        Command::Apply(args) => r(command::apply::run(hive, args)).await,
         #[cfg(target_os = "linux")]
-        Command::ApplyLocal(args) => r(command::apply_local::run(hive, args), opts.config).await,
-        Command::Eval(args) => r(command::eval::run(hive, args), opts.config).await,
-        Command::Exec(args) => r(command::exec::run(hive, args), opts.config).await,
-        Command::NixInfo => r(command::nix_info::run(), opts.config).await,
-        Command::Repl => r(command::repl::run(hive), opts.config).await,
+        Command::ApplyLocal(args) => r(command::apply_local::run(hive, args)).await,
+        Command::Eval(args) => r(command::eval::run(hive, args)).await,
+        Command::Exec(args) => r(command::exec::run(hive, args)).await,
+        Command::NixInfo => r(command::nix_info::run(flags)).await,
+        Command::Repl => r(command::repl::run(hive)).await,
         #[cfg(debug_assertions)]
-        Command::TestProgress => r(command::test_progress::run(), opts.config).await,
+        Command::TestProgress => r(command::test_progress::run()).await,
         Command::Build { deploy } => {
             let args = command::apply::Opts {
                 deploy,
                 goal: crate::nix::Goal::Build,
             };
-            r(command::apply::run(hive, args), opts.config).await
+            r(command::apply::run(hive, args)).await
         }
         Command::UploadKeys { deploy } => {
             let args = command::apply::Opts {
                 deploy,
                 goal: crate::nix::Goal::UploadKeys,
             };
-            r(command::apply::run(hive, args), opts.config).await
+            r(command::apply::run(hive, args)).await
         }
         Command::GenCompletions { .. } => unreachable!(),
     }
